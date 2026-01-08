@@ -30,7 +30,6 @@ export default function SimpleBrandList() {
   const handleDelete = async (id: number) => {
     if (confirm('Delete this brand?')) {
       try {
-        // DELETE request with axios
         await axios.delete(`http://127.0.0.1:8000/brands/${id}`);
         setBrands(brands.filter((b) => b.brand_id !== id));
       } catch (error) {
