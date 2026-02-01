@@ -37,9 +37,11 @@ export default function Navbar() {
 
           {/* Action Buttons */}
           <div className="hidden md:flex items-center space-x-4">
-            <Button variant="ghost" className="text-slate-300 hover:text-blue-400">
-              Login
-            </Button>
+            <Link href="/login">
+              <Button variant="ghost" className="text-slate-300 hover:text-blue-400">
+                Login
+              </Button>
+            </Link>
             <Button className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700">
               Get Started
             </Button>
@@ -79,9 +81,11 @@ export default function Navbar() {
               About
             </a>
             <div className="flex flex-col space-y-2 pt-4">
-              <Button variant="ghost" className="w-full text-slate-300 hover:text-blue-400">
-                Login
-              </Button>
+              <Link href="/login">
+                <Button variant="ghost" className="w-full text-slate-300 hover:text-blue-400">
+                  Login
+                </Button>
+              </Link>
               <Button className="w-full bg-gradient-to-r from-blue-600 to-cyan-600">
                 Get Started
               </Button>
