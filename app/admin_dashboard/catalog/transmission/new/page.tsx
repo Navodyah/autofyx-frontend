@@ -1,21 +1,29 @@
-"use client";
+'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
 import Link from 'next/link';
-import { ArrowLeft, Save, Cog, Cylinder, Gauge } from 'lucide-react';
+import { ArrowLeft, Save, Settings, Tag } from 'lucide-react';
 
-export default function AddEngineType() {
+export default function NewTransmissionPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   
   const [formData, setFormData] = useState({
-    engine_type_name: '',
-    cylinders: '',
-    engine_size: ''
+    transmission_name: '',
+    category: ''
   });
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const categoryOptions = [
+    'Automatic',
+    'Manual',
+    'CVT',
+    'DCT',
+    'Semi-Automatic',
+    'AMT'
+  ];
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
@@ -25,15 +33,14 @@ export default function AddEngineType() {
 
     try {
       // POST request with axios
-      const response = await axios.post('http://127.0.0.1:8000/engine-types/', {
-        engine_type_name: formData.engine_type_name,
-        cylinders: parseInt(formData.cylinders),
-        engine_size: parseFloat(formData.engine_size)
+      const response = await axios.post('http://127.0.0.1:8000/transmissions/', {
+        transmission_name: formData.transmission_name,
+        category: formData.category
       });
 
       if (response.status === 200 || response.status === 201) {
-        alert("Engine Type Added Successfully!");
-        router.push('/admin_dashboard/catalog/engine-types');
+        alert("Transmission Added Successfully!");
+        router.push('/admin_dashboard/catalog/transmission');
       }
     } catch (error: any) {
       console.error(error);
@@ -48,10 +55,10 @@ export default function AddEngineType() {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-8">
       <div className="max-w-2xl mx-auto">
         {/* Back Button */}
-        <Link href="/admin_dashboard/catalog/engine-types">
+        <Link href="/admin_dashboard/catalog/transmission">
           <button className="mb-6 flex items-center gap-2 text-gray-600 hover:text-blue-600 transition-colors">
             <ArrowLeft className="w-5 h-5" />
-            Back to Engine Types
+            Back to Transmissions
           </button>
         </Link>
 
@@ -61,81 +68,64 @@ export default function AddEngineType() {
           <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-8 py-6">
             <div className="flex items-center gap-3 text-white">
               <div className="bg-white/20 p-3 rounded-xl">
-                <Cog className="w-8 h-8" />
+                <Settings className="w-8 h-8" />
               </div>
               <div>
-                <h1 className="text-3xl font-bold">Add New Engine Type</h1>
-                <p className="text-blue-100 mt-1">Create a new engine specification</p>
+                <h1 className="text-3xl font-bold">Add New Transmission</h1>
+                <p className="text-blue-100 mt-1">Create a new transmission specification</p>
               </div>
             </div>
           </div>
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="p-8 space-y-6">
-            {/* Engine Type Name */}
+            {/* Transmission Name */}
             <div className="space-y-2">
               <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-                <Cog className="w-4 h-4 text-blue-600" />
-                Engine Type Name <span className="text-red-500">*</span>
+                <Settings className="w-4 h-4 text-blue-600" />
+                Transmission Name <span className="text-red-500">*</span>
               </label>
               <input
-                name="engine_type_name"
+                name="transmission_name"
                 type="text"
-                value={formData.engine_type_name}
+                value={formData.transmission_name}
                 onChange={handleChange}
                 required
-                placeholder="Ex: V6 Turbo, Inline-4, V8 HEMI"
+                placeholder="e.g. 6-Speed Tiptronic, 8-Speed Automatic"
                 className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none transition-colors"
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-6">
-              {/* Cylinders */}
-              <div className="space-y-2">
-                <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-                  <Cylinder className="w-4 h-4 text-blue-600" />
-                  Cylinders <span className="text-red-500">*</span>
-                </label>
-                <input
-                  name="cylinders"
-                  type="number"
-                  min="1"
-                  max="16"
-                  value={formData.cylinders}
-                  onChange={handleChange}
-                  required
-                  placeholder="Ex: 4, 6, 8"
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none transition-colors"
-                />
-              </div>
-
-              {/* Engine Size */}
-              <div className="space-y-2">
-                <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-                  <Gauge className="w-4 h-4 text-blue-600" />
-                  Engine Size (L) <span className="text-red-500">*</span>
-                </label>
-                <input
-                  name="engine_size"
-                  type="number"
-                  step="0.1"
-                  min="0.1"
-                  max="20"
-                  value={formData.engine_size}
-                  onChange={handleChange}
-                  required
-                  placeholder="Ex: 2.0, 3.5"
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none transition-colors"
-                />
-              </div>
+            {/* Category - Dropdown */}
+            <div className="space-y-2">
+              <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                <Tag className="w-4 h-4 text-blue-600" />
+                Category <span className="text-red-500">*</span>
+              </label>
+              <select
+                name="category"
+                value={formData.category}
+                onChange={handleChange}
+                required
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none transition-colors appearance-none bg-white cursor-pointer"
+              >
+                <option value="" disabled>Select a Category</option>
+                {categoryOptions.map((option, index) => (
+                  <option key={index} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
             </div>
 
-            {/* Info Display */}
-            {formData.cylinders && formData.engine_size && (
+            {/* Preview */}
+            {formData.transmission_name && formData.category && (
               <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-4">
                 <p className="text-sm text-blue-800">
-                  🔧 Configuration: <span className="font-semibold">{formData.cylinders} Cylinder</span> engine with{' '}
-                  <span className="font-semibold">{formData.engine_size}L</span> displacement
+                  ⚙️ Transmission: <span className="font-semibold">{formData.transmission_name}</span>
+                </p>
+                <p className="text-sm text-blue-700 mt-1">
+                  📋 Category: <span className="font-semibold">{formData.category}</span>
                 </p>
               </div>
             )}
@@ -155,11 +145,11 @@ export default function AddEngineType() {
                 ) : (
                   <>
                     <Save className="w-5 h-5" />
-                    Save Engine Type
+                    Save Transmission
                   </>
                 )}
               </button>
-              <Link href="/admin_dashboard/catalog/engine-types" className="flex-1">
+              <Link href="/admin_dashboard/catalog/transmission" className="flex-1">
                 <button
                   type="button"
                   className="w-full bg-gray-200 hover:bg-gray-300 text-gray-700 px-6 py-3 rounded-xl flex items-center justify-center gap-2 transition-all duration-300"
@@ -173,12 +163,14 @@ export default function AddEngineType() {
 
         {/* Info Card */}
         <div className="mt-6 bg-blue-50 border-2 border-blue-200 rounded-xl p-6">
-          <h3 className="font-semibold text-blue-900 mb-2">📝 Tips</h3>
+          <h3 className="font-semibold text-blue-900 mb-2">📝 Transmission Categories</h3>
           <ul className="text-sm text-blue-800 space-y-1">
-            <li>• All fields are required</li>
-            <li>• Cylinder count typically ranges from 1 to 16</li>
-            <li>• Engine size is measured in liters (L)</li>
-            <li>• Common sizes: 1.5L, 2.0L, 3.5L, 5.0L</li>
+            <li>• <strong>Automatic:</strong> Traditional torque converter automatic</li>
+            <li>• <strong>Manual:</strong> Manual gear shifting with clutch</li>
+            <li>• <strong>CVT:</strong> Continuously Variable Transmission</li>
+            <li>• <strong>DCT:</strong> Dual-Clutch Transmission</li>
+            <li>• <strong>Semi-Automatic:</strong> Manual without clutch pedal</li>
+            <li>• <strong>AMT:</strong> Automated Manual Transmission</li>
           </ul>
         </div>
       </div>
