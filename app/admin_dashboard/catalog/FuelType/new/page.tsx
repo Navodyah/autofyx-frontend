@@ -11,13 +11,9 @@ export default function NewFuelTypePage() {
   const [isLoading, setIsLoading] = useState(false);
 
   const fuelTypeOptions = [
-    "Petrol 92 Octane",
-    "Petrol 95 Octane",
-    "Auto Diesel",
-    "Super Diesel",
-    "Electric",
-    "Hybrid (Petrol)",
-    "Hybrid (Diesel)"
+    "Z- Premium Gasonline",
+    "X - Regular Gasoline",
+    "D - Diesel",
   ];
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -136,13 +132,10 @@ export default function NewFuelTypePage() {
         <div className="mt-6 bg-blue-50 border-2 border-blue-200 rounded-xl p-6">
           <h3 className="font-semibold text-blue-900 mb-2">📝 Available Fuel Types</h3>
           <ul className="text-sm text-blue-800 space-y-1">
-            <li>• Petrol 92 Octane - Standard petrol grade</li>
-            <li>• Petrol 95 Octane - Premium petrol grade</li>
-            <li>• Auto Diesel - Standard diesel for vehicles</li>
-            <li>• Super Diesel - Premium diesel grade</li>
-            <li>• Electric - Battery electric vehicles</li>
-            <li>• Hybrid (Petrol) - Petrol-electric hybrid</li>
-            <li>• Hybrid (Diesel) - Diesel-electric hybrid</li>
+            <li>• Z- Premium Gasonline</li>
+            <li>• X - Regular Gasoline</li>
+            <li>• D - Diesel</li>
+            
           </ul>
         </div>
       </div>
