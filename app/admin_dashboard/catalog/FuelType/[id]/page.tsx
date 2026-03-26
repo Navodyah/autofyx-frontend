@@ -15,13 +15,9 @@ export default function EditFuelTypePage() {
   const [isUpdating, setIsUpdating] = useState(false);
 
   const fuelTypeOptions = [
-    "Petrol 92 Octane",
-    "Petrol 95 Octane",
-    "Auto Diesel",
-    "Super Diesel",
-    "Electric",
-    "Hybrid (Petrol)",
-    "Hybrid (Diesel)"
+    "Z- Premium Gasonline",
+    "X - Regular Gasoline",
+    "D - Diesel",
   ];
 
   useEffect(() => {
