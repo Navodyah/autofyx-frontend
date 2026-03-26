@@ -15,12 +15,11 @@ export default function NewTransmissionPage() {
   });
 
   const categoryOptions = [
-    'Automatic',
-    'Manual',
-    'CVT',
-    'DCT',
-    'Semi-Automatic',
-    'AMT'
+    'A=Automatic',
+    'M=Manual',
+    'AV=CVT',
+    'AS=Automatic with Manual Shifting',
+    'AM=Automated Manual'
   ];
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -168,9 +167,8 @@ export default function NewTransmissionPage() {
             <li>• <strong>Automatic:</strong> Traditional torque converter automatic</li>
             <li>• <strong>Manual:</strong> Manual gear shifting with clutch</li>
             <li>• <strong>CVT:</strong> Continuously Variable Transmission</li>
-            <li>• <strong>DCT:</strong> Dual-Clutch Transmission</li>
             <li>• <strong>Semi-Automatic:</strong> Manual without clutch pedal</li>
-            <li>• <strong>AMT:</strong> Automated Manual Transmission</li>
+            <li>• <strong>AM:</strong> Automated Manual </li>
           </ul>
         </div>
       </div>
