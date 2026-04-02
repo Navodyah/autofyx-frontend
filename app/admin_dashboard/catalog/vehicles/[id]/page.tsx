@@ -21,6 +21,8 @@ export default function EditVehiclePage() {
     brand_id: '',
     model_name: '',
     engine_size: '',
+    minimum_price: '',
+    max_price: '',
     class_id: '',
     engine_type_id: '',
     fuel_type_id: '',
@@ -68,8 +70,10 @@ export default function EditVehiclePage() {
       // FIXED: Properly map model_name from response
       setFormData({
         brand_id: response.data.brand_id?.toString() || '',
-        model_name: response.data.model_name || '', // CHANGED: Direct mapping from model_name field
+        model_name: response.data.model_name || response.data.vehicle_model || '',
         engine_size: response.data.engine_size?.toString() || '',
+        minimum_price: response.data.minimum_price?.toString() || '',
+        max_price: response.data.max_price?.toString() || '',
         class_id: response.data.class_id?.toString() || '',
         engine_type_id: response.data.engine_type_id?.toString() || '',
         fuel_type_id: response.data.fuel_type_id?.toString() || '',
@@ -85,7 +89,7 @@ export default function EditVehiclePage() {
       // Debug log to verify model_name was loaded
       console.log('✓ Form data populated:', {
         brand_id: response.data.brand_id,
-        model_name: response.data.model_name,
+        model_name: response.data.model_name || response.data.vehicle_model,
         engine_size: response.data.engine_size
       });
     } catch (error) {
@@ -231,6 +235,8 @@ export default function EditVehiclePage() {
       brand_id: parseInt(formData.brand_id),
       model_name: formData.model_name, // CHANGED: Send as model_name (not vehicle_model)
       engine_size: parseFloat(formData.engine_size),
+      minimum_price: parseFloat(formData.minimum_price),
+      max_price: parseFloat(formData.max_price),
       class_id: parseInt(formData.class_id),
       engine_type_id: parseInt(formData.engine_type_id),
       fuel_type_id: parseInt(formData.fuel_type_id),
@@ -394,6 +400,44 @@ export default function EditVehiclePage() {
                   className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-orange-500 focus:outline-none transition-colors"
                 />
                 <p className="text-xs text-gray-500">Engine displacement in liters</p>
+              </div>
+
+              <div className="space-y-2">
+                <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                  <Gauge className="w-4 h-4 text-orange-600" />
+                  Minimum Price <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  name="minimum_price"
+                  value={formData.minimum_price}
+                  onChange={handleChange}
+                  required
+                  min="0"
+                  placeholder="e.g. 4500000"
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-orange-500 focus:outline-none transition-colors"
+                />
+                <p className="text-xs text-gray-500">Lowest market price for this vehicle</p>
+              </div>
+
+              <div className="space-y-2">
+                <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                  <Gauge className="w-4 h-4 text-orange-600" />
+                  Maximum Price <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  name="max_price"
+                  value={formData.max_price}
+                  onChange={handleChange}
+                  required
+                  min="0"
+                  placeholder="e.g. 5200000"
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-orange-500 focus:outline-none transition-colors"
+                />
+                <p className="text-xs text-gray-500">Highest market price for this vehicle</p>
               </div>
 
               {/* Vehicle Class */}
