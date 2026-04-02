@@ -6,7 +6,11 @@ import { Plus, Edit, Trash2, Search, Car, Calendar, Fuel, Zap, Package } from 'l
 
 interface Vehicle {
   vehicle_id: number;
+  brand_id?: number;
   model_id?: number;
+  vehicle_name?: string;
+  vehicle_model?: string;
+  engine_size?: number;
   class_id?: number;
   engine_type_id?: number;
   fuel_type_id?: number;
@@ -14,6 +18,7 @@ interface Vehicle {
   manufacturing_year?: number;
 
   // Enriched display fields
+  brand_name?: string | null;
   model_name?: string | null;
   class_name?: string | null;
   engine_type_name?: string | null;
@@ -49,6 +54,7 @@ export default function VehicleListPage() {
       
       const [
         vehiclesRes,
+        brandsRes,
         modelsRes,
         classesRes,
         enginesRes,
@@ -56,23 +62,26 @@ export default function VehicleListPage() {
         transmissionsRes,
       ] = await Promise.all([
         axios.get(`${API_BASE}/vehicles/`),
+        axios.get(`${API_BASE}/brands/`),
         axios.get(`${API_BASE}/models/`),
         axios.get(`${API_BASE}/vehicle_classes/`),
-        // CORRECTED: Changed 'engine_types' to 'engine-types' to match your backend
         axios.get(`${API_BASE}/engine-types/`), 
         axios.get(`${API_BASE}/fuel_types/`),
         axios.get(`${API_BASE}/transmissions/`),
       ]);
 
       console.log('Data fetched successfully');
+      console.log('Vehicles:', vehiclesRes.data);
 
       const vehiclesData = vehiclesRes.data as any[];
+      const brands = brandsRes.data as any[];
       const models = modelsRes.data as any[];
       const classes = classesRes.data as any[];
       const engines = enginesRes.data as any[];
       const fuels = fuelsRes.data as any[];
       const transmissions = transmissionsRes.data as any[];
 
+      const brandsMap = buildMap(brands, 'brand_id', 'brand_name');
       const modelsMap = buildMap(models, 'model_id', 'model_name');
       const classesMap = buildMap(classes, 'class_id', 'class_name');
       const enginesMap = buildMap(engines, 'engine_type_id', 'engine_type_name');
@@ -81,18 +90,18 @@ export default function VehicleListPage() {
 
       const enriched = vehiclesData.map((v) => ({
         ...v,
-        model_name: v.model?.model_name ?? modelsMap[v.model_id] ?? 'Unknown',
-        class_name: v.vehicle_class?.class_name ?? classesMap[v.class_id] ?? 'Unknown',
-        engine_type_name: v.engine_type?.engine_type_name ?? enginesMap[v.engine_type_id] ?? 'Unknown',
-        fuel_type_name: v.fuel_type?.fuel_type_name ?? fuelsMap[v.fuel_type_id] ?? 'Unknown',
-        transmission_name:
-          v.transmission?.transmission_name ?? transmissionsMap[v.transmission_id] ?? 'Unknown',
+        brand_name: v.brand?.brand_name ?? brandsMap[v.brand_id] ?? null,
+        model_name: v.model?.model_name ?? modelsMap[v.model_id] ?? null,
+        class_name: v.vehicle_class?.class_name ?? classesMap[v.class_id] ?? null,
+        engine_type_name: v.engine_type?.engine_type_name ?? enginesMap[v.engine_type_id] ?? null,
+        fuel_type_name: v.fuel_type?.fuel_type_name ?? fuelsMap[v.fuel_type_id] ?? null,
+        transmission_name: v.transmission?.transmission_name ?? transmissionsMap[v.transmission_id] ?? null,
       })) as Vehicle[];
 
+      console.log('Enriched vehicles:', enriched);
       setVehicles(enriched);
     } catch (error) {
       console.error('Failed to fetch vehicles or reference data:', error);
-      // Data load wune nathi unath, thiyena vehicles tika hari pennanna try karamu (optional)
       setVehicles([]); 
     } finally {
       setLoading(false);
@@ -111,15 +120,34 @@ export default function VehicleListPage() {
     }
   };
 
+  // Enhanced search filter
   const term = searchTerm.trim().toLowerCase();
   const filteredVehicles = vehicles.filter((v) => {
     if (!term) return true;
-    const matchesId = v.vehicle_id?.toString().includes(term);
+    
+    const matchesId = v.vehicle_id?.toString().toLowerCase().includes(term);
+    const matchesBrand = v.brand_name?.toLowerCase().includes(term);
     const matchesModel = v.model_name?.toLowerCase().includes(term);
+    const matchesVehicleName = v.vehicle_name?.toLowerCase().includes(term);
+    const matchesVehicleModel = v.vehicle_model?.toLowerCase().includes(term);
     const matchesClass = v.class_name?.toLowerCase().includes(term);
     const matchesEngine = v.engine_type_name?.toLowerCase().includes(term);
     const matchesFuel = v.fuel_type_name?.toLowerCase().includes(term);
-    return !!(matchesId || matchesModel || matchesClass || matchesEngine || matchesFuel);
+    const matchesYear = v.manufacturing_year?.toString().includes(term);
+    const matchesEngineSize = v.engine_size?.toString().includes(term);
+    
+    return !!(
+      matchesId || 
+      matchesBrand || 
+      matchesModel || 
+      matchesVehicleName || 
+      matchesVehicleModel || 
+      matchesClass || 
+      matchesEngine || 
+      matchesFuel || 
+      matchesYear ||
+      matchesEngineSize
+    );
   });
 
   return (
@@ -150,12 +178,25 @@ export default function VehicleListPage() {
             <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
             <input
               type="text"
-              placeholder="Search by Model, Class, Engine, Fuel or Vehicle ID..."
+              placeholder="Search by Brand, Model, Vehicle Name, Class, Engine, Fuel Type, Year, or ID..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none transition-colors"
             />
           </div>
+          {searchTerm && (
+            <div className="mt-3 flex items-center justify-between">
+              <p className="text-sm text-gray-600">
+                Found <span className="font-bold text-blue-600">{filteredVehicles.length}</span> result(s) for "{searchTerm}"
+              </p>
+              <button 
+                onClick={() => setSearchTerm('')}
+                className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+              >
+                Clear Search
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Stats Cards */}
@@ -183,9 +224,9 @@ export default function VehicleListPage() {
           <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl shadow-xl p-6 text-white">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-purple-100 text-sm">Vehicle Models</p>
+                <p className="text-purple-100 text-sm">Unique Brands</p>
                 <p className="text-3xl font-bold mt-1">
-                  {new Set(vehicles.map((v) => v.model_name).filter(Boolean)).size}
+                  {new Set(vehicles.map((v) => v.brand_name).filter(Boolean)).size}
                 </p>
               </div>
               <Package className="w-12 h-12 opacity-80" />
@@ -205,7 +246,8 @@ export default function VehicleListPage() {
                 <thead className="bg-gradient-to-r from-gray-50 to-gray-100">
                   <tr>
                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">ID</th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Model</th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Brand & Model</th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Vehicle Details</th>
                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Class</th>
                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Engine & Fuel</th>
                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Year</th>
@@ -215,10 +257,14 @@ export default function VehicleListPage() {
                 <tbody className="divide-y divide-gray-200">
                   {filteredVehicles.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
+                      <td colSpan={7} className="px-6 py-12 text-center text-gray-500">
                         <Car className="w-16 h-16 mx-auto mb-4 text-gray-300" />
-                        <p className="text-lg font-semibold">No vehicles found</p>
-                        <p className="text-sm mt-2">Try adjusting your search criteria</p>
+                        <p className="text-lg font-semibold">
+                          {searchTerm ? 'No vehicles found matching your search' : 'No vehicles found'}
+                        </p>
+                        <p className="text-sm mt-2">
+                          {searchTerm ? 'Try adjusting your search criteria' : 'Register a new vehicle to get started'}
+                        </p>
                       </td>
                     </tr>
                   ) : (
@@ -230,45 +276,90 @@ export default function VehicleListPage() {
                           </span>
                         </td>
 
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        {/* Brand & Model Name */}
+                        <td className="px-6 py-4">
                           <div className="flex items-center">
                             <div className="flex-shrink-0 h-10 w-10 bg-gradient-to-br from-blue-400 to-blue-600 rounded-lg flex items-center justify-center">
                               <Car className="text-white w-6 h-6" />
                             </div>
                             <div className="ml-4">
-                              <div className="text-sm font-bold text-blue-600">
-                                {vehicle.model_name || 'Unknown Model'}
+                              <div className="text-sm font-bold text-gray-900">
+                                {vehicle.brand_name || 'N/A'}
                               </div>
+                              {vehicle.model_name && (
+                                <div className="text-sm text-blue-600 font-semibold">
+                                  {vehicle.model_name}
+                                </div>
+                              )}
                             </div>
                           </div>
                         </td>
 
+                        {/* Vehicle Name & Model Variant */}
+                        <td className="px-6 py-4">
+                          {vehicle.vehicle_name && (
+                            <div className="text-sm font-medium text-gray-900">
+                              {vehicle.vehicle_name}
+                            </div>
+                          )}
+                          {vehicle.vehicle_model && (
+                            <div className="text-xs text-gray-600 mt-1">
+                              {vehicle.vehicle_model}
+                            </div>
+                          )}
+                          {vehicle.engine_size && (
+                            <div className="text-xs text-orange-600 font-medium mt-1">
+                              {vehicle.engine_size}L Engine
+                            </div>
+                          )}
+                          {!vehicle.vehicle_name && !vehicle.vehicle_model && !vehicle.engine_size && (
+                            <span className="text-xs text-gray-400">No details</span>
+                          )}
+                        </td>
+
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <span className="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-purple-100 text-purple-800">
-                            {vehicle.class_name || 'N/A'}
-                          </span>
+                          {vehicle.class_name ? (
+                            <span className="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-purple-100 text-purple-800">
+                              {vehicle.class_name}
+                            </span>
+                          ) : (
+                            <span className="text-xs text-gray-400">N/A</span>
+                          )}
                         </td>
 
                         <td className="px-6 py-4">
-                          <div className="flex items-center gap-2">
-                            <Zap className="w-4 h-4 text-orange-500" />
-                            <div className="text-xs text-gray-900 font-medium">
-                              {vehicle.engine_type_name || 'N/A'}
+                          {vehicle.engine_type_name && (
+                            <div className="flex items-center gap-2">
+                              <Zap className="w-4 h-4 text-orange-500" />
+                              <div className="text-xs text-gray-900 font-medium">
+                                {vehicle.engine_type_name}
+                              </div>
                             </div>
-                          </div>
-                          <div className="flex items-center gap-2 mt-1">
-                            <Fuel className="w-4 h-4 text-green-500" />
-                            <div className="text-xs text-gray-500">
-                              {vehicle.fuel_type_name || 'N/A'}
+                          )}
+                          {vehicle.fuel_type_name && (
+                            <div className="flex items-center gap-2 mt-1">
+                              <Fuel className="w-4 h-4 text-green-500" />
+                              <div className="text-xs text-gray-500">
+                                {vehicle.fuel_type_name}
+                              </div>
                             </div>
-                          </div>
+                          )}
+                          {!vehicle.engine_type_name && !vehicle.fuel_type_name && (
+                            <span className="text-xs text-gray-400">N/A</span>
+                          )}
                         </td>
 
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center gap-2">
-                            <Calendar className="w-4 h-4 text-gray-400" />
-                            <span className="text-sm font-semibold text-gray-700">{vehicle.manufacturing_year}</span>
-                          </div>
+                          {vehicle.manufacturing_year ? (
+                            <div className="flex items-center gap-2">
+                              <Calendar className="w-4 h-4 text-gray-400" />
+                              <span className="text-sm font-semibold text-gray-700">
+                                {vehicle.manufacturing_year}
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="text-xs text-gray-400">N/A</span>
+                          )}
                         </td>
 
                         <td className="px-6 py-4 whitespace-nowrap text-center">
@@ -278,7 +369,10 @@ export default function VehicleListPage() {
                                 <Edit className="w-4 h-4" />
                               </button>
                             </Link>
-                            <button onClick={() => handleDelete(vehicle.vehicle_id)} className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white p-2 rounded-lg transition-all duration-300 transform hover:scale-110 shadow-md hover:shadow-lg">
+                            <button 
+                              onClick={() => handleDelete(vehicle.vehicle_id)} 
+                              className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white p-2 rounded-lg transition-all duration-300 transform hover:scale-110 shadow-md hover:shadow-lg"
+                            >
                               <Trash2 className="w-4 h-4" />
                             </button>
                           </div>

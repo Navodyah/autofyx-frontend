@@ -2,221 +2,149 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import axios from 'axios';
+import { Save, ArrowLeft, Loader2, Edit3, Trash2 } from 'lucide-react';
 import Link from 'next/link';
-import { ArrowLeft, Save, Edit, Cog, Cylinder, Gauge } from 'lucide-react';
 
 export default function EditEngineType() {
-  const params = useParams();
-  const id = params?.id as string;
+  const { id } = useParams();
   const router = useRouter();
-  
-  const [formData, setFormData] = useState({
-    engine_type_name: '',
-    cylinders: '',
-    engine_size: ''
-  });
+  const [formData, setFormData] = useState({ engine_type_name: '', cylinders: '' });
   const [loading, setLoading] = useState(true);
-  const [isUpdating, setIsUpdating] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (!id || id === 'undefined') {
-      alert('Invalid engine type ID');
-      setLoading(false);
-      return;
-    }
-
-    const fetchData = async () => {
-      try {
-        // GET request with axios
-        const response = await axios.get(`http://127.0.0.1:8000/engine-types/${id}`);
-        setFormData({
-          engine_type_name: response.data.engine_type_name,
-          cylinders: response.data.cylinders.toString(),
-          engine_size: response.data.engine_size.toString()
-        });
-        setLoading(false);
-      } catch (error) {
-        console.error("Error fetching engine type:", error);
-        alert("Engine Type not found");
-        setLoading(false);
-      }
-    };
-
-    fetchData();
+    fetchCurrentData();
   }, [id]);
 
-  const handleUpdate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsUpdating(true);
-
+  const fetchCurrentData = async () => {
     try {
-      // PUT request with axios
-      const response = await axios.put(`http://127.0.0.1:8000/engine-types/${id}`, {
-        engine_type_name: formData.engine_type_name,
-        cylinders: parseInt(formData.cylinders),
-        engine_size: parseFloat(formData.engine_size)
+      const res = await axios.get(`http://127.0.0.1:8000/engine-types/${id}`);
+      setFormData({ 
+        engine_type_name: res.data.engine_type_name, 
+        cylinders: res.data.cylinders.toString() 
       });
-
-      if (response.status === 200) {
-        alert("Engine Type Updated Successfully!");
-        router.push('/admin_dashboard/catalog/engine-types');
-      }
-    } catch (error: any) {
-      console.error("Error updating:", error);
-      const errorMessage = error.response?.data?.detail || "Error updating data";
-      alert(errorMessage);
+    } catch (err) {
+      alert("Could not load data");
     } finally {
-      setIsUpdating(false);
+      setLoading(false);
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+  const handleUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      await axios.put(`http://127.0.0.1:8000/engine-types/${id}`, {
+        engine_type_name: formData.engine_type_name,
+        cylinders: parseInt(formData.cylinders)
+      });
+      router.push('/admin_dashboard/catalog/engine-types');
+    } catch (error) {
+      alert("Update failed");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (confirm('Are you sure you want to delete this engine type? This action cannot be undone.')) {
+      try {
+        await axios.delete(`http://127.0.0.1:8000/engine-types/${id}`);
+        router.push('/admin_dashboard/catalog/engine-types');
+      } catch (error) {
+        alert("Delete failed");
+      }
+    }
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600 font-semibold">Loading engine type data...</p>
-        </div>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-slate-100">
+        <Loader2 className="animate-spin text-blue-600" size={48}/>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-8">
-      <div className="max-w-2xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-amber-50 to-slate-100 p-4 md:p-8 flex items-center justify-center">
+      <div className="w-full max-w-2xl">
         {/* Back Button */}
-        <Link href="/admin_dashboard/catalog/engine-types">
-          <button className="mb-6 flex items-center gap-2 text-gray-600 hover:text-blue-600 transition-colors">
-            <ArrowLeft className="w-5 h-5" />
-            Back to Engine Types
-          </button>
+        <Link href="/admin_dashboard/catalog/engine-types" className="inline-flex items-center gap-2 text-slate-600 hover:text-slate-900 mb-6 transition-colors group">
+          <ArrowLeft size={20} className="group-hover:-translate-x-1 transition-transform"/> 
+          <span className="font-medium">Back to Engine Types</span>
         </Link>
 
         {/* Form Card */}
-        <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
+        <div className="bg-white rounded-3xl shadow-xl border border-slate-200 overflow-hidden">
           {/* Header */}
-          <div className="bg-gradient-to-r from-orange-500 to-orange-600 px-8 py-6">
+          <div className="bg-gradient-to-r from-amber-500 to-amber-600 px-8 py-6">
             <div className="flex items-center gap-3 text-white">
-              <div className="bg-white/20 p-3 rounded-xl">
-                <Edit className="w-8 h-8" />
+              <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
+                <Edit3 size={24}/>
               </div>
               <div>
-                <h1 className="text-3xl font-bold">Edit Engine Type</h1>
-                <p className="text-orange-100 mt-1">Update engine specification (ID: {id})</p>
+                <h2 className="text-2xl font-bold">Edit Engine Type</h2>
+                <p className="text-amber-100 text-sm mt-1">Modify engine configuration (ID: #{id})</p>
               </div>
             </div>
           </div>
 
           {/* Form */}
           <form onSubmit={handleUpdate} className="p-8 space-y-6">
-            {/* Engine Type Name */}
-            <div className="space-y-2">
-              <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-                <Cog className="w-4 h-4 text-orange-600" />
-                Engine Type Name <span className="text-red-500">*</span>
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-2">
+                Engine Name <span className="text-red-500">*</span>
               </label>
-              <input
-                name="engine_type_name"
+              <input 
                 type="text"
+                className="w-full px-4 py-3.5 border-2 border-slate-200 rounded-xl focus:border-amber-500 focus:ring-4 focus:ring-amber-500/10 outline-none transition-all text-slate-900"
                 value={formData.engine_type_name}
-                onChange={handleChange}
+                onChange={(e) => setFormData({...formData, engine_type_name: e.target.value})}
                 required
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-orange-500 focus:outline-none transition-colors"
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-6">
-              {/* Cylinders */}
-              <div className="space-y-2">
-                <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-                  <Cylinder className="w-4 h-4 text-orange-600" />
-                  Cylinders <span className="text-red-500">*</span>
-                </label>
-                <input
-                  name="cylinders"
-                  type="number"
-                  min="1"
-                  max="16"
-                  value={formData.cylinders}
-                  onChange={handleChange}
-                  required
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-orange-500 focus:outline-none transition-colors"
-                />
-              </div>
-
-              {/* Engine Size */}
-              <div className="space-y-2">
-                <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-                  <Gauge className="w-4 h-4 text-orange-600" />
-                  Engine Size (L) <span className="text-red-500">*</span>
-                </label>
-                <input
-                  name="engine_size"
-                  type="number"
-                  step="0.1"
-                  min="0.1"
-                  max="20"
-                  value={formData.engine_size}
-                  onChange={handleChange}
-                  required
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-orange-500 focus:outline-none transition-colors"
-                />
-              </div>
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-2">
+                Number of Cylinders <span className="text-red-500">*</span>
+              </label>
+              <input 
+                type="number"
+                min="1"
+                max="16"
+                className="w-full px-4 py-3.5 border-2 border-slate-200 rounded-xl focus:border-amber-500 focus:ring-4 focus:ring-amber-500/10 outline-none transition-all text-slate-900"
+                value={formData.cylinders}
+                onChange={(e) => setFormData({...formData, cylinders: e.target.value})}
+                required
+              />
             </div>
 
-            {/* Info Display */}
-            {formData.cylinders && formData.engine_size && (
-              <div className="bg-orange-50 border-2 border-orange-200 rounded-xl p-4">
-                <p className="text-sm text-orange-800">
-                  🔧 Configuration: <span className="font-semibold">{formData.cylinders} Cylinder</span> engine with{' '}
-                  <span className="font-semibold">{formData.engine_size}L</span> displacement
-                </p>
-              </div>
-            )}
-
-            {/* Buttons */}
-            <div className="flex gap-4 pt-4">
-              <button
+            {/* Action Buttons */}
+            <div className="flex gap-3 pt-4">
+              <button 
                 type="submit"
-                disabled={isUpdating}
-                className="flex-1 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-6 py-3 rounded-xl flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                disabled={saving}
+                className="flex-1 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white px-6 py-4 rounded-xl flex items-center justify-center gap-2 font-semibold shadow-lg shadow-amber-500/30 transition-all duration-200 hover:shadow-xl hover:shadow-amber-500/40 hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isUpdating ? (
+                {saving ? (
                   <>
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                    Updating...
+                    <Loader2 size={20} className="animate-spin"/> Saving...
                   </>
                 ) : (
                   <>
-                    <Save className="w-5 h-5" />
-                    Update Engine Type
+                    <Save size={20}/> Update Changes
                   </>
                 )}
               </button>
-              <Link href="/admin_dashboard/catalog/engine-types" className="flex-1">
-                <button
-                  type="button"
-                  className="w-full bg-gray-200 hover:bg-gray-300 text-gray-700 px-6 py-3 rounded-xl flex items-center justify-center gap-2 transition-all duration-300"
-                >
-                  Cancel
-                </button>
-              </Link>
+              <button 
+                type="button"
+                onClick={handleDelete}
+                className="px-6 py-4 border-2 border-red-200 bg-red-50 hover:bg-red-100 rounded-xl font-semibold text-red-600 transition-colors flex items-center gap-2"
+              >
+                <Trash2 size={18}/> Delete
+              </button>
             </div>
           </form>
-        </div>
-
-        {/* Warning Card */}
-        <div className="mt-6 bg-orange-50 border-2 border-orange-200 rounded-xl p-6">
-          <h3 className="font-semibold text-orange-900 mb-2">⚠️ Note</h3>
-          <ul className="text-sm text-orange-800 space-y-1">
-            <li>• Changes will affect all related vehicle records</li>
-            <li>• Ensure cylinder count and engine size are accurate</li>
-            <li>• All fields are required for update</li>
-          </ul>
         </div>
       </div>
     </div>

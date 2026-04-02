@@ -18,12 +18,11 @@ export default function EditTransmissionPage() {
   const [isUpdating, setIsUpdating] = useState(false);
 
   const categoryOptions = [
-    'Automatic',
-    'Manual',
-    'CVT',
-    'DCT',
-    'Semi-Automatic',
-    'AMT'
+    'A=Automatic',
+    'M=Manual',
+    'AV=CVT',
+    'AS=Automatic with Manual Shifting',
+    'AM=Automated Manual'
   ];
 
   useEffect(() => {
