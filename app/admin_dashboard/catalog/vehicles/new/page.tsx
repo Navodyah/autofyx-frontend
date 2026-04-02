@@ -18,6 +18,8 @@ export default function NewVehiclePage() {
     brand_id: '',
     model_name: '',
     engine_size: '',
+    minimum_price: '',
+    max_price: '',
     class_id: '',
     engine_type_id: '',
     fuel_type_id: '',
@@ -183,6 +185,8 @@ export default function NewVehiclePage() {
       brand_id: parseInt(formData.brand_id),
       vehicle_model: formData.model_name,
       engine_size: parseFloat(formData.engine_size),
+      minimum_price: parseFloat(formData.minimum_price),
+      max_price: parseFloat(formData.max_price),
       class_id: parseInt(formData.class_id),
       engine_type_id: parseInt(formData.engine_type_id),
       fuel_type_id: parseInt(formData.fuel_type_id),
@@ -342,6 +346,44 @@ export default function NewVehiclePage() {
                   className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none transition-colors"
                 />
                 <p className="text-xs text-gray-500">Engine displacement in liters</p>
+              </div>
+
+              <div className="space-y-2">
+                <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                  <Gauge className="w-4 h-4 text-blue-600" />
+                  Minimum Price <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  name="minimum_price"
+                  value={formData.minimum_price}
+                  onChange={handleChange}
+                  required
+                  min="0"
+                  placeholder="e.g. 4500000"
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none transition-colors"
+                />
+                <p className="text-xs text-gray-500">Lowest market price for this vehicle</p>
+              </div>
+
+              <div className="space-y-2">
+                <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                  <Gauge className="w-4 h-4 text-blue-600" />
+                  Maximum Price <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  name="max_price"
+                  value={formData.max_price}
+                  onChange={handleChange}
+                  required
+                  min="0"
+                  placeholder="e.g. 5200000"
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none transition-colors"
+                />
+                <p className="text-xs text-gray-500">Highest market price for this vehicle</p>
               </div>
 
             
