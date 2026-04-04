@@ -4,6 +4,8 @@ import { useState } from "react";
 import Link from "next/link";
 import { Eye, EyeOff, LogIn, Car } from "lucide-react";
 import axios from "axios";
+import { createBrowserAuthToken } from "@/lib/auth-token";
+import { getDashboardRouteByUserType } from "@/lib/auth-token";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -37,12 +39,21 @@ export default function LoginPage() {
       });
 
       console.log("Login successful:", response.data);
-      // Store token if provided
-      if (response.data.access_token || response.data.token) {
-        localStorage.setItem("token", response.data.access_token || response.data.token);
-      }
+      const user = response.data?.user;
+      const token = response.data.access_token || response.data.token || createBrowserAuthToken({
+        user_id: user?.user_id,
+        email: user?.email,
+        user_type: user?.user_type,
+        session_id: response.data?.session_id,
+      });
+
+      localStorage.setItem("token", token);
+      localStorage.setItem("access_token", token);
+
+      const userType = user?.user_type || null;
+      const dashboardRoute = getDashboardRouteByUserType(userType);
       // Redirect to dashboard
-      window.location.href = "/dashboard";
+      window.location.href = dashboardRoute;
       
     } catch (error) {
       if (axios.isAxiosError(error)) {
