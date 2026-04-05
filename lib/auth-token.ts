@@ -1,5 +1,6 @@
 export type BrowserAuthTokenPayload = {
   user_id?: string;
+  appwrite_id?: string;
   email?: string;
   user_type?: 'user' | 'admin' | 'researcher' | string;
   session_id?: string;

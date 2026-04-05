@@ -92,6 +92,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const userData = response.user;
       const token = createBrowserAuthToken({
         user_id: userData?.user_id,
+        appwrite_id: userData?.appwrite_id,
         email: userData?.email,
         user_type: userData?.user_type,
         session_id: response.session_id,
