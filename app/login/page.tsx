@@ -42,6 +42,7 @@ export default function LoginPage() {
       const user = response.data?.user;
       const token = response.data.access_token || response.data.token || createBrowserAuthToken({
         user_id: user?.user_id,
+        appwrite_id: user?.appwrite_id,
         email: user?.email,
         user_type: user?.user_type,
         session_id: response.data?.session_id,
@@ -54,7 +55,7 @@ export default function LoginPage() {
       const dashboardRoute = getDashboardRouteByUserType(userType);
       // Redirect to dashboard
       window.location.href = dashboardRoute;
-      
+
     } catch (error) {
       if (axios.isAxiosError(error)) {
         console.error("Login error:", error.response?.data);
