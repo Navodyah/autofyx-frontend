@@ -1,529 +1,349 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import {
-  Search,
-  Sparkles,
-  ChevronUp,
-  ChevronDown,
-  Car,
-  Fuel,
-  Gauge,
-  Zap,
-  Scale,
-  Settings2,
-  Wallet,
-} from "lucide-react";
+import dynamic from "next/dynamic";
+import { motion } from "framer-motion";
+import type { Variants } from "framer-motion";
 import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { 
+  ArrowUpRight, 
+  BatteryCharging, 
+  CalendarDays, 
+  CarFront, 
+  Gauge, 
+  MapPin, 
+  ShieldCheck, 
+  Sparkles, 
+  TrendingDown, 
+  Trophy,
+  Activity,
+  History,
+  ChevronRight,
+  TrendingUp,
+  AlertCircle
+} from "lucide-react";
 
-type RecommendPayload = {
-  salary: number;
-  purpose?: "daily_commute" | "family" | "performance" | "luxury";
-  area?: "city" | "highway" | "mixed" | "off-road";
-  fuel?: string;
-  transmission?: string;
-  max_comb_l_per_100?: number;
-  vehicle_class?: string;
-  rate_of_interest?: number;
-  number_of_months?: number;
-  down_payment_amount?: number;
-  down_payment_ratio?: number;
-  top_n: number;
-  candidate_limit: number;
-};
+function DashboardOverview() {
+  const containerVariants: Variants = {
+    hidden: { opacity: 0 },
+    visible: { opacity: 1, transition: { staggerChildren: 0.1 } }
+  };
 
-type RecommendResponse = {
-  message?: string | null;
-  count: number;
-  items: Record<string, unknown>[];
-  finance?: Record<string, unknown>;
-};
-
-function ScoreBadge({ score }: { score: number }) {
-  const pct = Number.isFinite(score) ? score : 0;
-  const color = pct >= 85 ? "#10b981" : pct >= 70 ? "#f59e0b" : "#ef4444";
-  const bg = pct >= 85 ? "rgba(16,185,129,0.12)" : pct >= 70 ? "rgba(245,158,11,0.12)" : "rgba(239,68,68,0.12)";
+  const itemVariants: Variants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0, transition: { type: "spring" as const, stiffness: 100 } }
+  };
 
   return (
-    <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-bold" style={{ background: bg, color }}>
-      {pct.toFixed(1)}%
-    </span>
+    <motion.div 
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+      className="space-y-8 pb-10"
+    >
+      {/* Page Header */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="text-xs font-bold text-emerald-600 tracking-wider uppercase">System Active</span>
+          </div>
+          <h1 className="text-3xl font-bold tracking-tight text-slate-900 mb-1">Dashboard Overview</h1>
+          <p className="text-slate-500">Your personalized vehicle intelligence and market analytics.</p>
+        </div>
+        <div className="flex gap-3">
+          <Button variant="outline" className="px-5 py-2.5 rounded-xl font-medium shadow-sm gap-2 text-sm">
+            <History className="w-4 h-4" />
+            History
+          </Button>
+          <Button className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-medium shadow-sm gap-2 text-sm">
+            <Sparkles className="w-4 h-4" />
+            Update Preferences
+          </Button>
+        </div>
+      </div>
+
+      {/* Top Analytics Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        {[
+          { title: "Recommendation", href: "/dashboard/recomendation", desc: "AI-ranked vehicle suggestions" },
+          { title: "Vehicle Search", href: "/dashboard/search", desc: "Manual vehicle filtering" },
+          { title: "Compare", href: "/dashboard/compare", desc: "Side-by-side specs" },
+          { title: "Cost Calculation", href: "/dashboard/cost-calculation", desc: "EMI and ownership cost" },
+          { title: "Profile", href: "/dashboard/profile", desc: "Personal and preference settings" },
+          { title: "My Garage (Wishlist)", href: "/dashboard/garage", desc: "Saved vehicles" },
+        ].map((module) => (
+          <Card key={module.href} className="border border-slate-200 rounded-2xl shadow-sm">
+            <CardContent className="pt-6 flex items-start justify-between gap-4">
+              <div>
+                <p className="font-semibold text-slate-900">{module.title}</p>
+                <p className="text-xs text-slate-500 mt-1">{module.desc}</p>
+              </div>
+              <Button asChild size="sm" variant="outline" className="rounded-lg">
+                <Link href={module.href}>Open</Link>
+              </Button>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Top Analytics Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5">
+        {[
+          { label: "Analyzed Models", value: "854", sub: "+12 this week", icon: CarFront, color: "text-blue-600", bg: "bg-blue-50" },
+          { label: "Saved Matches", value: "3", sub: "1 high confidence", icon: Trophy, color: "text-amber-600", bg: "bg-amber-50" },
+          { label: "Market Trend", value: "-2.4%", sub: "Prices dropping", icon: TrendingDown, color: "text-emerald-600", bg: "bg-emerald-50" },
+          { label: "Active Alerts", value: "2", sub: "Price drop detected", icon: BellIcon, color: "text-rose-600", bg: "bg-rose-50" },
+        ].map((stat, i) => (
+          <motion.div key={i} variants={itemVariants}>
+            <Card className="p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow relative overflow-hidden gap-0">
+              <div className="flex justify-between items-start mb-4">
+                <div className={`w-12 h-12 rounded-xl ${stat.bg} flex items-center justify-center`}>
+                  <stat.icon className={`w-6 h-6 ${stat.color}`} />
+                </div>
+                <span className="text-xs font-semibold text-slate-400 bg-slate-100 px-2.5 py-1 rounded-md">{stat.sub}</span>
+              </div>
+              <div>
+                <h3 className="text-3xl font-bold text-slate-900">{stat.value}</h3>
+                <p className="text-sm font-medium text-slate-500 mt-1">{stat.label}</p>
+              </div>
+              <div className={`absolute -right-4 -bottom-4 w-24 h-24 rounded-full ${stat.bg} opacity-50 blur-2xl pointer-events-none`} />
+            </Card>
+          </motion.div>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+        {/* Left Column: Huge Match & Chart */}
+        <div className="xl:col-span-2 space-y-8">
+          {/* Main Recommended Hero Match */}
+          <motion.div variants={itemVariants}>
+            <Card className="rounded-[2rem] border border-slate-200 shadow-sm overflow-hidden flex flex-col lg:flex-row relative gap-0 p-0">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-blue-50 rounded-full blur-3xl opacity-50 pointer-events-none -mt-20 -mr-20" />
+            
+            {/* Visual Side */}
+            <div className="lg:w-2/5 bg-slate-50 p-6 flex flex-col justify-between relative overflow-hidden">
+              <div className="flex justify-between items-start relative z-10 w-full mb-8">
+                <div className="px-3 py-1 rounded-full bg-white shadow-sm border border-slate-200 text-xs font-bold text-blue-600 flex items-center gap-1.5 uppercase tracking-wider">
+                  Top Match
+                </div>
+                <div className="px-3 py-1 rounded-full bg-emerald-100 text-xs font-bold text-emerald-700 flex items-center gap-1.5 backdrop-blur-md">
+                  <Sparkles className="w-3 h-3 fill-emerald-600" />
+                  98%
+                </div>
+              </div>
+              <img 
+                src="https://images.unsplash.com/photo-1503376713356-2dbfdfaa52a1?q=80&w=1500&auto=format&fit=crop" 
+                alt="Recommended Car" 
+                className="w-[120%] max-w-none transform -translate-x-6 relative z-10 filter drop-shadow-2xl object-cover rounded-xl"
+              />
+            </div>
+
+            {/* Content Side */}
+            <div className="p-8 flex-1 flex flex-col justify-center">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-xs font-semibold text-slate-400 tracking-wider uppercase">Electric SUV</span>
+                <span className="w-1 h-1 rounded-full bg-slate-300" />
+                <span className="text-xs font-semibold text-slate-400 tracking-wider uppercase">2024</span>
+              </div>
+              <h2 className="text-3xl font-bold text-slate-900 mb-2">Porsche Macan EV</h2>
+              <div className="flex items-baseline gap-2 mb-6">
+                <span className="text-2xl font-bold text-emerald-600">$78,800</span>
+                <span className="text-sm font-medium text-slate-400 line-through">MSRP $80,450</span>
+              </div>
+              
+              <p className="text-sm text-slate-500 mb-8 leading-relaxed">
+                Perfectly aligns with your 40-mile daily commute and preference for premium German engineering. Highest total cost of ownership efficiency in its class.
+              </p>
+
+              <div className="grid grid-cols-2 gap-4 auto-rows-fr">
+                <div className="bg-slate-50 rounded-xl p-3 border border-slate-100 flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-white shadow-sm flex items-center justify-center">
+                    <BatteryCharging className="w-4 h-4 text-blue-600" />
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-slate-400 font-semibold uppercase">Range</p>
+                    <p className="text-sm font-bold text-slate-900">315 mi</p>
+                  </div>
+                </div>
+                <div className="bg-slate-50 rounded-xl p-3 border border-slate-100 flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-white shadow-sm flex items-center justify-center">
+                    <Gauge className="w-4 h-4 text-amber-600" />
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-slate-400 font-semibold uppercase">Acceleration</p>
+                    <p className="text-sm font-bold text-slate-900">4.9s <span className="text-xs font-normal text-slate-500">0-60</span></p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            </Card>
+          </motion.div>
+
+          {/* Market Analytics Mini-Chart Widget */}
+          <motion.div variants={itemVariants}>
+            <Card className="rounded-[2rem] border border-slate-200 shadow-sm p-0 gap-0">
+              <CardHeader className="flex items-center justify-between px-8 pt-8 pb-0">
+                <div>
+                  <CardTitle className="text-xl font-bold text-slate-900">Market Price Analytics</CardTitle>
+                  <CardDescription className="text-sm text-slate-500">Historical depreciation vs current asking prices</CardDescription>
+                </div>
+                <Button variant="outline" className="text-sm font-semibold text-blue-600 px-4 py-2 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors">
+                Detailed Report
+                </Button>
+              </CardHeader>
+              <CardContent className="p-8">
+            
+            {/* CSS UI Chart representation */}
+            <div className="h-64 flex flex-col justify-end gap-2 relative">
+              {/* Y Axis Labels */}
+              <div className="absolute left-0 top-0 bottom-6 w-12 flex flex-col justify-between text-xs text-slate-400 font-medium z-10">
+                <span>$90k</span><span>$85k</span><span>$80k</span><span>$75k</span>
+              </div>
+              {/* Grid Lines */}
+              <div className="absolute left-14 right-0 top-0 bottom-6 flex flex-col justify-between z-0">
+                {[1, 2, 3, 4].map(i => <div key={i} className="w-full border-b border-dashed border-slate-200" />)}
+              </div>
+              
+              {/* Bars */}
+              <div className="absolute left-14 right-0 top-0 bottom-6 flex items-end justify-between px-4 z-10">
+                {[
+                  { height: '90%', label: 'Oct' },
+                  { height: '85%', label: 'Nov' },
+                  { height: '82%', label: 'Dec' },
+                  { height: '75%', label: 'Jan' },
+                  { height: '60%', label: 'Feb', current: true },
+                  { height: '58%', label: 'Mar', pred: true },
+                ].map((bar, i) => (
+                  <div key={i} className="flex flex-col items-center gap-2 group w-1/6">
+                    <div className="w-full px-2">
+                       <motion.div 
+                         initial={{ height: 0 }}
+                         animate={{ height: bar.height }}
+                         transition={{ duration: 1, delay: i * 0.1, ease: "easeOut" }}
+                         className={`w-full rounded-t-lg relative transition-colors ${bar.current ? 'bg-blue-600 shadow-lg shadow-blue-200' : bar.pred ? 'bg-blue-200 border-2 border-dashed border-blue-400' : 'bg-slate-200 group-hover:bg-slate-300'}`}
+                       >
+                         {bar.current && (
+                           <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-xs font-bold px-2 py-1 rounded shadow pointer-events-none">
+                             Current
+                           </div>
+                         )}
+                       </motion.div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="absolute left-14 right-0 bottom-0 h-6 flex justify-between px-4 text-xs font-semibold text-slate-500 z-10">
+                <span className="w-1/6 text-center">Oct</span>
+                <span className="w-1/6 text-center">Nov</span>
+                <span className="w-1/6 text-center">Dec</span>
+                <span className="w-1/6 text-center">Jan</span>
+                <span className="w-1/6 text-center text-blue-600">Feb</span>
+                <span className="w-1/6 text-center text-slate-400">Mar (Est)</span>
+              </div>
+            </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        </div>
+
+        {/* Right Column: Alternatives & Activity */}
+        <div className="space-y-8">
+          {/* Alternative Matches */}
+          <motion.div variants={itemVariants}>
+            <Card className="rounded-[2rem] border border-slate-200 shadow-sm p-6 lg:p-8 gap-0">
+            <h3 className="text-lg font-bold text-slate-900 mb-1">Alternative Options</h3>
+            <p className="text-sm text-slate-500 mb-6">Other models that fit your profile</p>
+            
+            <div className="space-y-4">
+              {[
+                { name: "Audi Q8 e-tron", match: "94%", price: "$74,400", trend: "up", img: "https://images.unsplash.com/photo-1606664515524-ed2f786a0b16?q=80&w=800&auto=format&fit=crop" },
+                { name: "BMW iX xDrive50", match: "91%", price: "$87,250", trend: "down", img: "https://images.unsplash.com/photo-1698246535496-c1edb0805c6d?q=80&w=800&auto=format&fit=crop" },
+                { name: "Tesla Model X", match: "88%", price: "$79,990", trend: "down", img: "https://images.unsplash.com/photo-1617788138017-80ad40651399?q=80&w=800&auto=format&fit=crop" },
+              ].map((car, i) => (
+                <div key={i} className="flex items-center gap-4 p-3 rounded-2xl hover:bg-slate-50 transition-colors border border-transparent hover:border-slate-100 group cursor-pointer">
+                  <div className="w-20 h-16 rounded-xl overflow-hidden bg-slate-100 flex-shrink-0 relative">
+                    <img src={car.img} alt={car.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-bold text-slate-900 text-sm truncate">{car.name}</h4>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-xs font-semibold text-slate-500">{car.price}</span>
+                      <span className="w-1 h-1 rounded-full bg-slate-300" />
+                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded flex items-center gap-0.5 ${car.trend === 'up' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>
+                        {car.trend === 'up' ? <TrendingDown className="w-3 h-3" /> : <TrendingUp className="w-3 h-3" />}
+                        {car.trend === 'up' ? 'Good Buy' : 'Wait'}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="w-10 h-10 rounded-full bg-transparent border border-slate-200 flex items-center justify-center text-slate-400 group-hover:bg-white group-hover:text-blue-600 transition-colors shadow-sm">
+                    <ChevronRight className="w-4 h-4" />
+                  </div>
+                </div>
+              ))}
+            </div>
+            
+            <Button variant="outline" className="w-full mt-4 py-3 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-colors">
+              View All 15 Alternatives
+            </Button>
+            </Card>
+          </motion.div>
+
+          {/* Activity Feed */}
+          <motion.div variants={itemVariants}>
+            <Card className="rounded-[2rem] border border-slate-200 shadow-sm p-6 lg:p-8 gap-0">
+            <h3 className="text-lg font-bold text-slate-900 mb-6">Recent Activity</h3>
+            
+            <div className="space-y-6 relative before:absolute before:inset-0 before:ml-4 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-slate-200 before:to-transparent">
+              {[
+                { title: "Price Drop Alert", desc: "Porsche Macan EV price fell by $1,200", time: "2 hours ago", icon: AlertCircle, color: "text-emerald-500", bg: "bg-emerald-50" },
+                { title: "Match Updated", desc: "Added 'Electric' to primary preferences", time: "Yesterday", icon: Sparkles, color: "text-blue-500", bg: "bg-blue-50" },
+                { title: "Analysis Completed", desc: "Finished scanning 854 new models", time: "2 days ago", icon: Activity, color: "text-purple-500", bg: "bg-purple-50" },
+              ].map((activity, i) => (
+                <div key={i} className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
+                  <div className={`flex items-center justify-center w-8 h-8 rounded-full border-2 border-white ${activity.bg} shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2`}>
+                    <activity.icon className={`w-3.5 h-3.5 ${activity.color}`} />
+                  </div>
+                  <div className="w-[calc(100%-3rem)] md:w-[calc(50%-2rem)] p-4 rounded-2xl bg-slate-50 border border-slate-100 shadow-sm">
+                    <div className="flex justify-between items-start mb-1">
+                      <h4 className="font-bold text-slate-900 text-sm">{activity.title}</h4>
+                      <span className="text-[10px] font-semibold text-slate-400">{activity.time}</span>
+                    </div>
+                    <p className="text-xs text-slate-500 leading-snug">{activity.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+            </Card>
+          </motion.div>
+        </div>
+      </div>
+    </motion.div>
   );
 }
 
-function toOptionalNumber(value: string): number | undefined {
-  if (!value.trim()) return undefined;
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : undefined;
-}
+export default dynamic(() => Promise.resolve(DashboardOverview), {
+  ssr: false,
+});
 
-function asNumber(value: unknown): number | null {
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : null;
-}
-
-function formatCurrency(value: unknown) {
-  const parsed = asNumber(value);
-  if (parsed === null) return "-";
-  return new Intl.NumberFormat("en-LK", { maximumFractionDigits: 0 }).format(parsed);
-}
-
-function readValue(row: Record<string, unknown>, keys: string[]) {
-  for (const key of keys) {
-    const value = row[key];
-    if (value !== undefined && value !== null && value !== "") return value;
-  }
-  return undefined;
-}
-
-export default function SearchPage() {
-  const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000";
-
-  const [searchQuery, setSearchQuery] = useState("");
-  const [salary, setSalary] = useState("");
-  const [purpose, setPurpose] = useState("");
-  const [area, setArea] = useState("");
-  const [fuelType, setFuelType] = useState("");
-  const [transmission, setTransmission] = useState("");
-  const [vehicleClass, setVehicleClass] = useState("");
-  const [maxComb, setMaxComb] = useState("");
-  const [interestRate, setInterestRate] = useState("");
-  const [months, setMonths] = useState("");
-  const [downPaymentAmount, setDownPaymentAmount] = useState("");
-  const [downPaymentRatio, setDownPaymentRatio] = useState("");
-  const [topN, setTopN] = useState("10");
-  const [candidateLimit, setCandidateLimit] = useState("2000");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [parsedParams, setParsedParams] = useState<Record<string, unknown> | null>(null);
-  const [results, setResults] = useState<RecommendResponse | null>(null);
-  const [showParsed, setShowParsed] = useState(false);
-
-  const suggestions = [
-    "Family SUV, city driving, diesel automatic, max 8L/100km",
-    "Performance highway car, premium petrol, automatic",
-    "Daily commute mixed roads, regular petrol, max 7L/100km",
-    "Electric vehicle for city use with low running cost",
-  ];
-
-  function buildManualParams(): Partial<RecommendPayload> {
-    const payload: Partial<RecommendPayload> = {
-      top_n: Math.max(1, Math.min(toOptionalNumber(topN) ?? 10, 50)),
-      candidate_limit: Math.max(100, Math.min(toOptionalNumber(candidateLimit) ?? 2000, 20000)),
-    };
-
-    const salaryValue = toOptionalNumber(salary);
-    if (salaryValue !== undefined) payload.salary = salaryValue;
-    if (purpose) payload.purpose = purpose as RecommendPayload["purpose"];
-    if (area) payload.area = area as RecommendPayload["area"];
-    if (fuelType) payload.fuel = fuelType;
-    if (transmission) payload.transmission = transmission;
-    if (vehicleClass.trim()) payload.vehicle_class = vehicleClass.trim().toUpperCase();
-
-    const maxCombValue = toOptionalNumber(maxComb);
-    if (maxCombValue !== undefined) payload.max_comb_l_per_100 = maxCombValue;
-
-    const interestRateValue = toOptionalNumber(interestRate);
-    if (interestRateValue !== undefined) payload.rate_of_interest = interestRateValue;
-
-    const monthsValue = toOptionalNumber(months);
-    if (monthsValue !== undefined) payload.number_of_months = monthsValue;
-
-    const downPaymentAmountValue = toOptionalNumber(downPaymentAmount);
-    if (downPaymentAmountValue !== undefined) payload.down_payment_amount = downPaymentAmountValue;
-
-    const downPaymentRatioValue = toOptionalNumber(downPaymentRatio);
-    if (downPaymentRatioValue !== undefined) payload.down_payment_ratio = downPaymentRatioValue;
-
-    return payload;
-  }
-
-  async function handleSearch(e: React.FormEvent) {
-    e.preventDefault();
-
-    setLoading(true);
-    setError(null);
-    setResults(null);
-    setParsedParams(null);
-    setShowParsed(false);
-
-    try {
-      const manualParams = buildManualParams();
-      let params: Record<string, unknown> = { ...manualParams };
-
-      if (searchQuery.trim()) {
-        const parseRes = await fetch("/api/parse", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ text: searchQuery, salary: manualParams.salary }),
-        });
-
-        const parseJson = (await parseRes.json()) as { ok?: boolean; message?: string; params?: Record<string, unknown> };
-        if (!parseRes.ok || !parseJson?.ok) {
-          setError(parseJson?.message || "Gemini parsing failed");
-          setLoading(false);
-          return;
-        }
-
-        params = { ...(parseJson.params || {}), ...manualParams };
-        setParsedParams(parseJson.params || null);
-      }
-
-      if (!params.salary) {
-        setError("Monthly salary is required to get recommendations.");
-        setLoading(false);
-        return;
-      }
-
-      const recRes = await fetch(`${API_BASE}/recommendations/`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(params),
-      });
-
-      const recJson = (await recRes.json()) as RecommendResponse;
-      if (!recRes.ok) {
-        setError(recJson?.message || `Backend request failed (${recRes.status})`);
-        setLoading(false);
-        return;
-      }
-
-      setResults(recJson);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Network error";
-      setError(message);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  const items = results?.items || [];
-  const hasItems = items.length > 0;
-  const finance = results?.finance || {};
-
+// Helper icon component for Bell
+function BellIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
-    <div className="af-dashboard-bg min-h-screen">
-      <nav
-        className="sticky top-0 z-50 flex h-14 items-center justify-between px-6"
-        style={{
-          background: "var(--navbar-bg)",
-          borderBottom: "1px solid var(--border-primary)",
-          backdropFilter: "blur(20px)",
-        }}
-      >
-        <Link href="/landing_page" className="flex items-center gap-2">
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg" style={{ background: "linear-gradient(135deg, #3b82f6, #06b6d4)" }}>
-            <Car className="h-4 w-4 text-white" />
-          </div>
-          <span className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>
-            Auto<span style={{ color: "var(--text-accent)" }}>Fyx</span>
-          </span>
-        </Link>
-
-        <Link href="/user_dashboard/compare" className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm" style={{ color: "var(--text-secondary)", background: "var(--bg-tertiary)" }}>
-          <Scale className="h-4 w-4" />
-          Compare
-        </Link>
-      </nav>
-
-      <div className="mx-auto max-w-6xl px-4 py-12">
-        <motion.div className="mb-10 text-center" initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
-          <div className="mb-4 flex items-center justify-center gap-2">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl" style={{ background: "linear-gradient(135deg, #3b82f6, #06b6d4)" }}>
-              <Sparkles className="h-5 w-5 text-white" />
-            </div>
-          </div>
-          <h1 className="mb-2 text-3xl font-bold tracking-tight sm:text-4xl" style={{ color: "var(--text-primary)" }}>
-            AI Vehicle Recommender
-          </h1>
-          <p className="text-base" style={{ color: "var(--text-secondary)" }}>
-            Type a vehicle request, review the controller fields, and submit the query.
-          </p>
-        </motion.div>
-
-        <motion.form onSubmit={handleSearch} initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.5, delay: 0.15 }}>
-          <motion.div
-            className="relative rounded-2xl p-[2px]"
-            style={{ background: "linear-gradient(90deg, #3b82f6, #8b5cf6, #06b6d4, #3b82f6)", backgroundSize: "300% 100%" }}
-            animate={{ backgroundPosition: ["0% 0%", "100% 0%", "0% 0%"] }}
-            transition={{ duration: 5, repeat: Infinity, ease: "linear" }}
-          >
-            <div className="rounded-[14px] overflow-hidden" style={{ background: "var(--bg-card)" }}>
-              <div className="flex flex-wrap items-center md:flex-nowrap">
-                <div className="flex w-full shrink-0 items-center gap-2 border-b px-4 py-4 md:w-auto md:border-b-0 md:border-r" style={{ borderColor: "var(--border-primary)" }}>
-                  <span className="text-xs font-semibold" style={{ color: "var(--text-muted)" }}>LKR</span>
-                  <input
-                    type="text"
-                    value={salary}
-                    onChange={(e) => setSalary(e.target.value.replace(/\D/g, ""))}
-                    placeholder="Salary"
-                    className="w-full bg-transparent text-base font-medium focus:outline-none md:w-28"
-                    style={{ color: "var(--text-primary)" }}
-                  />
-                  <div className="flex flex-col gap-0.5">
-                    <button type="button" onClick={() => setSalary((p) => String(Math.min(Number(p || 0) + 50000, 999999999)))} className="rounded p-0.5">
-                      <ChevronUp className="h-3 w-3" />
-                    </button>
-                    <button type="button" onClick={() => setSalary((p) => String(Math.max(Number(p || 0) - 50000, 0)))} className="rounded p-0.5">
-                      <ChevronDown className="h-3 w-3" />
-                    </button>
-                  </div>
-                </div>
-
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder='Type your request, for example: "Family SUV, city, diesel automatic"'
-                  className="w-full flex-1 bg-transparent px-4 py-4 text-base focus:outline-none md:w-auto"
-                  style={{ color: "var(--text-primary)" }}
-                />
-
-                <motion.button
-                  type="submit"
-                  disabled={loading}
-                  className="m-2 flex w-[calc(100%-16px)] items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-60 md:w-auto"
-                  style={{ background: "linear-gradient(135deg, #3b82f6, #06b6d4)", flexShrink: 0 }}
-                  whileHover={{ scale: 1.02, boxShadow: "0 0 20px rgba(59,130,246,0.4)" }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  {loading ? <span className="af-spinner" style={{ borderTopColor: "#fff", borderColor: "rgba(255,255,255,0.3)" }} /> : <Search className="h-4 w-4" />}
-                  {loading ? "Searching..." : "Search"}
-                </motion.button>
-              </div>
-            </div>
-          </motion.div>
-
-          <div className="mt-5 rounded-2xl border p-5" style={{ borderColor: "var(--border-primary)", background: "var(--bg-card)" }}>
-            <div className="mb-4 flex items-center gap-2" style={{ color: "var(--text-primary)" }}>
-              <Settings2 className="h-4 w-4" />
-              <span className="text-sm font-semibold">Recommender form</span>
-            </div>
-            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-              <select value={purpose} onChange={(e) => setPurpose(e.target.value)} className="rounded-xl border px-3 py-3 text-sm" style={{ borderColor: "var(--border-primary)", background: "var(--bg-secondary)", color: "var(--text-primary)" }}>
-                <option value="">Purpose</option>
-                <option value="daily_commute">Daily commute</option>
-                <option value="family">Family</option>
-                <option value="performance">Performance</option>
-                <option value="luxury">Luxury</option>
-              </select>
-              <select value={area} onChange={(e) => setArea(e.target.value)} className="rounded-xl border px-3 py-3 text-sm" style={{ borderColor: "var(--border-primary)", background: "var(--bg-secondary)", color: "var(--text-primary)" }}>
-                <option value="">Area</option>
-                <option value="city">City</option>
-                <option value="highway">Highway</option>
-                <option value="mixed">Mixed</option>
-                <option value="off-road">Off-road</option>
-              </select>
-              <select value={fuelType} onChange={(e) => setFuelType(e.target.value)} className="rounded-xl border px-3 py-3 text-sm" style={{ borderColor: "var(--border-primary)", background: "var(--bg-secondary)", color: "var(--text-primary)" }}>
-                <option value="">Fuel</option>
-                <option value="X">Regular petrol</option>
-                <option value="Z">Premium petrol</option>
-                <option value="D">Diesel</option>
-                <option value="E">Electric</option>
-              </select>
-              <select value={transmission} onChange={(e) => setTransmission(e.target.value)} className="rounded-xl border px-3 py-3 text-sm" style={{ borderColor: "var(--border-primary)", background: "var(--bg-secondary)", color: "var(--text-primary)" }}>
-                <option value="">Transmission</option>
-                <option value="A">Automatic</option>
-                <option value="MANUAL">Manual</option>
-              </select>
-              <input value={vehicleClass} onChange={(e) => setVehicleClass(e.target.value)} placeholder="Vehicle class" className="rounded-xl border px-3 py-3 text-sm uppercase" style={{ borderColor: "var(--border-primary)", background: "var(--bg-secondary)", color: "var(--text-primary)" }} />
-              <input value={maxComb} onChange={(e) => setMaxComb(e.target.value)} placeholder="Max L/100km" type="number" step="0.1" className="rounded-xl border px-3 py-3 text-sm" style={{ borderColor: "var(--border-primary)", background: "var(--bg-secondary)", color: "var(--text-primary)" }} />
-              <input value={interestRate} onChange={(e) => setInterestRate(e.target.value)} placeholder="Interest %" type="number" step="0.1" className="rounded-xl border px-3 py-3 text-sm" style={{ borderColor: "var(--border-primary)", background: "var(--bg-secondary)", color: "var(--text-primary)" }} />
-              <input value={months} onChange={(e) => setMonths(e.target.value)} placeholder="Months" type="number" className="rounded-xl border px-3 py-3 text-sm" style={{ borderColor: "var(--border-primary)", background: "var(--bg-secondary)", color: "var(--text-primary)" }} />
-              <input value={downPaymentAmount} onChange={(e) => setDownPaymentAmount(e.target.value)} placeholder="Down payment amount" type="number" className="rounded-xl border px-3 py-3 text-sm" style={{ borderColor: "var(--border-primary)", background: "var(--bg-secondary)", color: "var(--text-primary)" }} />
-              <input value={downPaymentRatio} onChange={(e) => setDownPaymentRatio(e.target.value)} placeholder="Down payment ratio" type="number" min="0" max="1" step="0.01" className="rounded-xl border px-3 py-3 text-sm" style={{ borderColor: "var(--border-primary)", background: "var(--bg-secondary)", color: "var(--text-primary)" }} />
-              <input value={topN} onChange={(e) => setTopN(e.target.value)} placeholder="Top N" type="number" min="1" max="50" className="rounded-xl border px-3 py-3 text-sm" style={{ borderColor: "var(--border-primary)", background: "var(--bg-secondary)", color: "var(--text-primary)" }} />
-              <input value={candidateLimit} onChange={(e) => setCandidateLimit(e.target.value)} placeholder="Candidate limit" type="number" min="100" max="20000" className="rounded-xl border px-3 py-3 text-sm" style={{ borderColor: "var(--border-primary)", background: "var(--bg-secondary)", color: "var(--text-primary)" }} />
-            </div>
-          </div>
-        </motion.form>
-
-        {!hasItems && !loading && (
-          <div className="mt-4 flex flex-wrap gap-2">
-            {suggestions.map((s) => (
-              <button key={s} type="button" onClick={() => setSearchQuery(s)} className="cursor-pointer rounded-full px-3 py-1.5 text-xs transition-colors" style={{ background: "var(--bg-tertiary)", color: "var(--text-muted)", border: "1px solid var(--border-primary)" }}>
-                {s}
-              </button>
-            ))}
-          </div>
-        )}
-
-        <AnimatePresence>
-          {error && (
-            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="mt-5 rounded-xl border p-4 text-sm" style={{ background: "rgba(239,68,68,0.08)", borderColor: "rgba(239,68,68,0.25)", color: "#f87171" }}>
-              {error}
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {parsedParams && (
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mt-5 overflow-hidden rounded-xl border" style={{ borderColor: "var(--border-primary)" }}>
-            <button onClick={() => setShowParsed(!showParsed)} className="flex w-full items-center justify-between px-5 py-3 text-sm font-semibold" style={{ color: "var(--text-secondary)", background: "var(--bg-tertiary)" }}>
-              <span>Extracted query parameters</span>
-              <ChevronDown className="h-4 w-4 transition-transform duration-200" style={{ transform: showParsed ? "rotate(180deg)" : "rotate(0deg)" }} />
-            </button>
-            {showParsed && (
-              <pre className="max-h-[220px] overflow-auto px-5 py-4 text-xs" style={{ background: "var(--bg-secondary)", color: "var(--text-secondary)", fontFamily: "monospace" }}>
-                {JSON.stringify(parsedParams, null, 2)}
-              </pre>
-            )}
-          </motion.div>
-        )}
-
-        {results && (
-          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="mt-6">
-            <div className="mb-4 flex items-center justify-between">
-              <div>
-                <h2 className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>Recommendations</h2>
-                <p className="mt-0.5 text-xs" style={{ color: "var(--text-muted)" }}>{hasItems ? `${items.length} vehicles found` : results.message || "No results"}</p>
-              </div>
-              {hasItems && (
-                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">
-                  <Sparkles className="h-3 w-3" />
-                  AI Ranked
-                </span>
-              )}
-            </div>
-
-            <div className="mb-6 grid gap-3 md:grid-cols-4">
-              <div className="rounded-xl border p-4" style={{ borderColor: "var(--border-primary)", background: "var(--bg-card)" }}>
-                <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase" style={{ color: "var(--text-muted)" }}><Wallet className="h-3.5 w-3.5" /> Salary</div>
-                <div className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>LKR {formatCurrency(finance.salary)}</div>
-              </div>
-              <div className="rounded-xl border p-4" style={{ borderColor: "var(--border-primary)", background: "var(--bg-card)" }}>
-                <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase" style={{ color: "var(--text-muted)" }}><Gauge className="h-3.5 w-3.5" /> Max EMI</div>
-                <div className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>LKR {formatCurrency(finance.max_monthly_emi)}</div>
-              </div>
-              <div className="rounded-xl border p-4" style={{ borderColor: "var(--border-primary)", background: "var(--bg-card)" }}>
-                <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase" style={{ color: "var(--text-muted)" }}><Zap className="h-3.5 w-3.5" /> Interest</div>
-                <div className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>{asNumber(finance.rate_of_interest)?.toFixed(1) ?? "-"}%</div>
-              </div>
-              <div className="rounded-xl border p-4" style={{ borderColor: "var(--border-primary)", background: "var(--bg-card)" }}>
-                <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase" style={{ color: "var(--text-muted)" }}><Fuel className="h-3.5 w-3.5" /> Months</div>
-                <div className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>{asNumber(finance.number_of_months)?.toFixed(0) ?? "-"}</div>
-              </div>
-            </div>
-
-            {hasItems && (
-              <>
-                <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  {items.slice(0, 3).map((r, idx) => {
-                    const score = Number(readValue(r, ["Compatibility_Score", "compatibility_score"]) || 0);
-                    const year = String(readValue(r, ["YEAR", "Year", "year"]) || "-");
-                    const make = String(readValue(r, ["Make", "MAKE", "make"]) || "-");
-                    const model = String(readValue(r, ["Model", "MODEL", "model"]) || "-");
-                    const vehicleClassValue = String(readValue(r, ["VEHICLE CLASS", "VEHICLE_CLASS", "vehicle_class", "Class"]) || "-");
-                    const engine = String(readValue(r, ["ENGINE SIZE", "ENGINE_SIZE", "engine_size", "Engine"]) || "-");
-                    const trans = String(readValue(r, ["Transmission", "TRANSMISSION", "transmission", "Trans"]) || "-");
-                    const fuel = String(readValue(r, ["FUEL", "Fuel", "fuel"]) || "-");
-                    const l100 = String(readValue(r, ["COMB (L/100 km)", "COMB_L_100", "comb_l_100", "Comb L/100"]) || "-");
-                    const emi = formatCurrency(readValue(r, ["monthly_emi"]));
-                    const avgPrice = formatCurrency(readValue(r, ["average_price"]));
-                    const maintenanceId = String(readValue(r, ["maintenance_record_id"]) || "-");
-                    const maintenanceCost = formatCurrency(readValue(r, ["maintenance_yearly_cost"]));
-
-                    return (
-                      <motion.div key={idx} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.08 }} className="relative overflow-hidden rounded-xl border p-5" style={{ borderColor: "var(--border-primary)", background: "var(--bg-card)" }}>
-                        {idx === 0 && <div className="absolute right-3 top-3 rounded-full px-2 py-0.5 text-xs font-bold text-white" style={{ background: "linear-gradient(135deg, #10b981, #059669)" }}>Best Match</div>}
-                        <div className="mb-4 flex items-start gap-3">
-                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl" style={{ background: "var(--bg-tertiary)" }}>
-                            <Car className="h-5 w-5" style={{ color: "var(--text-accent)" }} />
-                          </div>
-                          <div>
-                            <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{make} {model}</p>
-                            <p className="text-xs" style={{ color: "var(--text-muted)" }}>{year} - {vehicleClassValue}</p>
-                          </div>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-2 text-xs">
-                          <div className="flex items-center gap-1.5" style={{ color: "var(--text-secondary)" }}><Fuel className="h-3 w-3" />{fuel}</div>
-                          <div className="flex items-center gap-1.5" style={{ color: "var(--text-secondary)" }}><Gauge className="h-3 w-3" />{l100} L/100</div>
-                          <div className="flex items-center gap-1.5" style={{ color: "var(--text-secondary)" }}><Zap className="h-3 w-3" />{engine}L</div>
-                          <div className="flex items-center gap-1.5" style={{ color: "var(--text-secondary)" }}><Car className="h-3 w-3" />{trans}</div>
-                          <div className="col-span-2 flex items-center justify-between rounded-lg px-2 py-1" style={{ background: "var(--bg-secondary)", color: "var(--text-secondary)" }}>
-                            <span>Avg price: LKR {avgPrice}</span>
-                            <span>EMI: LKR {emi}</span>
-                          </div>
-                          <div className="col-span-2 flex items-center justify-between rounded-lg px-2 py-1" style={{ background: "var(--bg-secondary)", color: "var(--text-secondary)" }}>
-                            <span>Maintenance ID: {maintenanceId}</span>
-                            <span>Yearly cost: LKR {maintenanceCost}</span>
-                          </div>
-                        </div>
-
-                        <div className="mt-4 flex items-center justify-between border-t pt-3" style={{ borderTop: "1px solid var(--border-secondary)" }}>
-                          <span className="text-xs" style={{ color: "var(--text-muted)" }}>Match Score</span>
-                          <ScoreBadge score={score} />
-                        </div>
-                      </motion.div>
-                    );
-                  })}
-                </div>
-
-                <div className="overflow-hidden rounded-xl border" style={{ borderColor: "var(--border-primary)", background: "var(--bg-card)" }}>
-                  <div className="flex items-center justify-between px-5 py-4 text-sm font-semibold" style={{ background: "var(--bg-tertiary)", color: "var(--text-primary)", borderBottom: "1px solid var(--border-primary)" }}>
-                    <span>All Results ({items.length} vehicles)</span>
-                  </div>
-                  <div className="overflow-x-auto">
-                    <table className="min-w-[1100px] w-full border-collapse text-left">
-                      <thead>
-                        <tr className="text-xs uppercase tracking-wider" style={{ background: "var(--bg-secondary)", color: "var(--text-muted)" }}>
-                          <th className="border-b px-4 py-3 font-medium" style={{ borderColor: "var(--border-primary)" }}>Score</th>
-                          <th className="border-b px-4 py-3 font-medium" style={{ borderColor: "var(--border-primary)" }}>Vehicle</th>
-                          <th className="border-b px-4 py-3 font-medium" style={{ borderColor: "var(--border-primary)" }}>Fuel</th>
-                          <th className="border-b px-4 py-3 font-medium" style={{ borderColor: "var(--border-primary)" }}>Trans</th>
-                          <th className="border-b px-4 py-3 font-medium text-right" style={{ borderColor: "var(--border-primary)" }}>Comb</th>
-                          <th className="border-b px-4 py-3 font-medium text-right" style={{ borderColor: "var(--border-primary)" }}>Avg Price</th>
-                          <th className="border-b px-4 py-3 font-medium text-right" style={{ borderColor: "var(--border-primary)" }}>Monthly EMI</th>
-                          <th className="border-b px-4 py-3 font-medium text-right" style={{ borderColor: "var(--border-primary)" }}>Maintenance ID</th>
-                          <th className="border-b px-4 py-3 font-medium text-right" style={{ borderColor: "var(--border-primary)" }}>Yearly Maintenance</th>
-                        </tr>
-                      </thead>
-                      <tbody className="text-sm divide-y" style={{ borderColor: "var(--border-secondary)" }}>
-                        {items.map((r, idx) => {
-                          const score = Number(readValue(r, ["Compatibility_Score", "compatibility_score"]) || 0);
-                          const year = String(readValue(r, ["YEAR", "Year", "year"]) || "-");
-                          const make = String(readValue(r, ["Make", "MAKE", "make"]) || "-");
-                          const model = String(readValue(r, ["Model", "MODEL", "model"]) || "-");
-                          const fuel = String(readValue(r, ["FUEL", "Fuel", "fuel"]) || "-");
-                          const trans = String(readValue(r, ["Transmission", "TRANSMISSION", "transmission", "Trans"]) || "-");
-                          const l100 = String(readValue(r, ["COMB (L/100 km)", "COMB_L_100", "comb_l_100", "Comb L/100"]) || "-");
-                          const avgPrice = formatCurrency(readValue(r, ["average_price"]));
-                          const emi = formatCurrency(readValue(r, ["monthly_emi"]));
-                          const maintenanceId = String(readValue(r, ["maintenance_record_id"]) || "-");
-                          const maintenanceCost = formatCurrency(readValue(r, ["maintenance_yearly_cost"]));
-
-                          return (
-                            <tr key={idx}>
-                              <td className="px-4 py-3"><ScoreBadge score={score} /></td>
-                              <td className="px-4 py-3 font-medium" style={{ color: "var(--text-primary)" }}>{make} {model}<div className="text-xs" style={{ color: "var(--text-muted)" }}>{year}</div></td>
-                              <td className="px-4 py-3" style={{ color: "var(--text-secondary)" }}>{fuel}</td>
-                              <td className="px-4 py-3" style={{ color: "var(--text-secondary)" }}>{trans}</td>
-                              <td className="px-4 py-3 text-right" style={{ color: "var(--text-secondary)" }}>{l100}</td>
-                              <td className="px-4 py-3 text-right font-semibold" style={{ color: "var(--text-primary)" }}>LKR {avgPrice}</td>
-                              <td className="px-4 py-3 text-right font-semibold" style={{ color: "var(--text-primary)" }}>LKR {emi}</td>
-                              <td className="px-4 py-3 text-right" style={{ color: "var(--text-secondary)" }}>{maintenanceId === "-" ? "-" : `#${maintenanceId}`}</td>
-                              <td className="px-4 py-3 text-right font-semibold" style={{ color: "var(--text-primary)" }}>LKR {maintenanceCost}</td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              </>
-            )}
-
-            {!hasItems && (
-              <div className="rounded-xl p-10 text-center" style={{ background: "var(--bg-card)" }}>
-                <Car className="mx-auto mb-4 h-12 w-12" style={{ color: "var(--text-muted)" }} />
-                <p className="font-medium" style={{ color: "var(--text-secondary)" }}>{results.message || "No vehicles found matching your criteria."}</p>
-                <p className="mt-1 text-sm" style={{ color: "var(--text-muted)" }}>Try broadening your search query or relaxing some form filters.</p>
-              </div>
-            )}
-          </motion.div>
-        )}
-      </div>
-    </div>
+    <svg
+      {...props}
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
+      <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
+    </svg>
   );
 }
