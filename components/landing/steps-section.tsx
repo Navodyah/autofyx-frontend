@@ -64,11 +64,6 @@ export default function StepsSection() {
               transition={{ delay: index * 0.2 }}
               className="relative"
             >
-              {/* Connector Line (hidden on mobile) */}
-              {index < steps.length - 1 && (
-                <div className="hidden md:block absolute top-20 left-1/2 w-full h-0.5 bg-gradient-to-r from-blue-500 to-cyan-500 opacity-30" />
-              )}
-
               <Card className="bg-slate-900/50 border-slate-800 p-8 text-center relative z-10 hover:border-blue-500/50 transition-all">
                 {/* Step Number */}
                 <div className="absolute -top-4 left-1/2 -translate-x-1/2 w-8 h-8 rounded-full bg-gradient-to-r from-blue-600 to-cyan-600 flex items-center justify-center text-white font-bold">

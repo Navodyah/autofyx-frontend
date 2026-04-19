@@ -40,7 +40,9 @@ export default function RegisterPage() {
         username: fullName,
         email: email,
         password: password,
-        user_type: role
+        user_type: role.toLowerCase()
+      }, {
+        timeout: 15000
       });
       console.log("Registration successful:", response.data);
       // Store token if provided
@@ -53,9 +55,10 @@ export default function RegisterPage() {
     } catch (error) {
       if (axios.isAxiosError(error)) {
         console.error("Registration error:", error.response?.data);
-        alert(error.response?.data?.message || "Registration failed");
+        alert(error.response?.data?.detail || error.response?.data?.message || "Registration failed");
       } else {
         console.error("Registration error:", error);
+        alert("An unexpected error occurred during registration");
       }
     } finally {
       setIsLoading(false);

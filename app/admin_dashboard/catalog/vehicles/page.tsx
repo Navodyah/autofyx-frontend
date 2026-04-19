@@ -8,9 +8,12 @@ interface Vehicle {
   vehicle_id: number;
   brand_id?: number;
   model_id?: number;
+  model_name?: string | null;
   vehicle_name?: string;
   vehicle_model?: string;
   engine_size?: number;
+  minimum_price?: number | string;
+  max_price?: number | string;
   class_id?: number;
   engine_type_id?: number;
   fuel_type_id?: number;
@@ -19,7 +22,6 @@ interface Vehicle {
 
   // Enriched display fields
   brand_name?: string | null;
-  model_name?: string | null;
   class_name?: string | null;
   engine_type_name?: string | null;
   fuel_type_name?: string | null;
@@ -32,6 +34,17 @@ export default function VehicleListPage() {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+
+  const formatPrice = (value?: number | string) => {
+    if (value == null) return 'N/A';
+    const numericValue = Number(value);
+    if (Number.isNaN(numericValue)) return 'N/A';
+    return new Intl.NumberFormat('en-LK', {
+      style: 'currency',
+      currency: 'LKR',
+      maximumFractionDigits: 2,
+    }).format(numericValue);
+  };
 
   useEffect(() => {
     fetchAllData();
@@ -91,7 +104,7 @@ export default function VehicleListPage() {
       const enriched = vehiclesData.map((v) => ({
         ...v,
         brand_name: v.brand?.brand_name ?? brandsMap[v.brand_id] ?? null,
-        model_name: v.model?.model_name ?? modelsMap[v.model_id] ?? null,
+        model_name: v.model_name ?? v.vehicle_model ?? v.model?.model_name ?? modelsMap[v.model_id] ?? null,
         class_name: v.vehicle_class?.class_name ?? classesMap[v.class_id] ?? null,
         engine_type_name: v.engine_type?.engine_type_name ?? enginesMap[v.engine_type_id] ?? null,
         fuel_type_name: v.fuel_type?.fuel_type_name ?? fuelsMap[v.fuel_type_id] ?? null,
@@ -129,12 +142,14 @@ export default function VehicleListPage() {
     const matchesBrand = v.brand_name?.toLowerCase().includes(term);
     const matchesModel = v.model_name?.toLowerCase().includes(term);
     const matchesVehicleName = v.vehicle_name?.toLowerCase().includes(term);
-    const matchesVehicleModel = v.vehicle_model?.toLowerCase().includes(term);
+    const matchesVehicleModel = (v.vehicle_model ?? v.model_name ?? '').toLowerCase().includes(term);
     const matchesClass = v.class_name?.toLowerCase().includes(term);
     const matchesEngine = v.engine_type_name?.toLowerCase().includes(term);
     const matchesFuel = v.fuel_type_name?.toLowerCase().includes(term);
     const matchesYear = v.manufacturing_year?.toString().includes(term);
     const matchesEngineSize = v.engine_size?.toString().includes(term);
+    const matchesMinimumPrice = v.minimum_price?.toString().includes(term);
+    const matchesMaximumPrice = v.max_price?.toString().includes(term);
     
     return !!(
       matchesId || 
@@ -146,7 +161,9 @@ export default function VehicleListPage() {
       matchesEngine || 
       matchesFuel || 
       matchesYear ||
-      matchesEngineSize
+      matchesEngineSize ||
+      matchesMinimumPrice ||
+      matchesMaximumPrice
     );
   });
 
@@ -187,7 +204,7 @@ export default function VehicleListPage() {
           {searchTerm && (
             <div className="mt-3 flex items-center justify-between">
               <p className="text-sm text-gray-600">
-                Found <span className="font-bold text-blue-600">{filteredVehicles.length}</span> result(s) for "{searchTerm}"
+                Found <span className="font-bold text-blue-600">{filteredVehicles.length}</span> result(s) for &quot;{searchTerm}&quot;
               </p>
               <button 
                 onClick={() => setSearchTerm('')}
@@ -250,6 +267,7 @@ export default function VehicleListPage() {
                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Vehicle Details</th>
                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Class</th>
                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Engine & Fuel</th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Price Range</th>
                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Year</th>
                     <th className="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
                   </tr>
@@ -257,7 +275,7 @@ export default function VehicleListPage() {
                 <tbody className="divide-y divide-gray-200">
                   {filteredVehicles.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="px-6 py-12 text-center text-gray-500">
+                      <td colSpan={8} className="px-6 py-12 text-center text-gray-500">
                         <Car className="w-16 h-16 mx-auto mb-4 text-gray-300" />
                         <p className="text-lg font-semibold">
                           {searchTerm ? 'No vehicles found matching your search' : 'No vehicles found'}
@@ -302,9 +320,9 @@ export default function VehicleListPage() {
                               {vehicle.vehicle_name}
                             </div>
                           )}
-                          {vehicle.vehicle_model && (
+                          {(vehicle.vehicle_model || vehicle.model_name) && (
                             <div className="text-xs text-gray-600 mt-1">
-                              {vehicle.vehicle_model}
+                              {vehicle.vehicle_model || vehicle.model_name}
                             </div>
                           )}
                           {vehicle.engine_size && (
@@ -312,7 +330,7 @@ export default function VehicleListPage() {
                               {vehicle.engine_size}L Engine
                             </div>
                           )}
-                          {!vehicle.vehicle_name && !vehicle.vehicle_model && !vehicle.engine_size && (
+                          {!vehicle.vehicle_name && !(vehicle.vehicle_model || vehicle.model_name) && !vehicle.engine_size && (
                             <span className="text-xs text-gray-400">No details</span>
                           )}
                         </td>
@@ -347,6 +365,15 @@ export default function VehicleListPage() {
                           {!vehicle.engine_type_name && !vehicle.fuel_type_name && (
                             <span className="text-xs text-gray-400">N/A</span>
                           )}
+                        </td>
+
+                        <td className="px-6 py-4">
+                          <div className="text-sm font-semibold text-gray-900">
+                            Min: {formatPrice(vehicle.minimum_price)}
+                          </div>
+                          <div className="text-xs text-gray-500 mt-1">
+                            Max: {formatPrice(vehicle.max_price)}
+                          </div>
                         </td>
 
                         <td className="px-6 py-4 whitespace-nowrap">

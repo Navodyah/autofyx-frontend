@@ -4,6 +4,15 @@ import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Scale, ChevronLeft, Car, RefreshCw, ArrowRight } from "lucide-react";
 import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 type CatalogListResponse = { items: string[] };
 type YearsListResponse = { items: number[] };
@@ -88,17 +97,16 @@ function SelectField({
   disabled?: boolean;
 }) {
   return (
-    <select
-      className="af-select"
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      disabled={disabled}
-    >
-      <option value="">{placeholder}</option>
-      {options.map((o) => (
-        <option key={o} value={o}>{o}</option>
-      ))}
-    </select>
+    <Select value={value} onValueChange={onChange} disabled={disabled}>
+      <SelectTrigger className="w-full bg-[var(--bg-secondary)] border-[var(--border-primary)] text-[var(--text-primary)]">
+        <SelectValue placeholder={placeholder} />
+      </SelectTrigger>
+      <SelectContent>
+        {options.map((o) => (
+          <SelectItem key={o} value={o}>{o}</SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   );
 }
 
@@ -266,7 +274,7 @@ export default function ComparePage() {
           backdropFilter: 'blur(20px)',
         }}
       >
-        <Link href="/user_dashboard" className="flex items-center gap-2 text-sm transition-colors" style={{ color: 'var(--text-secondary)' }}>
+        <Link href="/dashboard" className="flex items-center gap-2 text-sm transition-colors" style={{ color: 'var(--text-secondary)' }}>
           <ChevronLeft className="h-4 w-4" />
           Back to Search
         </Link>
@@ -320,51 +328,59 @@ export default function ComparePage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="af-card p-6 space-y-4"
+            className="space-y-4"
           >
-            <div className="flex items-center gap-3">
-              <div
-                className="w-9 h-9 rounded-xl flex items-center justify-center text-white text-sm font-bold"
-                style={{ background: 'linear-gradient(135deg, #3b82f6, #06b6d4)' }}
-              >
-                A
-              </div>
-              <div>
-                <h3 className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>
-                  Vehicle A
-                </h3>
-                {makeA && modelA && yearA !== "" && (
-                  <p className="text-xs" style={{ color: 'var(--text-accent)' }}>
-                    {makeA} {modelA} ({yearA})
-                  </p>
-                )}
-              </div>
-            </div>
-
-            <SelectField
-              value={makeA}
-              onChange={setMakeA}
-              options={makes}
-              placeholder="Select Make"
-            />
-            <SelectField
-              value={modelA}
-              onChange={setModelA}
-              options={modelsA}
-              placeholder={makeA ? "Select Model" : "Select Make first"}
-              disabled={!makeA}
-            />
-            <select
-              className="af-select"
-              value={yearA === "" ? "" : String(yearA)}
-              onChange={(e) => setYearA(Number(e.target.value))}
-              disabled={!modelA}
-            >
-              <option value="">{modelA ? "Select Year" : "Select Model first"}</option>
-              {yearsA.map((y) => (
-                <option key={y} value={y}>{y}</option>
-              ))}
-            </select>
+            <Card className="border-[var(--border-primary)] bg-[var(--bg-card)]">
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <div
+                    className="w-9 h-9 rounded-xl flex items-center justify-center text-white text-sm font-bold"
+                    style={{ background: 'linear-gradient(135deg, #3b82f6, #06b6d4)' }}
+                  >
+                    A
+                  </div>
+                  <div>
+                    <CardTitle className="text-sm" style={{ color: 'var(--text-primary)' }}>
+                      Vehicle A
+                    </CardTitle>
+                    {makeA && modelA && yearA !== "" && (
+                      <p className="text-xs" style={{ color: 'var(--text-accent)' }}>
+                        {makeA} {modelA} ({yearA})
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <SelectField
+                  value={makeA}
+                  onChange={setMakeA}
+                  options={makes}
+                  placeholder="Select Make"
+                />
+                <SelectField
+                  value={modelA}
+                  onChange={setModelA}
+                  options={modelsA}
+                  placeholder={makeA ? "Select Model" : "Select Make first"}
+                  disabled={!makeA}
+                />
+                <Select
+                  value={yearA === "" ? undefined : String(yearA)}
+                  onValueChange={(v) => setYearA(Number(v))}
+                  disabled={!modelA}
+                >
+                  <SelectTrigger className="w-full bg-[var(--bg-secondary)] border-[var(--border-primary)] text-[var(--text-primary)]">
+                    <SelectValue placeholder={modelA ? "Select Year" : "Select Model first"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {yearsA.map((y) => (
+                      <SelectItem key={y} value={String(y)}>{y}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </CardContent>
+            </Card>
           </motion.div>
 
           {/* VS Divider */}
@@ -382,60 +398,68 @@ export default function ComparePage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.15 }}
-            className="af-card p-6 space-y-4 md:-ml-8"
+            className="space-y-4 md:-ml-8"
           >
-            <div className="flex items-center gap-3">
-              <div
-                className="w-9 h-9 rounded-xl flex items-center justify-center text-white text-sm font-bold"
-                style={{ background: 'linear-gradient(135deg, #8b5cf6, #ec4899)' }}
-              >
-                B
-              </div>
-              <div>
-                <h3 className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>
-                  Vehicle B
-                </h3>
-                {makeB && modelB && yearB !== "" && (
-                  <p className="text-xs" style={{ color: '#a78bfa' }}>
-                    {makeB} {modelB} ({yearB})
-                  </p>
-                )}
-              </div>
-            </div>
-
-            <SelectField
-              value={makeB}
-              onChange={setMakeB}
-              options={makes}
-              placeholder="Select Make"
-            />
-            <SelectField
-              value={modelB}
-              onChange={setModelB}
-              options={modelsB}
-              placeholder={makeB ? "Select Model" : "Select Make first"}
-              disabled={!makeB}
-            />
-            <select
-              className="af-select"
-              value={yearB === "" ? "" : String(yearB)}
-              onChange={(e) => setYearB(Number(e.target.value))}
-              disabled={!modelB}
-            >
-              <option value="">{modelB ? "Select Year" : "Select Model first"}</option>
-              {yearsB.map((y) => (
-                <option key={y} value={y}>{y}</option>
-              ))}
-            </select>
+            <Card className="border-[var(--border-primary)] bg-[var(--bg-card)]">
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <div
+                    className="w-9 h-9 rounded-xl flex items-center justify-center text-white text-sm font-bold"
+                    style={{ background: 'linear-gradient(135deg, #8b5cf6, #ec4899)' }}
+                  >
+                    B
+                  </div>
+                  <div>
+                    <CardTitle className="text-sm" style={{ color: 'var(--text-primary)' }}>
+                      Vehicle B
+                    </CardTitle>
+                    {makeB && modelB && yearB !== "" && (
+                      <p className="text-xs" style={{ color: '#a78bfa' }}>
+                        {makeB} {modelB} ({yearB})
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <SelectField
+                  value={makeB}
+                  onChange={setMakeB}
+                  options={makes}
+                  placeholder="Select Make"
+                />
+                <SelectField
+                  value={modelB}
+                  onChange={setModelB}
+                  options={modelsB}
+                  placeholder={makeB ? "Select Model" : "Select Make first"}
+                  disabled={!makeB}
+                />
+                <Select
+                  value={yearB === "" ? undefined : String(yearB)}
+                  onValueChange={(v) => setYearB(Number(v))}
+                  disabled={!modelB}
+                >
+                  <SelectTrigger className="w-full bg-[var(--bg-secondary)] border-[var(--border-primary)] text-[var(--text-primary)]">
+                    <SelectValue placeholder={modelB ? "Select Year" : "Select Model first"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {yearsB.map((y) => (
+                      <SelectItem key={y} value={String(y)}>{y}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </CardContent>
+            </Card>
           </motion.div>
         </div>
 
         {/* Action Buttons */}
         <div className="flex gap-3">
-          <button
+          <Button
             disabled={!canCompare || loading}
             onClick={onCompare}
-            className="af-btn-primary py-3 px-6 disabled:opacity-50"
+            className="py-3 px-6 disabled:opacity-50 bg-[linear-gradient(135deg,#3b82f6,#06b6d4)] text-white"
           >
             {loading ? (
               <>
@@ -448,15 +472,16 @@ export default function ComparePage() {
                 Compare Now
               </>
             )}
-          </button>
+          </Button>
 
-          <button
+          <Button
             onClick={onReset}
-            className="af-btn-secondary py-3 px-5"
+            variant="outline"
+            className="py-3 px-5 border-[var(--border-primary)] bg-[var(--bg-card)] text-[var(--text-secondary)]"
           >
             <RefreshCw className="h-4 w-4" />
             Reset
-          </button>
+          </Button>
         </div>
 
         {/* Results */}
@@ -466,66 +491,68 @@ export default function ComparePage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0 }}
-              className="af-card rounded-2xl overflow-hidden"
+              className="rounded-2xl overflow-hidden"
             >
-              {/* Comparison Header */}
-              <div
-                className="grid grid-cols-3 gap-4 px-5 py-4"
-                style={{ background: 'var(--bg-tertiary)', borderBottom: '1px solid var(--border-primary)' }}
-              >
-                <div className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>
-                  Specification
-                </div>
-                <div>
-                  <p className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>
-                    {left?.name || "Vehicle A"}
-                  </p>
-                  {!left?.found && (
-                    <p className="text-xs" style={{ color: '#f87171' }}>Not found</p>
-                  )}
-                </div>
-                <div>
-                  <p className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>
-                    {right?.name || "Vehicle B"}
-                  </p>
-                  {!right?.found && (
-                    <p className="text-xs" style={{ color: '#f87171' }}>Not found</p>
-                  )}
-                </div>
-              </div>
-
-              {/* Not found warning */}
-              {(!left?.found || !right?.found) && (
+              <Card className="rounded-2xl overflow-hidden border-[var(--border-primary)] bg-[var(--bg-card)] gap-0">
+                {/* Comparison Header */}
                 <div
-                  className="mx-5 mt-4 rounded-xl border p-3 text-sm"
+                  className="grid grid-cols-3 gap-4 px-5 py-4"
+                  style={{ background: 'var(--bg-tertiary)', borderBottom: '1px solid var(--border-primary)' }}
+                >
+                  <div className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>
+                    Specification
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>
+                      {left?.name || "Vehicle A"}
+                    </p>
+                    {!left?.found && (
+                      <p className="text-xs" style={{ color: '#f87171' }}>Not found</p>
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>
+                      {right?.name || "Vehicle B"}
+                    </p>
+                    {!right?.found && (
+                      <p className="text-xs" style={{ color: '#f87171' }}>Not found</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Not found warning */}
+                {(!left?.found || !right?.found) && (
+                  <div
+                    className="mx-5 mt-4 rounded-xl border p-3 text-sm"
+                    style={{
+                      background: 'rgba(245,158,11,0.08)',
+                      borderColor: 'rgba(245,158,11,0.25)',
+                      color: '#fbbf24',
+                    }}
+                  >
+                    {left?.found === false && <div>⚠️ <b>{left?.name}</b>: {left?.message || "Not found"}</div>}
+                    {right?.found === false && <div>⚠️ <b>{right?.name}</b>: {right?.message || "Not found"}</div>}
+                  </div>
+                )}
+
+                {/* Rows */}
+                <div className="py-2 px-2">
+                  {comparisonRows.map((row) => (
+                    <CompareCell key={row.label} label={row.label} a={row.a} b={row.b} />
+                  ))}
+                </div>
+
+                <div
+                  className="px-5 py-3 text-xs"
                   style={{
-                    background: 'rgba(245,158,11,0.08)',
-                    borderColor: 'rgba(245,158,11,0.25)',
-                    color: '#fbbf24',
+                    borderTop: '1px solid var(--border-secondary)',
+                    color: 'var(--text-muted)',
+                    background: 'var(--bg-tertiary)',
                   }}
                 >
-                  {left?.found === false && <div>⚠️ <b>{left?.name}</b>: {left?.message || "Not found"}</div>}
-                  {right?.found === false && <div>⚠️ <b>{right?.name}</b>: {right?.message || "Not found"}</div>}
+                  ✅ Green values indicate better fuel efficiency (lower consumption).
                 </div>
-              )}
-
-              {/* Rows */}
-              <div className="py-2 px-2">
-                {comparisonRows.map((row) => (
-                  <CompareCell key={row.label} label={row.label} a={row.a} b={row.b} />
-                ))}
-              </div>
-
-              <div
-                className="px-5 py-3 text-xs"
-                style={{
-                  borderTop: '1px solid var(--border-secondary)',
-                  color: 'var(--text-muted)',
-                  background: 'var(--bg-tertiary)',
-                }}
-              >
-                ✅ Green values indicate better fuel efficiency (lower consumption).
-              </div>
+              </Card>
             </motion.div>
           )}
         </AnimatePresence>
