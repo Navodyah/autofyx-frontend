@@ -38,7 +38,7 @@ const navItems = [
   { label: "Compare", href: "/dashboard/compare", icon: Scale },
   { label: "Cost Calculation", href: "/dashboard/cost-calculation", icon: Calculator },
   { label: "Profile", href: "/dashboard/profile", icon: User },
-  { label: "My Garage (Wishlist)", href: "/dashboard/garage", icon: Heart },
+  { label: "My Garage", href: "/dashboard/garage", icon: Heart },
   { label: "Preferences", href: "/dashboard/profile", icon: Settings },
 ];
 
@@ -47,82 +47,97 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const pathname = usePathname();
 
   return (
-    <div suppressHydrationWarning className="flex h-screen bg-[#F8FAFC] text-slate-900 font-sans overflow-hidden">
+    <div suppressHydrationWarning className="flex h-screen bg-[#f4f6f9] text-slate-900 font-sans overflow-hidden">
       <UserPreferenceOnboardingModal />
-      {/* Desktop Sidebar */}
-      <aside className="hidden lg:flex w-72 flex-col bg-white border-r border-slate-200 z-20">
-        <div className="h-20 flex items-center px-8 border-b border-slate-100">
-          <div className="flex items-center gap-2 text-blue-600">
-            <Car className="w-6 h-6" />
-            <span className="text-xl font-bold tracking-tight text-slate-900">AutoFyx</span>
+
+      {/* ── Desktop Sidebar (black) ──────────────────────────────────────── */}
+      <aside className="hidden lg:flex w-64 xl:w-72 flex-col bg-[#0a0a0c] z-20 flex-shrink-0">
+
+        {/* Logo */}
+        <div className="h-[72px] flex items-center px-7 border-b border-white/5 flex-shrink-0">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-white/10 border border-white/10 flex items-center justify-center">
+              <Car className="w-4 h-4 text-white" />
+            </div>
+            <span className="text-lg font-bold tracking-tight text-white">AutoFyx</span>
           </div>
         </div>
-        
-        <div className="px-6 py-8">
-          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4">Main Menu</p>
-          <nav className="flex flex-col gap-2">
+
+        {/* Nav */}
+        <div className="flex-1 px-4 py-6 overflow-y-auto">
+          <p className="text-[10px] font-bold text-white/30 uppercase tracking-widest px-3 mb-3">Main Menu</p>
+          <nav className="flex flex-col gap-1">
             {navItems.map((item) => {
               const isActive = pathname === item.href;
               return (
                 <Link
-                  key={item.href}
+                  key={`${item.href}-${item.label}`}
                   href={item.href}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
                     isActive
-                      ? "bg-blue-50 text-blue-700 shadow-sm"
-                      : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                      ? "bg-white text-slate-900 shadow-md"
+                      : "text-white/60 hover:bg-white/10 hover:text-white"
                   }`}
                 >
-                  <item.icon className={`w-5 h-5 ${isActive ? "text-blue-600" : "text-slate-400"}`} />
-                  {item.label}
+                  <item.icon className={`w-4 h-4 flex-shrink-0 ${isActive ? "text-slate-700" : "text-white/50"}`} />
+                  <span className="truncate">{item.label}</span>
+                  {isActive && (
+                    <div className="ml-auto w-1.5 h-1.5 rounded-full bg-slate-500 flex-shrink-0" />
+                  )}
                 </Link>
               );
             })}
           </nav>
         </div>
 
-        <div className="mt-auto p-6 border-t border-slate-100">
-          <Button suppressHydrationWarning onClick={() => router.push("/")} variant="ghost" className="w-full justify-start gap-3 px-4 py-3 text-sm font-medium text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all">
-            <LogOut className="w-5 h-5" />
+        {/* Footer */}
+        <div className="px-4 py-5 border-t border-white/5 flex-shrink-0">
+          <button
+            suppressHydrationWarning
+            onClick={() => router.push("/")}
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-white/50 hover:text-white hover:bg-white/10 transition-all"
+          >
+            <LogOut className="w-4 h-4" />
             Logout
-          </Button>
+          </button>
         </div>
       </aside>
 
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col h-screen overflow-hidden">
-        {/* Top Navbar */}
-        <header className="h-20 bg-white/80 backdrop-blur-md border-b border-slate-200 flex items-center justify-between px-6 lg:px-10 z-10 sticky top-0">
+      {/* ── Main Content ─────────────────────────────────────────────────── */}
+      <div className="flex-1 flex flex-col h-screen overflow-hidden min-w-0">
+
+        {/* Top Header */}
+        <header className="h-[72px] bg-white border-b border-slate-200/80 flex items-center justify-between px-6 lg:px-8 z-10 flex-shrink-0">
           <div className="flex items-center gap-4">
+
+            {/* Mobile hamburger */}
             <Sheet>
               <SheetTrigger asChild>
-                <Button
-                  suppressHydrationWarning
-                  variant="outline"
-                  size="icon"
-                  className="lg:hidden"
-                >
+                <Button suppressHydrationWarning variant="ghost" size="icon" className="lg:hidden text-slate-600">
                   <Menu className="w-5 h-5" />
                 </Button>
               </SheetTrigger>
-
-              <SheetContent side="left" className="w-3/4 max-w-sm bg-white p-0">
-                <SheetHeader className="px-6 py-6 border-b border-slate-100">
-                  <SheetTitle className="flex items-center gap-2 text-blue-600">
-                    <Car className="w-6 h-6" />
-                    <span className="text-xl font-bold tracking-tight text-slate-900">AutoFyx</span>
+              <SheetContent side="left" className="w-72 p-0 bg-[#0a0a0c] border-r-0">
+                <SheetHeader className="px-6 py-5 border-b border-white/5">
+                  <SheetTitle className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-lg bg-white/10 border border-white/10 flex items-center justify-center">
+                      <Car className="w-4 h-4 text-white" />
+                    </div>
+                    <span className="text-lg font-bold tracking-tight text-white">AutoFyx</span>
                   </SheetTitle>
                 </SheetHeader>
-                <nav className="px-4 py-4 space-y-2">
+                <nav className="px-4 py-4 space-y-1">
                   {navItems.map((item) => (
-                    <SheetClose asChild key={item.href}>
+                    <SheetClose asChild key={`mobile-${item.href}-${item.label}`}>
                       <Link
                         href={item.href}
-                        className={`flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-semibold ${
-                          pathname === item.href ? "bg-blue-50 text-blue-700" : "text-slate-600 hover:bg-slate-50"
+                        className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                          pathname === item.href
+                            ? "bg-white text-slate-900"
+                            : "text-white/60 hover:bg-white/10 hover:text-white"
                         }`}
                       >
-                        <item.icon className="w-5 h-5" />
+                        <item.icon className="w-4 h-4" />
                         {item.label}
                       </Link>
                     </SheetClose>
@@ -131,41 +146,49 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               </SheetContent>
             </Sheet>
 
-            <div className="hidden md:flex items-center bg-slate-100 px-4 py-2.5 rounded-full w-96 border border-slate-200 focus-within:bg-white focus-within:border-blue-300 transition-all shadow-inner relative">
-              <Search className="w-4 h-4 text-slate-400 mr-2" />
+            {/* Search bar */}
+            <div className="hidden md:flex items-center bg-slate-50 border border-slate-200 rounded-full px-4 py-2.5 w-80 xl:w-96 focus-within:border-slate-400 focus-within:bg-white transition-all">
+              <Search className="w-4 h-4 text-slate-400 mr-2 flex-shrink-0" />
               <Input
                 suppressHydrationWarning
-                type="text" 
-                placeholder="Search models, brands, or features..." 
-                className="bg-transparent border-none shadow-none outline-none text-sm h-7 w-full text-slate-800 placeholder:text-slate-400 focus-visible:ring-0"
+                type="text"
+                placeholder="Search models, brands, features..."
+                className="bg-transparent border-none shadow-none outline-none text-sm h-5 w-full text-slate-800 placeholder:text-slate-400 focus-visible:ring-0 p-0"
               />
             </div>
           </div>
 
-          <div className="flex items-center gap-4">
-            <Button suppressHydrationWarning variant="ghost" size="icon" className="relative rounded-full border border-slate-200 text-slate-500 hover:bg-slate-50">
+          <div className="flex items-center gap-3">
+            {/* Bell */}
+            <Button suppressHydrationWarning variant="ghost" size="icon" className="relative w-9 h-9 rounded-full border border-slate-200 text-slate-500 hover:bg-slate-50">
               <Bell className="w-4 h-4" />
-              <span className="absolute top-2 right-2.5 w-2 h-2 bg-blue-600 rounded-full border-2 border-white" />
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-slate-900 rounded-full border-2 border-white" />
             </Button>
-            <div className="flex items-center gap-3 pl-4 border-l border-slate-200 cursor-pointer group">
-              <div className="flex flex-col items-end">
-                <span className="text-sm font-semibold text-slate-900 group-hover:text-blue-600 transition-colors">Alex Driver</span>
-                <span className="text-xs text-slate-500">Premium Member</span>
+
+            {/* Profile */}
+            <div className="flex items-center gap-3 pl-3 border-l border-slate-200 cursor-pointer group">
+              <div className="hidden sm:flex flex-col items-end">
+                <span className="text-sm font-semibold text-slate-900 group-hover:text-slate-600 transition-colors leading-tight">Alex Driver</span>
+                <span className="text-xs text-slate-400">Premium Member</span>
               </div>
-              <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold border-2 border-white shadow-sm overflow-hidden">
-                <img src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?q=80&w=150&auto=format&fit=crop" alt="Profile" className="w-full h-full object-cover" />
+              <div className="w-9 h-9 rounded-full overflow-hidden border-2 border-slate-200 shadow-sm flex-shrink-0">
+                <img
+                  src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?q=80&w=150&auto=format&fit=crop"
+                  alt="Profile"
+                  className="w-full h-full object-cover"
+                />
               </div>
             </div>
           </div>
         </header>
 
-        {/* Scrollable Children Container */}
-        <main className="flex-1 overflow-y-auto p-6 lg:p-10 relative">
+        {/* Page content */}
+        <main className="flex-1 overflow-y-auto bg-[#f4f6f9]">
           <motion.div
-            initial={{ opacity: 0, y: 10 }}
+            initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4 }}
-            className="w-full max-w-6xl mx-auto"
+            transition={{ duration: 0.35 }}
+            className="w-full max-w-7xl mx-auto px-6 lg:px-8 py-8"
           >
             {children}
           </motion.div>

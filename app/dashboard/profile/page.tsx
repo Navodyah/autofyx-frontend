@@ -1,748 +1,582 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
-import axios from "axios";
+import { useEffect, useMemo, useState } from "react";
+import { Camera, CarFront, CarTaxiFront, CarFront as SuvIcon, Fuel, Heart, RotateCcw, Save, Settings2, ShieldCheck, Sparkles, Zap } from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
-type ActiveSection = "basic" | "vehicle" | "personal" | "security";
+type TabKey = "vehicle-preferences" | "personal-details" | "security" | "activity-log" | "messages";
+type VehicleType = "SUV" | "Hatchback" | "Sedan" | "Electric Vehicle";
 
-type ProfileDTO = {
-  username: string;
-  email: string;
-  user_type: string;
-  profile?: {
-    monthly_income?: number | null;
-    purpose?: string | null;
-    area?: string | null;
-    fuel_pref?: string | null;
-    transmission_pref?: string | null;
-    max_comb_l_per_100?: number | null;
-    vehicle_class_pref?: string | null;
+type PreferenceDraft = {
+  vehicleTypes: VehicleType[];
+  budgetMin: number;
+  budgetMax: number;
+  yearOfManufacture: string;
+  condition: "New" | "Used";
+  preferredColors: string;
+};
 
-    phone_number?: string | null;
-    address?: string | null;
-    city?: string | null;
-    country?: string | null;
-    notification_enabled?: boolean;
-    email_updates?: boolean;
+const STORAGE_KEY = "autofyx_profile_preferences";
+const MIN_BUDGET = 500000;
+const MAX_BUDGET = 25000000;
+const BUDGET_STEP = 50000;
+
+const defaultDraft: PreferenceDraft = {
+  vehicleTypes: ["SUV", "Sedan"],
+  budgetMin: 2500000,
+  budgetMax: 8500000,
+  yearOfManufacture: "2024",
+  condition: "Used",
+  preferredColors: "Black, White, Pearl Silver",
+};
+
+const vehicleCards: Array<{
+  value: VehicleType;
+  title: string;
+  description: string;
+  icon: typeof CarFront;
+}> = [
+  {
+    value: "SUV",
+    title: "SUV",
+    description: "Practical, spacious, confident",
+    icon: CarTaxiFront,
+  },
+  {
+    value: "Hatchback",
+    title: "Hatchback",
+    description: "Compact and efficient",
+    icon: CarFront,
+  },
+  {
+    value: "Sedan",
+    title: "Sedan",
+    description: "Balanced, refined, and comfortable",
+    icon: SuvIcon,
+  },
+  {
+    value: "Electric Vehicle",
+    title: "Electric Vehicle",
+    description: "Quiet, modern, and low running cost",
+    icon: Zap,
+  },
+];
+
+const tabs: Array<{ key: TabKey; label: string }> = [
+  { key: "vehicle-preferences", label: "Vehicle Preferences" },
+  { key: "personal-details", label: "Personal Details" },
+  { key: "security", label: "Security" },
+  { key: "activity-log", label: "Activity Log" },
+  { key: "messages", label: "Messages" },
+];
+
+function formatLkr(value: number): string {
+  return new Intl.NumberFormat("en-LK", { maximumFractionDigits: 0 }).format(value);
+}
+
+function clampBudget(value: number) {
+  return Math.max(MIN_BUDGET, Math.min(MAX_BUDGET, value));
+}
+
+function getBudgetTrackStyle(minValue: number, maxValue: number) {
+  const start = ((minValue - MIN_BUDGET) / (MAX_BUDGET - MIN_BUDGET)) * 100;
+  const end = ((maxValue - MIN_BUDGET) / (MAX_BUDGET - MIN_BUDGET)) * 100;
+  return {
+    background: `linear-gradient(to right, #e5e7eb 0%, #e5e7eb ${start}%, #6d28d9 ${start}%, #7c3aed ${end}%, #e5e7eb ${end}%, #e5e7eb 100%)`,
   };
-};
-
-type StatisticsDTO = {
-  total_comparisons: number;
-  total_favorites: number;
-  profile_completeness: number;
-};
-
-function getToken(): string | null {
-  if (typeof window === "undefined") return null;
-  return localStorage.getItem("access_token");
 }
 
 export default function ProfilePage() {
-  const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
-
-  const [profile, setProfile] = useState<ProfileDTO | null>(null);
-  const [statistics, setStatistics] = useState<StatisticsDTO | null>(null);
-
-  const [loading, setLoading] = useState(true);
-  const [activeSection, setActiveSection] = useState<ActiveSection>("basic");
-
-  const [successMessage, setSuccessMessage] = useState("");
-  const [errorMessage, setErrorMessage] = useState("");
-
-  const axiosConfig = useMemo(() => {
-    const token = getToken();
-    return {
-      headers: { Authorization: `Bearer ${token}` },
-    };
-  }, []);
+  const [activeTab, setActiveTab] = useState<TabKey>("vehicle-preferences");
+  const [draft, setDraft] = useState<PreferenceDraft>(defaultDraft);
+  const [savedDraft, setSavedDraft] = useState<PreferenceDraft>(defaultDraft);
+  const [message, setMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchAll();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    try {
+      const raw = window.localStorage.getItem(STORAGE_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as PreferenceDraft;
+      setDraft((prev) => ({ ...prev, ...parsed }));
+      setSavedDraft((prev) => ({ ...prev, ...parsed }));
+    } catch {
+      setDraft(defaultDraft);
+      setSavedDraft(defaultDraft);
+    }
   }, []);
 
-  async function fetchAll() {
-    setLoading(true);
-    setErrorMessage("");
-    try {
-      await Promise.all([fetchProfileData(), fetchStatistics()]);
-    } finally {
-      setLoading(false);
-    }
+  const selectedCount = draft.vehicleTypes.length;
+  const budgetLabel = useMemo(
+    () => `LKR ${formatLkr(draft.budgetMin)} - LKR ${formatLkr(draft.budgetMax)}`,
+    [draft.budgetMin, draft.budgetMax]
+  );
+
+  function toggleVehicleType(type: VehicleType) {
+    setDraft((current) => ({
+      ...current,
+      vehicleTypes: current.vehicleTypes.includes(type)
+        ? current.vehicleTypes.filter((entry) => entry !== type)
+        : [...current.vehicleTypes, type],
+    }));
+    setMessage(null);
   }
 
-  async function fetchProfileData() {
-    const token = getToken();
-    if (!token) {
-      setErrorMessage("No token found. Please login again.");
-      return;
-    }
-
-    try {
-      const res = await axios.get<ProfileDTO>(`${API_BASE}/user-profile/me`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setProfile(res.data);
-    } catch (err: any) {
-      setErrorMessage(err?.response?.data?.detail || "Failed to load profile");
-    }
+  function updateBudgetMin(value: number) {
+    const nextMin = clampBudget(value);
+    setDraft((current) => ({
+      ...current,
+      budgetMin: Math.min(nextMin, current.budgetMax - BUDGET_STEP),
+    }));
+    setMessage(null);
   }
 
-  async function fetchStatistics() {
-    const token = getToken();
-    if (!token) return;
-
-    try {
-      const res = await axios.get<StatisticsDTO>(`${API_BASE}/user-profile/statistics`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setStatistics(res.data);
-    } catch {
-      // optional: ignore stats error
-    }
+  function updateBudgetMax(value: number) {
+    const nextMax = clampBudget(value);
+    setDraft((current) => ({
+      ...current,
+      budgetMax: Math.max(nextMax, current.budgetMin + BUDGET_STEP),
+    }));
+    setMessage(null);
   }
 
-  if (loading) {
-    return (
-      <div className="min-h-[60vh] flex items-center justify-center text-gray-600">
-        Loading profile...
-      </div>
-    );
+  function handleSave() {
+    const next = {
+      ...draft,
+      budgetMin: Math.min(draft.budgetMin, draft.budgetMax - BUDGET_STEP),
+      budgetMax: Math.max(draft.budgetMax, draft.budgetMin + BUDGET_STEP),
+    };
+
+    setDraft(next);
+    setSavedDraft(next);
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+    setMessage("Vehicle preferences saved successfully.");
+  }
+
+  function handleReset() {
+    setDraft(defaultDraft);
+    setSavedDraft(defaultDraft);
+    window.localStorage.removeItem(STORAGE_KEY);
+    setMessage("Preferences reset to defaults.");
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 md:p-8">
-      <div className="mx-auto max-w-6xl space-y-6">
-        {/* Header */}
-        <div className="rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 p-6 md:p-10 text-white shadow-sm">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-            <div className="flex items-center gap-5">
-              <div className="h-20 w-20 md:h-24 md:w-24 rounded-full border-4 border-white/80 bg-white/20 flex items-center justify-center text-4xl font-bold">
-                {profile?.username?.[0]?.toUpperCase() || "U"}
+    <div className="min-h-screen bg-slate-50 text-slate-950">
+      <div className="mx-auto max-w-7xl px-4 py-6 md:px-8 md:py-8">
+        <section className="overflow-hidden rounded-[2rem] bg-gradient-to-r from-black via-slate-950 to-violet-700 p-[1px] shadow-[0_24px_80px_rgba(15,23,42,0.18)]">
+          <div className="relative overflow-hidden rounded-[calc(2rem-1px)] bg-[linear-gradient(135deg,#0a0a0b_0%,#121216_56%,#4c1d95_100%)] px-6 py-8 md:px-10 md:py-10">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(168,85,247,0.22),transparent_35%),radial-gradient(circle_at_left,rgba(255,255,255,0.08),transparent_30%)]" />
+            <div className="relative flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+              <div className="flex flex-col gap-6 sm:flex-row sm:items-center">
+                <div className="relative h-28 w-28 shrink-0 rounded-full border-4 border-white bg-white/10 shadow-[0_0_0_6px_rgba(255,255,255,0.08)]">
+                  <div className="flex h-full w-full items-center justify-center rounded-full bg-gradient-to-br from-zinc-900 to-violet-900 text-3xl font-semibold text-white">
+                    UD
+                  </div>
+                  <button
+                    type="button"
+                    className="absolute bottom-1 right-1 flex h-8 w-8 items-center justify-center rounded-full border border-white/70 bg-white text-slate-950 shadow-lg"
+                    aria-label="Edit profile photo"
+                  >
+                    <Camera className="h-4 w-4" />
+                  </button>
+                </div>
+
+                <div className="space-y-3">
+                  <div>
+                    <p className="text-sm font-medium uppercase tracking-[0.32em] text-violet-200/80">User Profile</p>
+                    <h1 className="mt-2 text-3xl font-bold tracking-tight text-white md:text-5xl">Upeksha Dias</h1>
+                    <span className="mt-3 inline-flex rounded-full border border-violet-300/30 bg-violet-300/15 px-3 py-1 text-xs font-semibold tracking-[0.24em] text-violet-100">
+                      PREMIUM USER
+                    </span>
+                  </div>
+                  <p className="max-w-2xl text-sm leading-6 text-slate-200/90 md:text-base">
+                    Curate your vehicle preferences, review your account settings, and keep your marketplace profile in sync.
+                  </p>
+                </div>
               </div>
-              <div>
-                <h1 className="text-2xl md:text-3xl font-semibold">{profile?.username || "User"}</h1>
-                <p className="text-white/90 text-sm">{profile?.email}</p>
-                <span className="mt-2 inline-block rounded-full bg-white/20 px-3 py-1 text-xs font-semibold uppercase">
-                  {profile?.user_type || "user"}
-                </span>
+
+              <div className="grid gap-3 sm:grid-cols-3 lg:w-[31rem]">
+                <StatPill label="Selected Types" value={`${selectedCount}`} />
+                <StatPill label="Budget Range" value={budgetLabel} wide />
+                <StatPill label="Condition" value={draft.condition} />
               </div>
             </div>
+          </div>
+        </section>
 
-            {statistics && (
-              <div className="flex gap-8 md:gap-10">
-                <StatItem label="Comparisons" value={statistics.total_comparisons} />
-                <StatItem label="Favorites" value={statistics.total_favorites} />
-                <StatItem label="Profile Complete" value={`${statistics.profile_completeness}%`} />
+        <div className="relative mx-auto -mt-7 max-w-6xl rounded-full border border-slate-200 bg-white px-3 py-3 shadow-[0_12px_40px_rgba(15,23,42,0.08)]">
+          <div className="flex items-center justify-center gap-2 overflow-x-auto whitespace-nowrap">
+            {tabs.map((tab) => {
+              const isActive = activeTab === tab.key;
+              return (
+                <button
+                  key={tab.key}
+                  type="button"
+                  onClick={() => setActiveTab(tab.key)}
+                  className={[
+                    "rounded-full px-4 py-2 text-sm font-medium transition-all",
+                    isActive
+                      ? "bg-gradient-to-r from-blue-600 to-violet-600 text-white shadow-lg shadow-violet-200"
+                      : "text-slate-500 hover:bg-slate-100 hover:text-slate-900",
+                  ].join(" ")}
+                >
+                  {tab.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <main className="mx-auto mt-6 max-w-6xl">
+          <Card className="border-slate-200 bg-white shadow-[0_20px_60px_rgba(15,23,42,0.08)]">
+            <CardHeader className="border-b border-slate-100 px-6 py-6 md:px-8">
+              <div className="flex flex-col gap-1">
+                <CardTitle className="text-2xl font-semibold tracking-tight text-slate-950 md:text-3xl">
+                  {tabTitle(activeTab)}
+                </CardTitle>
+                <CardDescription className="text-sm text-slate-500 md:text-base">
+                  {tabDescription(activeTab)}
+                </CardDescription>
               </div>
-            )}
-          </div>
+            </CardHeader>
+
+            <CardContent className="px-6 py-6 md:px-8 md:py-8">
+              {activeTab === "vehicle-preferences" && (
+                <div className="space-y-8">
+                  <div className="grid gap-8 xl:grid-cols-[1.05fr_0.95fr]">
+                    <Card className="border-slate-200 bg-slate-50/70">
+                      <CardHeader className="pb-4">
+                        <CardTitle className="flex items-center gap-2 text-lg text-slate-950">
+                          <Heart className="h-5 w-5 text-violet-600" />
+                          Preferred Vehicle Types
+                        </CardTitle>
+                        <CardDescription>
+                          Select one or more body styles that fit your lifestyle.
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="grid gap-4 sm:grid-cols-2">
+                          {vehicleCards.map((item) => {
+                            const active = draft.vehicleTypes.includes(item.value);
+                            const Icon = item.icon;
+
+                            return (
+                              <button
+                                key={item.value}
+                                type="button"
+                                onClick={() => toggleVehicleType(item.value)}
+                                className={[
+                                  "group rounded-2xl border p-4 text-left transition-all duration-200",
+                                  active
+                                    ? "border-violet-500 bg-white shadow-lg shadow-violet-100"
+                                    : "border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm",
+                                ].join(" ")}
+                              >
+                                <div className="flex items-start justify-between gap-3">
+                                  <div className="space-y-2">
+                                    <div className={[
+                                      "flex h-11 w-11 items-center justify-center rounded-xl transition-colors",
+                                      active ? "bg-violet-600 text-white" : "bg-slate-100 text-slate-700 group-hover:bg-slate-200",
+                                    ].join(" ")}>
+                                      <Icon className="h-5 w-5" />
+                                    </div>
+                                    <div>
+                                      <p className="font-semibold text-slate-950">{item.title}</p>
+                                      <p className="mt-1 text-sm leading-5 text-slate-500">{item.description}</p>
+                                    </div>
+                                  </div>
+
+                                  <div className={[
+                                    "mt-1 h-5 w-5 rounded-full border-2 transition-all",
+                                    active ? "border-violet-600 bg-violet-600" : "border-slate-300 bg-white",
+                                  ].join(" ")} />
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    <div className="space-y-6">
+                      <Card className="border-slate-200 bg-white">
+                        <CardHeader className="pb-4">
+                          <CardTitle className="flex items-center gap-2 text-lg text-slate-950">
+                            <Fuel className="h-5 w-5 text-slate-900" />
+                            Budget Range
+                          </CardTitle>
+                          <CardDescription>
+                            Set the minimum and maximum price for your next vehicle.
+                          </CardDescription>
+                        </CardHeader>
+
+                        <CardContent className="space-y-5">
+                          <div className="space-y-4">
+                            <div className="relative h-2 rounded-full bg-slate-200" style={getBudgetTrackStyle(draft.budgetMin, draft.budgetMax)}>
+                              <input
+                                type="range"
+                                min={MIN_BUDGET}
+                                max={MAX_BUDGET}
+                                step={BUDGET_STEP}
+                                value={draft.budgetMin}
+                                onChange={(event) => updateBudgetMin(Number(event.target.value))}
+                                className="pointer-events-auto absolute inset-0 h-2 w-full cursor-pointer appearance-none bg-transparent"
+                              />
+                              <input
+                                type="range"
+                                min={MIN_BUDGET}
+                                max={MAX_BUDGET}
+                                step={BUDGET_STEP}
+                                value={draft.budgetMax}
+                                onChange={(event) => updateBudgetMax(Number(event.target.value))}
+                                className="pointer-events-auto absolute inset-0 h-2 w-full cursor-pointer appearance-none bg-transparent"
+                              />
+                            </div>
+
+                            <div className="grid gap-4 sm:grid-cols-2">
+                              <div className="space-y-2">
+                                <Label className="text-slate-700">Minimum Price</Label>
+                                <Input
+                                  type="number"
+                                  value={draft.budgetMin}
+                                  onChange={(event) => updateBudgetMin(Number(event.target.value || MIN_BUDGET))}
+                                  className="border-slate-300 bg-white text-slate-950"
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label className="text-slate-700">Maximum Price</Label>
+                                <Input
+                                  type="number"
+                                  value={draft.budgetMax}
+                                  onChange={(event) => updateBudgetMax(Number(event.target.value || MAX_BUDGET))}
+                                  className="border-slate-300 bg-white text-slate-950"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      <Card className="border-slate-200 bg-slate-50/70">
+                        <CardHeader className="pb-4">
+                          <CardTitle className="flex items-center gap-2 text-lg text-slate-950">
+                            <Settings2 className="h-5 w-5 text-slate-900" />
+                            Other Fields
+                          </CardTitle>
+                          <CardDescription>
+                            Fine-tune manufacturing year, condition, and preferred colors.
+                          </CardDescription>
+                        </CardHeader>
+                        <CardContent className="grid gap-4 sm:grid-cols-2">
+                          <div className="space-y-2">
+                            <Label className="text-slate-700">Year of Manufacture</Label>
+                            <Select
+                              value={draft.yearOfManufacture}
+                              onValueChange={(value) => {
+                                setDraft((current) => ({ ...current, yearOfManufacture: value }));
+                                setMessage(null);
+                              }}
+                            >
+                              <SelectTrigger className="border-slate-300 bg-white text-slate-950">
+                                <SelectValue placeholder="Choose year" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {yearOptions().map((year) => (
+                                  <SelectItem key={year} value={year}>
+                                    {year}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label className="text-slate-700">Condition</Label>
+                            <Select
+                              value={draft.condition}
+                              onValueChange={(value) => {
+                                setDraft((current) => ({ ...current, condition: value as PreferenceDraft["condition"] }));
+                                setMessage(null);
+                              }}
+                            >
+                              <SelectTrigger className="border-slate-300 bg-white text-slate-950">
+                                <SelectValue placeholder="Choose condition" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="New">New</SelectItem>
+                                <SelectItem value="Used">Used</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          <div className="sm:col-span-2 space-y-2">
+                            <Label className="text-slate-700">Preferred Colors</Label>
+                            <Input
+                              value={draft.preferredColors}
+                              onChange={(event) => {
+                                setDraft((current) => ({ ...current, preferredColors: event.target.value }));
+                                setMessage(null);
+                              }}
+                              placeholder="Black, White, Silver"
+                              className="border-slate-300 bg-white text-slate-950"
+                            />
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={handleReset}
+                      className="gap-2 border-slate-300 bg-white text-slate-900 hover:bg-slate-50"
+                    >
+                      <RotateCcw className="h-4 w-4" />
+                      Reset
+                    </Button>
+                    <Button
+                      type="button"
+                      onClick={handleSave}
+                      className="gap-2 bg-gradient-to-r from-violet-600 to-blue-600 text-white shadow-lg shadow-violet-200 hover:from-violet-700 hover:to-blue-700"
+                    >
+                      <Save className="h-4 w-4" />
+                      Save Changes
+                    </Button>
+                  </div>
+
+                  {message && (
+                    <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+                      {message}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {activeTab === "personal-details" && (
+                <PlaceholderSection
+                  icon={Sparkles}
+                  title="Personal Details"
+                  description="Profile contact details, address, and communication settings can be managed here next."
+                />
+              )}
+
+              {activeTab === "security" && (
+                <PlaceholderSection
+                  icon={ShieldCheck}
+                  title="Security"
+                  description="Password, verification, and session controls belong here."
+                />
+              )}
+
+              {activeTab === "activity-log" && (
+                <PlaceholderSection
+                  icon={RotateCcw}
+                  title="Activity Log"
+                  description="A timeline of searches, comparisons, and saved vehicles fits here."
+                />
+              )}
+
+              {activeTab === "messages" && (
+                <PlaceholderSection
+                  icon={Heart}
+                  title="Messages"
+                  description="Buyer alerts, dealer messages, and marketplace notifications can surface here."
+                />
+              )}
+            </CardContent>
+          </Card>
+        </main>
+      </div>
+    </div>
+  );
+}
+
+function StatPill({
+  label,
+  value,
+  wide = false,
+}: {
+  label: string;
+  value: string;
+  wide?: boolean;
+}) {
+  return (
+    <div className={[
+      "rounded-2xl border border-white/10 bg-white/10 px-4 py-3 text-white backdrop-blur-sm",
+      wide ? "sm:col-span-2" : "",
+    ].join(" ")}>
+      <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-violet-100/80">{label}</p>
+      <p className="mt-2 text-sm font-semibold leading-5 text-white">{value}</p>
+    </div>
+  );
+}
+
+function PlaceholderSection({
+  icon: Icon,
+  title,
+  description,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  title: string;
+  description: string;
+}) {
+  return (
+    <div className="flex min-h-[420px] items-center justify-center rounded-3xl border border-dashed border-slate-200 bg-slate-50/60 px-6 py-10 text-center">
+      <div className="max-w-md space-y-4">
+        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-white shadow-sm">
+          <Icon className="h-6 w-6 text-slate-900" />
         </div>
-
-        {/* Alerts */}
-        {(successMessage || errorMessage) && (
-          <div className="space-y-3">
-            {successMessage && (
-              <Alert type="success" onClose={() => setSuccessMessage("")}>
-                {successMessage}
-              </Alert>
-            )}
-            {errorMessage && (
-              <Alert type="error" onClose={() => setErrorMessage("")}>
-                {errorMessage}
-              </Alert>
-            )}
-          </div>
-        )}
-
-        {/* Tabs */}
-        <div className="flex gap-2 overflow-x-auto border-b bg-white rounded-2xl px-3 py-2 shadow-sm">
-          <TabButton active={activeSection === "basic"} onClick={() => setActiveSection("basic")}>
-            Basic Information
-          </TabButton>
-          <TabButton active={activeSection === "vehicle"} onClick={() => setActiveSection("vehicle")}>
-            Vehicle Preferences
-          </TabButton>
-          <TabButton active={activeSection === "personal"} onClick={() => setActiveSection("personal")}>
-            Personal Details
-          </TabButton>
-          <TabButton active={activeSection === "security"} onClick={() => setActiveSection("security")}>
-            Security
-          </TabButton>
-        </div>
-
-        {/* Content */}
-        <div className="rounded-2xl bg-white shadow-sm border">
-          {activeSection === "basic" && profile && (
-            <BasicInfoSection
-              apiBase={API_BASE}
-              profile={profile}
-              onUpdated={fetchProfileData}
-              setSuccess={setSuccessMessage}
-              setError={setErrorMessage}
-            />
-          )}
-
-          {activeSection === "vehicle" && profile && (
-            <VehiclePreferencesSection
-              apiBase={API_BASE}
-              profile={profile}
-              onUpdated={fetchProfileData}
-              setSuccess={setSuccessMessage}
-              setError={setErrorMessage}
-            />
-          )}
-
-          {activeSection === "personal" && profile && (
-            <PersonalDetailsSection
-              apiBase={API_BASE}
-              profile={profile}
-              onUpdated={fetchProfileData}
-              setSuccess={setSuccessMessage}
-              setError={setErrorMessage}
-            />
-          )}
-
-          {activeSection === "security" && (
-            <SecuritySection
-              apiBase={API_BASE}
-              setSuccess={setSuccessMessage}
-              setError={setErrorMessage}
-            />
-          )}
+        <div>
+          <h3 className="text-2xl font-semibold tracking-tight text-slate-950">{title}</h3>
+          <p className="mt-2 text-sm leading-6 text-slate-500">{description}</p>
         </div>
       </div>
     </div>
   );
 }
 
-/* ----------------- UI Components ----------------- */
-
-function StatItem({ label, value }: { label: string; value: React.ReactNode }) {
-  return (
-    <div className="text-center">
-      <div className="text-2xl font-bold">{value}</div>
-      <div className="text-xs text-white/90">{label}</div>
-    </div>
-  );
-}
-
-function Alert({
-  type,
-  children,
-  onClose,
-}: {
-  type: "success" | "error";
-  children: React.ReactNode;
-  onClose: () => void;
-}) {
-  const styles =
-    type === "success"
-      ? "border-green-200 bg-green-50 text-green-800"
-      : "border-red-200 bg-red-50 text-red-700";
-
-  return (
-    <div className={`flex items-center justify-between gap-3 rounded-xl border p-3 ${styles}`}>
-      <div className="text-sm">{children}</div>
-      <button onClick={onClose} className="text-xl leading-none opacity-70 hover:opacity-100">
-        ×
-      </button>
-    </div>
-  );
-}
-
-function TabButton({
-  active,
-  children,
-  onClick,
-}: {
-  active: boolean;
-  children: React.ReactNode;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className={[
-        "whitespace-nowrap rounded-xl px-4 py-2 text-sm font-medium transition",
-        active ? "bg-indigo-600 text-white" : "text-gray-700 hover:bg-gray-100",
-      ].join(" ")}
-    >
-      {children}
-    </button>
-  );
-}
-
-/* ----------------- Sections ----------------- */
-
-function SectionShell({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div className="p-5 md:p-8">
-      <h2 className="text-xl font-semibold text-gray-900">{title}</h2>
-      <div className="mt-5">{children}</div>
-    </div>
-  );
-}
-
-function BasicInfoSection({
-  apiBase,
-  profile,
-  onUpdated,
-  setSuccess,
-  setError,
-}: {
-  apiBase: string;
-  profile: ProfileDTO;
-  onUpdated: () => Promise<void>;
-  setSuccess: (v: string) => void;
-  setError: (v: string) => void;
-}) {
-  const [username, setUsername] = useState(profile.username || "");
-  const [email, setEmail] = useState(profile.email || "");
-  const [saving, setSaving] = useState(false);
-
-  async function onSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setSaving(true);
-    setError("");
-    setSuccess("");
-
-    try {
-      const token = getToken();
-      if (!token) throw new Error("No token found");
-      await axios.put(
-        `${apiBase}/user-profile/basic-info`,
-        { username, email },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      setSuccess("Basic information updated successfully!");
-      await onUpdated();
-    } catch (err: any) {
-      setError(err?.response?.data?.detail || "Failed to update information");
-    } finally {
-      setSaving(false);
-    }
+function tabTitle(tab: TabKey): string {
+  switch (tab) {
+    case "vehicle-preferences":
+      return "Vehicle Preferences";
+    case "personal-details":
+      return "Personal Details";
+    case "security":
+      return "Security";
+    case "activity-log":
+      return "Activity Log";
+    case "messages":
+      return "Messages";
   }
-
-  return (
-    <SectionShell title="Basic Information">
-      <form onSubmit={onSubmit} className="space-y-4 max-w-2xl">
-        <Field label="Username">
-          <input
-            className="w-full rounded-lg border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-200"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            placeholder="Enter username"
-          />
-        </Field>
-
-        <Field label="Email Address">
-          <input
-            type="email"
-            className="w-full rounded-lg border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-200"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="Enter email"
-          />
-        </Field>
-
-        <button
-          type="submit"
-          disabled={saving}
-          className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
-        >
-          {saving ? "Saving..." : "Save Changes"}
-        </button>
-      </form>
-    </SectionShell>
-  );
 }
 
-function VehiclePreferencesSection({
-  apiBase,
-  profile,
-  onUpdated,
-  setSuccess,
-  setError,
-}: {
-  apiBase: string;
-  profile: ProfileDTO;
-  onUpdated: () => Promise<void>;
-  setSuccess: (v: string) => void;
-  setError: (v: string) => void;
-}) {
-  const p = profile.profile || {};
-
-  const [monthlyIncome, setMonthlyIncome] = useState<number | "">(p.monthly_income ?? "");
-  const [purpose, setPurpose] = useState(p.purpose || "daily_commute");
-  const [area, setArea] = useState(p.area || "mixed");
-  const [fuelPref, setFuelPref] = useState(p.fuel_pref || "");
-  const [transPref, setTransPref] = useState(p.transmission_pref || "");
-  const [maxComb, setMaxComb] = useState<number | "">(p.max_comb_l_per_100 ?? "");
-  const [vehicleClassPref, setVehicleClassPref] = useState(p.vehicle_class_pref || "");
-
-  const [saving, setSaving] = useState(false);
-
-  async function onSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setSaving(true);
-    setError("");
-    setSuccess("");
-
-    try {
-      const token = getToken();
-      if (!token) throw new Error("No token found");
-
-      await axios.put(
-        `${apiBase}/user-profile/me`,
-        {
-          monthly_income: monthlyIncome === "" ? null : Number(monthlyIncome),
-          purpose,
-          area,
-          fuel_pref: fuelPref || null,
-          transmission_pref: transPref || null,
-          max_comb_l_per_100: maxComb === "" ? null : Number(maxComb),
-          vehicle_class_pref: vehicleClassPref || null,
-        },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-
-      setSuccess("Vehicle preferences updated successfully!");
-      await onUpdated();
-    } catch (err: any) {
-      setError(err?.response?.data?.detail || "Failed to update preferences");
-    } finally {
-      setSaving(false);
-    }
+function tabDescription(tab: TabKey): string {
+  switch (tab) {
+    case "vehicle-preferences":
+      return "Shape your search experience with type, budget, and style preferences.";
+    case "personal-details":
+      return "Keep your contact and account details up to date.";
+    case "security":
+      return "Control password and account security settings.";
+    case "activity-log":
+      return "Review recent activity and saved actions.";
+    case "messages":
+      return "Track notifications and marketplace conversations.";
   }
-
-  return (
-    <SectionShell title="Vehicle Preferences">
-      <form onSubmit={onSubmit} className="space-y-4 max-w-3xl">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Field label="Monthly Income (LKR)">
-            <input
-              type="number"
-              className="w-full rounded-lg border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-200"
-              value={monthlyIncome}
-              onChange={(e) => setMonthlyIncome(e.target.value ? Number(e.target.value) : "")}
-              placeholder="150000"
-            />
-          </Field>
-
-          <Field label="Primary Purpose">
-            <select
-              className="w-full rounded-lg border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-200"
-              value={purpose}
-              onChange={(e) => setPurpose(e.target.value)}
-            >
-              <option value="daily_commute">Daily Commute</option>
-              <option value="family">Family</option>
-              <option value="performance">Performance</option>
-              <option value="luxury">Luxury</option>
-            </select>
-          </Field>
-
-          <Field label="Driving Area">
-            <select
-              className="w-full rounded-lg border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-200"
-              value={area}
-              onChange={(e) => setArea(e.target.value)}
-            >
-              <option value="city">City</option>
-              <option value="highway">Highway</option>
-              <option value="mixed">Mixed</option>
-              <option value="off-road">Off-Road</option>
-            </select>
-          </Field>
-
-          <Field label="Fuel Preference">
-            <input
-              className="w-full rounded-lg border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-200"
-              value={fuelPref}
-              onChange={(e) => setFuelPref(e.target.value)}
-              placeholder="Z - Premium Gasoline"
-            />
-          </Field>
-
-          <Field label="Transmission Preference">
-            <select
-              className="w-full rounded-lg border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-200"
-              value={transPref}
-              onChange={(e) => setTransPref(e.target.value)}
-            >
-              <option value="">No Preference</option>
-              <option value="A=Automatic">Automatic</option>
-              <option value="M=Manual">Manual</option>
-            </select>
-          </Field>
-
-          <Field label="Max Fuel Consumption (L/100km)">
-            <input
-              type="number"
-              step="0.1"
-              className="w-full rounded-lg border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-200"
-              value={maxComb}
-              onChange={(e) => setMaxComb(e.target.value ? Number(e.target.value) : "")}
-              placeholder="10.0"
-            />
-          </Field>
-        </div>
-
-        <Field label="Vehicle Class Preference">
-          <input
-            className="w-full rounded-lg border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-200"
-            value={vehicleClassPref}
-            onChange={(e) => setVehicleClassPref(e.target.value)}
-            placeholder="COMPACT, SUV - SMALL..."
-          />
-        </Field>
-
-        <button
-          type="submit"
-          disabled={saving}
-          className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
-        >
-          {saving ? "Saving..." : "Save Preferences"}
-        </button>
-      </form>
-    </SectionShell>
-  );
 }
 
-function PersonalDetailsSection({
-  apiBase,
-  profile,
-  onUpdated,
-  setSuccess,
-  setError,
-}: {
-  apiBase: string;
-  profile: ProfileDTO;
-  onUpdated: () => Promise<void>;
-  setSuccess: (v: string) => void;
-  setError: (v: string) => void;
-}) {
-  const p = profile.profile || {};
-
-  const [phone, setPhone] = useState(p.phone_number || "");
-  const [address, setAddress] = useState(p.address || "");
-  const [city, setCity] = useState(p.city || "");
-  const [country, setCountry] = useState(p.country || "Sri Lanka");
-  const [notificationEnabled, setNotificationEnabled] = useState<boolean>(p.notification_enabled ?? true);
-  const [emailUpdates, setEmailUpdates] = useState<boolean>(p.email_updates ?? true);
-
-  const [saving, setSaving] = useState(false);
-
-  async function onSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setSaving(true);
-    setError("");
-    setSuccess("");
-
-    try {
-      const token = getToken();
-      if (!token) throw new Error("No token found");
-
-      await axios.put(
-        `${apiBase}/user-profile/me`,
-        {
-          phone_number: phone || null,
-          address: address || null,
-          city: city || null,
-          country: country || null,
-          notification_enabled: notificationEnabled,
-          email_updates: emailUpdates,
-        },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-
-      setSuccess("Personal details updated successfully!");
-      await onUpdated();
-    } catch (err: any) {
-      setError(err?.response?.data?.detail || "Failed to update details");
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  return (
-    <SectionShell title="Personal Details">
-      <form onSubmit={onSubmit} className="space-y-4 max-w-3xl">
-        <Field label="Phone Number">
-          <input
-            className="w-full rounded-lg border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-200"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            placeholder="+94 77 123 4567"
-          />
-        </Field>
-
-        <Field label="Address">
-          <textarea
-            className="w-full rounded-lg border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-200"
-            value={address}
-            onChange={(e) => setAddress(e.target.value)}
-            placeholder="Enter your address"
-            rows={3}
-          />
-        </Field>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Field label="City">
-            <input
-              className="w-full rounded-lg border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-200"
-              value={city}
-              onChange={(e) => setCity(e.target.value)}
-              placeholder="Colombo"
-            />
-          </Field>
-
-          <Field label="Country">
-            <input
-              className="w-full rounded-lg border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-200"
-              value={country}
-              onChange={(e) => setCountry(e.target.value)}
-              placeholder="Sri Lanka"
-            />
-          </Field>
-        </div>
-
-        <label className="flex items-center gap-2 text-sm text-gray-700">
-          <input
-            type="checkbox"
-            checked={notificationEnabled}
-            onChange={(e) => setNotificationEnabled(e.target.checked)}
-          />
-          Enable notifications
-        </label>
-
-        <label className="flex items-center gap-2 text-sm text-gray-700">
-          <input
-            type="checkbox"
-            checked={emailUpdates}
-            onChange={(e) => setEmailUpdates(e.target.checked)}
-          />
-          Receive email updates
-        </label>
-
-        <button
-          type="submit"
-          disabled={saving}
-          className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
-        >
-          {saving ? "Saving..." : "Save Details"}
-        </button>
-      </form>
-    </SectionShell>
-  );
-}
-
-function SecuritySection({
-  apiBase,
-  setSuccess,
-  setError,
-}: {
-  apiBase: string;
-  setSuccess: (v: string) => void;
-  setError: (v: string) => void;
-}) {
-  const [currentPassword, setCurrentPassword] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-
-  const [saving, setSaving] = useState(false);
-
-  async function onSubmit(e: React.FormEvent) {
-    e.preventDefault();
-
-    if (newPassword !== confirmPassword) {
-      setError("New passwords do not match");
-      return;
-    }
-
-    setSaving(true);
-    setError("");
-    setSuccess("");
-
-    try {
-      const token = getToken();
-      if (!token) throw new Error("No token found");
-
-      await axios.post(
-        `${apiBase}/user-profile/change-password`,
-        {
-          current_password: currentPassword,
-          new_password: newPassword,
-          confirm_password: confirmPassword,
-        },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-
-      setSuccess("Password changed successfully!");
-      setCurrentPassword("");
-      setNewPassword("");
-      setConfirmPassword("");
-    } catch (err: any) {
-      setError(err?.response?.data?.detail || "Failed to change password");
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  return (
-    <SectionShell title="Security Settings">
-      <form onSubmit={onSubmit} className="space-y-4 max-w-xl">
-        <Field label="Current Password">
-          <input
-            type="password"
-            className="w-full rounded-lg border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-200"
-            value={currentPassword}
-            onChange={(e) => setCurrentPassword(e.target.value)}
-            required
-          />
-        </Field>
-
-        <Field label="New Password">
-          <input
-            type="password"
-            className="w-full rounded-lg border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-200"
-            value={newPassword}
-            onChange={(e) => setNewPassword(e.target.value)}
-            minLength={6}
-            required
-          />
-          <p className="mt-1 text-xs text-gray-500">Minimum 6 characters</p>
-        </Field>
-
-        <Field label="Confirm New Password">
-          <input
-            type="password"
-            className="w-full rounded-lg border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-200"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            required
-          />
-        </Field>
-
-        <button
-          type="submit"
-          disabled={saving}
-          className="rounded-xl bg-rose-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
-        >
-          {saving ? "Changing..." : "Change Password"}
-        </button>
-      </form>
-    </SectionShell>
-  );
-}
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="space-y-1">
-      <label className="text-sm font-medium text-gray-900">{label}</label>
-      {children}
-    </div>
-  );
+function yearOptions(): string[] {
+  const currentYear = new Date().getFullYear();
+  return Array.from({ length: 25 }, (_, index) => String(currentYear - index));
 }
