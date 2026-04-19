@@ -1,61 +1,154 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { Eye, EyeOff, UserPlus, Car, Sparkles, Zap } from "lucide-react";
-import axios from "axios";
+import { useSearchParams } from "next/navigation";
+import { Eye, EyeOff, Car, ArrowRight, ShieldCheck, Users, FlaskConical } from "lucide-react";
+import { AppwriteException } from "appwrite";
 
-import { Button } from "@/components/ui/button";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  completeGoogleAuthFlow,
+  completeOtpRegistration,
+  deleteCurrentSession,
+  registerUser,
+  sendEmailOtp,
+  signInWithGoogle,
+  verifyEmailOtp,
+} from "@/lib/appwrite";
+
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState("User");
+  const [otp, setOtp] = useState("");
+  const [otpUserId, setOtpUserId] = useState("");
+  const [otpExpire, setOtpExpire] = useState("");
+  const [step, setStep] = useState<"details" | "otp">("details");
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const searchParams = useSearchParams();
+  const handledGoogleCallback = useRef(false);
 
-   const onSubmit = async (e: React.FormEvent) => {
+  useEffect(() => {
+    const oauth = searchParams.get("oauth") || searchParams.get("outh");
+    const oauthError = searchParams.get("error");
+    const hasOAuthCallback =
+      oauth === "google" ||
+      searchParams.has("code") ||
+      searchParams.has("state") ||
+      searchParams.has("userId") ||
+      searchParams.has("secret");
+
+    if (oauth === "failed") {
+      setIsGoogleLoading(false);
+      setStatusMessage(oauthError || "Google sign-in failed. Please try again.");
+      return;
+    }
+
+    if (!hasOAuthCallback || typeof window === "undefined" || handledGoogleCallback.current) {
+      return;
+    }
+    handledGoogleCallback.current = true;
+
+    let cancelled = false;
+
+    const syncGoogleSession = async () => {
+      try {
+        setIsGoogleLoading(true);
+        setStatusMessage("Finalizing Google sign-in...");
+
+        const nextPath = searchParams.get("next");
+        const result = await completeGoogleAuthFlow('user', nextPath, {
+          oauthUserId: searchParams.get("userId"),
+          oauthSecret: searchParams.get("secret"),
+        });
+        if (cancelled) {
+          return;
+        }
+
+        setStatusMessage("Google sign-in completed successfully. Redirecting...");
+        window.location.replace(result.dashboardRoute);
+      } catch (error) {
+        console.error("Google OAuth completion error:", error);
+        setStatusMessage("Google sign-in failed. Please try again.");
+      } finally {
+        if (!cancelled) {
+          setIsGoogleLoading(false);
+        }
+      }
+    };
+
+    void syncGoogleSession();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [searchParams]);
+
+  const sparkles = useMemo(
+    () =>
+      Array.from({ length: 20 }, (_, i) => ({
+        left: `${(i * 37 + 13) % 100}%`,
+        top: `${(i * 53 + 29) % 100}%`,
+        animationDelay: `${((i * 17) % 30) / 10}s`,
+        animationDuration: `${2 + ((i * 19) % 20) / 10}s`,
+      })),
+    []
+  );
+
+  const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+
     try {
-      const response = await axios.post("http://localhost:8000/users/register", {
-        username: fullName,
-        email: email,
-        password: password,
-        user_type: role.toLowerCase()
-      }, {
-        timeout: 15000
-      });
-      console.log("Registration successful:", response.data);
-      // Store token if provided
-      if (response.data.token) {
-        localStorage.setItem("token", response.data.token);
+      setStatusMessage(null);
+
+      if (step === "details") {
+        if (!fullName.trim() || !email.trim() || !password.trim()) {
+          throw new Error("Full name, email, and password are required.");
+        }
+
+        const otpToken = await sendEmailOtp(email, otpUserId || undefined);
+        setOtpUserId(otpToken.userId);
+        setOtpExpire(otpToken.expire);
+        setStep("otp");
+        setStatusMessage("We sent an Appwrite OTP to your email. Enter it below to finish registration.");
+      } else {
+        if (!otp.trim()) {
+          throw new Error("Enter the OTP sent to your email.");
+        }
+
+        await verifyEmailOtp(otpUserId, otp.trim());
+        await completeOtpRegistration(fullName, password);
+
+        await registerUser({
+          username: fullName,
+          email,
+          password,
+          user_type: role.toLowerCase() as "user" | "admin" | "researcher",
+          appwrite_id: otpUserId || undefined,
+        });
+
+        await deleteCurrentSession().catch(() => undefined);
+
+        setStatusMessage("Registration verified successfully. Redirecting to login...");
+        window.setTimeout(() => {
+          window.location.href = "/login";
+        }, 1200);
       }
-      //Redirect to login or dashboard
-      window.location.href = "/login";
-      
+
     } catch (error) {
-      if (axios.isAxiosError(error)) {
-        console.error("Registration error:", error.response?.data);
-        alert(error.response?.data?.detail || error.response?.data?.message || "Registration failed");
+      if (error instanceof AppwriteException) {
+        console.error("Appwrite registration error:", error);
+        alert(error.message || "OTP verification failed");
+      } else if (error instanceof Error) {
+        console.error("Registration error:", error);
+        alert(error.message || "Registration failed");
       } else {
         console.error("Registration error:", error);
         alert("An unexpected error occurred during registration");
@@ -65,279 +158,414 @@ export default function RegisterPage() {
     }
   };
 
+  const roles = [
+    { value: "User", label: "User", sub: "Standard access", icon: Users },
+    { value: "Admin", label: "Admin", sub: "Full system access", icon: ShieldCheck },
+    { value: "Researcher", label: "Researcher", sub: "Analytics & insights", icon: FlaskConical },
+  ];
+
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-slate-950 px-4 py-12">
-      {/* Animated Grid Background */}
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,#4f4f4f15_1px,transparent_1px),linear-gradient(to_bottom,#4f4f4f15_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_80%_50%_at_50%_0%,#000_70%,transparent_110%)]" />
+    <div className="min-h-screen flex bg-[#0a0a0c] overflow-hidden">
 
-      {/* Gradient Orbs */}
-      <div className="absolute top-0 -left-4 w-72 h-72 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob" />
-      <div className="absolute top-0 -right-4 w-72 h-72 bg-cyan-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000" />
-      <div className="absolute -bottom-8 left-20 w-72 h-72 bg-pink-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-4000" />
-
-      {/* Animated Road Lines */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 left-1/4 w-1 h-full bg-gradient-to-b from-transparent via-cyan-500 to-transparent opacity-30 animate-road-line" />
-        <div className="absolute top-0 left-1/2 w-1 h-full bg-gradient-to-b from-transparent via-purple-500 to-transparent opacity-30 animate-road-line animation-delay-1000" />
-        <div className="absolute top-0 left-3/4 w-1 h-full bg-gradient-to-b from-transparent via-pink-500 to-transparent opacity-30 animate-road-line animation-delay-2000" />
+      <div className="fixed inset-0 z-0 pointer-events-none">
+        <motion.div
+          animate={{ rotate: [0, 360], scale: [1, 1.1, 1] }}
+          transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
+          className="absolute top-[-30%] left-1/2 -translate-x-1/2 w-[900px] h-[700px] bg-[#2a2a30]/20 blur-[150px] rounded-full"
+        />
+        <div
+          className="absolute inset-0 opacity-[0.025]"
+          style={{
+            backgroundImage: `linear-gradient(to right, white 1px, transparent 1px), linear-gradient(to bottom, white 1px, transparent 1px)`,
+            backgroundSize: "4rem 4rem",
+          }}
+        />
       </div>
 
-      {/* Floating Cars Animation */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 -left-20 opacity-10 animate-car-float">
-          <Car className="w-16 h-16 text-cyan-400" />
-        </div>
-        <div className="absolute top-2/3 -right-20 opacity-10 animate-car-float-reverse animation-delay-3000">
-          <Car className="w-20 h-20 text-purple-400" />
-        </div>
-      </div>
+      <div className="hidden lg:flex w-[52%] relative overflow-hidden">
+        <motion.div
+          initial={{ scale: 1.05 }}
+          animate={{ scale: 1 }}
+          transition={{ duration: 12, ease: "easeOut" }}
+          className="absolute inset-0 bg-cover bg-center"
+          style={{ backgroundImage: "url('https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?q=80&w=2000&auto=format&fit=crop')" }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-br from-[#0a0a0c]/80 via-[#0a0a0c]/40 to-[#0a0a0c]/75" />
 
-      {/* Sparkle Effects */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {[...Array(20)].map((_, i) => (
-          <div
-            key={i}
-            className="absolute animate-sparkle"
-            style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-              animationDelay: `${Math.random() * 3}s`,
-              animationDuration: `${2 + Math.random() * 2}s`,
-            }}
-          >
-            <Sparkles className="w-2 h-2 text-cyan-400" />
-          </div>
-        ))}
-      </div>
+        <motion.div
+          animate={{ top: ["-10%", "110%"] }}
+          transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
+          className="absolute left-0 right-0 h-[1px] bg-white/30 shadow-[0_0_15px_rgba(255,255,255,0.6)] z-10"
+        />
 
-      {/* Main Card with Glass Effect */}
-      <Card className="relative z-10 w-full max-w-md shadow-2xl border border-slate-800/50 bg-slate-900/70 backdrop-blur-xl animate-fade-in-up">
-        {/* Glow Effect on Card */}
-        <div className="absolute -inset-[1px] bg-gradient-to-r from-cyan-500 via-purple-500 to-pink-500 rounded-lg opacity-20 blur-sm" />
-        <div className="relative bg-slate-900/90 rounded-lg">
-          <CardHeader className="space-y-4 text-center pb-8 pt-8">
-            {/* Animated Icon */}
-            <div className="mx-auto relative">
-              <div className="absolute inset-0 bg-gradient-to-r from-cyan-500 to-purple-500 rounded-full blur-lg opacity-50 animate-pulse" />
-              <div className="relative flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-cyan-500 via-purple-500 to-pink-500 shadow-lg animate-float">
-                <Car className="h-10 w-10 text-white" />
-              </div>
-              <div className="absolute -top-2 -right-2">
-                <Zap className="w-6 h-6 text-yellow-400 animate-pulse" />
-              </div>
+        <div className="relative z-10 flex flex-col justify-between p-12 w-full">
+          <Link href="/" className="flex items-center gap-3 group w-fit">
+            <div className="w-10 h-10 rounded-sm bg-white/5 border border-white/10 backdrop-blur-sm flex items-center justify-center group-hover:bg-white/10 transition-colors">
+              <Car className="w-5 h-5 text-white" />
             </div>
+            <span className="text-white font-semibold text-xl tracking-wide">AutoFyx</span>
+          </Link>
 
-            <div className="space-y-2">
-              <CardTitle className="text-3xl font-bold tracking-tight">
-                <span className="bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 bg-clip-text text-transparent animate-gradient">
-                  Create an Account
+          <div className="space-y-6 max-w-sm">
+            <motion.div
+              initial={{ opacity: 0, y: 24 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2, duration: 0.9 }}
+            >
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/10 bg-white/5 text-zinc-400 text-xs font-medium tracking-widest uppercase mb-5 backdrop-blur-md">
+                <span className="w-1.5 h-1.5 rounded-full bg-zinc-400 animate-pulse" />
+                Join AutoFyx Today
+              </div>
+              <h2 className="text-white text-4xl xl:text-5xl font-light leading-tight tracking-tight">
+                Your perfect match{" "}
+                <span className="font-semibold text-transparent bg-clip-text bg-gradient-to-r from-zinc-100 to-zinc-500">
+                  starts here.
                 </span>
-              </CardTitle>
-              <CardDescription className="text-base text-slate-400">
-                Welcome to <span className="font-semibold text-cyan-400">AutoFyx</span> - Your AI-Powered Vehicle Assistant
-              </CardDescription>
-            </div>
-          </CardHeader>
+              </h2>
+            </motion.div>
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4, duration: 0.8 }}
+              className="text-zinc-400 text-base leading-relaxed font-light"
+            >
+              Create your account and let our AI recommend the ideal vehicle matched to your lifestyle and budget.
+            </motion.p>
 
-          <CardContent>
-            <form onSubmit={onSubmit} className="space-y-4">
-              <div className="space-y-2 group">
-                <Label htmlFor="fullName" className="text-sm font-medium text-slate-300">
-                  Full Name
-                </Label>
-                <Input
-                  id="fullName"
-                  type="text"
-                  placeholder="John Doe"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  className="border-slate-700 bg-slate-800/50 text-white placeholder:text-slate-500 focus-visible:ring-cyan-500 focus-visible:border-cyan-500 transition-all duration-300 group-hover:border-slate-600"
-                  disabled={isLoading}
-                />
-              </div>
-
-              <div className="space-y-2 group">
-                <Label htmlFor="email" className="text-sm font-medium text-slate-300">
-                  Email Address
-                </Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="you@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="border-slate-700 bg-slate-800/50 text-white placeholder:text-slate-500 focus-visible:ring-cyan-500 focus-visible:border-cyan-500 transition-all duration-300 group-hover:border-slate-600"
-                  disabled={isLoading}
-                />
-              </div>
-
-              <div className="space-y-2 group">
-                <Label htmlFor="password" className="text-sm font-medium text-slate-300">
-                  Password
-                </Label>
-                <div className="relative">
-                  <Input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="Min 8 characters"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="border-slate-700 bg-slate-800/50 text-white placeholder:text-slate-500 focus-visible:ring-cyan-500 focus-visible:border-cyan-500 pr-10 transition-all duration-300 group-hover:border-slate-600"
-                    disabled={isLoading}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-cyan-400 transition-colors"
-                    tabIndex={-1}
-                  >
-                    {showPassword ? (
-                      <EyeOff className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
-                    )}
-                  </button>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.55, duration: 0.8 }}
+              className="space-y-3"
+            >
+              {[
+                "Analyse 850+ active vehicle models",
+                "OTP-verified secure registration",
+                "Personalised AI recommendations",
+              ].map((item, i) => (
+                <div key={i} className="flex items-center gap-3 text-zinc-300 text-sm">
+                  <div className="w-5 h-5 rounded-full bg-white/10 border border-white/10 flex items-center justify-center flex-shrink-0">
+                    <div className="w-1.5 h-1.5 rounded-full bg-white/70" />
+                  </div>
+                  {item}
                 </div>
-              </div>
+              ))}
+            </motion.div>
+          </div>
 
-              <div className="space-y-2 group">
-                <Label htmlFor="role" className="text-sm font-medium text-slate-300">
-                  User Role
-                </Label>
-                <Select
-                  value={role}
-                  onValueChange={setRole}
-                  disabled={isLoading}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.7, duration: 0.8 }}
+            className="bg-[#1c1c21]/60 border border-white/10 backdrop-blur-md rounded-[1.5rem] p-6"
+          >
+            <div className="flex items-center gap-4 mb-3">
+              <div className="w-10 h-10 rounded-full bg-white/10 border border-white/10 flex items-center justify-center">
+                <ShieldCheck className="w-4 h-4 text-zinc-300" />
+              </div>
+              <div>
+                <p className="text-zinc-100 font-semibold text-sm">Email OTP Verified</p>
+                <p className="text-zinc-500 text-xs">Powered by Appwrite Auth</p>
+              </div>
+            </div>
+            <p className="text-zinc-400 text-sm font-light leading-relaxed">
+              Every account is verified via a one-time passcode sent directly to your email — no passwords stored in plain text.
+            </p>
+          </motion.div>
+        </div>
+      </div>
+
+      <div className="w-full lg:w-[48%] flex flex-col justify-center px-6 sm:px-12 xl:px-20 py-12 relative z-10 bg-[#0a0a0c] overflow-y-auto">
+
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          <div className="absolute bottom-[-20%] right-[-10%] w-[30rem] h-[30rem] bg-white/[0.02] rounded-full blur-[100px]" />
+        </div>
+
+        <div className="lg:hidden flex items-center gap-2 mb-10">
+          <div className="w-9 h-9 rounded-sm bg-white/5 border border-white/10 flex items-center justify-center">
+            <Car className="w-5 h-5 text-white" />
+          </div>
+          <span className="font-semibold text-xl text-zinc-100 tracking-wide">AutoFyx</span>
+        </div>
+
+        <motion.div
+          initial={{ opacity: 0, x: 30 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+          className="w-full max-w-md mx-auto"
+        >
+          <div className="mb-8">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/10 bg-white/5 text-zinc-400 text-xs font-medium tracking-widest uppercase mb-5">
+              <span className="w-1.5 h-1.5 rounded-full bg-zinc-400 animate-pulse" />
+              {step === "otp" ? "Verify Email" : "Create Account"}
+            </div>
+            <h1 className="text-3xl xl:text-4xl font-bold text-zinc-100 tracking-tight mb-2">
+              {step === "otp" ? "Check your inbox" : "Get started"}
+            </h1>
+            <p className="text-zinc-400 text-base font-light">
+              {step === "otp"
+                ? `We sent a 6-digit code to ${email}`
+                : "Create your AutoFyx account to start finding your perfect vehicle."}
+            </p>
+          </div>
+
+          {statusMessage && (
+            <motion.div
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-6 p-4 rounded-xl bg-white/5 border border-white/10 text-zinc-300 text-sm font-medium flex items-start gap-3"
+            >
+              <div className="w-1.5 h-1.5 rounded-full bg-zinc-400 mt-1.5 flex-shrink-0 animate-pulse" />
+              {statusMessage}
+            </motion.div>
+          )}
+
+          <form onSubmit={onSubmit} className="space-y-4">
+            <button
+              type="button"
+              onClick={async () => {
+                setIsGoogleLoading(true);
+                setStatusMessage(null);
+                try {
+                  const nextPath = searchParams.get("next");
+                  const redirectPath = nextPath
+                    ? `/register?oauth=google&next=${encodeURIComponent(nextPath)}`
+                    : '/register?oauth=google';
+                  await signInWithGoogle(redirectPath);
+                } catch (error) {
+                  const message = error instanceof Error ? error.message : 'Google sign-in failed';
+                  alert(message);
+                  setIsGoogleLoading(false);
+                }
+              }}
+              disabled={isLoading || isGoogleLoading}
+              className="w-full flex items-center justify-center gap-3 py-3.5 bg-white/5 border border-white/10 rounded-xl text-sm font-semibold text-zinc-200 hover:bg-white/10 hover:border-white/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed mb-6"
+            >
+              <GoogleIcon />
+              {isGoogleLoading ? 'Connecting to Google...' : 'Continue with Google'}
+            </button>
+
+            <AnimatePresence mode="wait">
+              {step === "details" ? (
+                <motion.div
+                  key="details"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.3 }}
+                  className="space-y-4"
                 >
-                  <SelectTrigger
-                    id="role"
-                    className="border-slate-700 bg-slate-800/50 text-white focus:ring-cyan-500 focus:border-cyan-500 transition-all duration-300 group-hover:border-slate-600"
-                  >
-                    <SelectValue placeholder="Select your role" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-slate-800 border-slate-700">
-                    <SelectItem value="User" className="text-white hover:bg-slate-700">
-                      <div className="flex flex-col items-start">
-                        <span className="font-medium">User</span>
-                        <span className="text-xs text-slate-400">Standard access</span>
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="Admin" className="text-white hover:bg-slate-700">
-                      <div className="flex flex-col items-start">
-                        <span className="font-medium">Admin</span>
-                        <span className="text-xs text-slate-400">Full system access</span>
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="Researcher" className="text-white hover:bg-slate-700">
-                      <div className="flex flex-col items-start">
-                        <span className="font-medium">Researcher</span>
-                        <span className="text-xs text-slate-400">Analytics & insights</span>
-                      </div>
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+                  <div>
+                    <label htmlFor="fullName" className="block text-sm font-medium text-zinc-400 mb-2 tracking-wide">
+                      Full Name
+                    </label>
+                    <input
+                      id="fullName"
+                      type="text"
+                      placeholder="John Doe"
+                      value={fullName}
+                      onChange={(e) => setFullName(e.target.value)}
+                      disabled={isLoading}
+                      required
+                      className="w-full bg-[#16161a]/60 border border-white/10 rounded-xl px-4 py-3.5 text-zinc-100 font-medium placeholder:text-zinc-600 focus:outline-none focus:border-white/30 focus:bg-[#1c1c21] focus:ring-4 focus:ring-white/5 transition-all disabled:opacity-50 caret-white"
+                    />
+                  </div>
 
-              <Button
+                  <div>
+                    <label htmlFor="email" className="block text-sm font-medium text-zinc-400 mb-2 tracking-wide">
+                      Email Address
+                    </label>
+                    <input
+                      id="email"
+                      type="email"
+                      placeholder="you@example.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      disabled={isLoading}
+                      required
+                      className="w-full bg-[#16161a]/60 border border-white/10 rounded-xl px-4 py-3.5 text-zinc-100 font-medium placeholder:text-zinc-600 focus:outline-none focus:border-white/30 focus:bg-[#1c1c21] focus:ring-4 focus:ring-white/5 transition-all disabled:opacity-50 caret-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="password" className="block text-sm font-medium text-zinc-400 mb-2 tracking-wide">
+                      Password
+                    </label>
+                    <div className="relative">
+                      <input
+                        id="password"
+                        type={showPassword ? "text" : "password"}
+                        placeholder="Min 8 characters"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        disabled={isLoading}
+                        required
+                        className="w-full bg-[#16161a]/60 border border-white/10 rounded-xl px-4 py-3.5 pr-12 text-zinc-100 font-medium placeholder:text-zinc-600 focus:outline-none focus:border-white/30 focus:bg-[#1c1c21] focus:ring-4 focus:ring-white/5 transition-all disabled:opacity-50 caret-white"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-600 hover:text-zinc-300 transition-colors"
+                        tabIndex={-1}
+                      >
+                        {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-zinc-400 mb-2 tracking-wide">
+                      Account Role
+                    </label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {roles.map(({ value, label, sub, icon: Icon }) => (
+                        <button
+                          key={value}
+                          type="button"
+                          onClick={() => setRole(value)}
+                          disabled={isLoading}
+                          className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border text-center transition-all ${
+                            role === value
+                              ? "bg-white/10 border-white/30 text-zinc-100"
+                              : "bg-[#16161a]/60 border-white/10 text-zinc-500 hover:bg-white/5 hover:text-zinc-300"
+                          } disabled:opacity-50 disabled:cursor-not-allowed`}
+                        >
+                          <Icon className="w-5 h-5" />
+                          <span className="text-xs font-semibold">{label}</span>
+                          <span className="text-[10px] leading-tight opacity-70">{sub}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="otp"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.3 }}
+                  className="space-y-4"
+                >
+                  <div>
+                    <label htmlFor="otp" className="block text-sm font-medium text-zinc-400 mb-2 tracking-wide">
+                      Email OTP
+                    </label>
+                    <input
+                      id="otp"
+                      type="text"
+                      placeholder="Enter the code from your email"
+                      value={otp}
+                      onChange={(e) => setOtp(e.target.value.trim())}
+                      disabled={isLoading}
+                      className="w-full bg-[#16161a]/60 border border-white/10 rounded-xl px-4 py-3.5 text-zinc-100 font-medium placeholder:text-zinc-600 focus:outline-none focus:border-white/30 focus:bg-[#1c1c21] focus:ring-4 focus:ring-white/5 transition-all disabled:opacity-50 caret-white tracking-[0.3em] text-center text-lg"
+                    />
+                    <p className="text-xs text-zinc-600 mt-2">
+                      OTP requested for {email}.{otpExpire ? ` Expires at ${new Date(otpExpire).toLocaleString()}.` : ""}
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      disabled={isLoading}
+                      onClick={async () => {
+                        setIsLoading(true);
+                        setStatusMessage(null);
+                        try {
+                          const otpToken = await sendEmailOtp(email, otpUserId || undefined);
+                          setOtpUserId(otpToken.userId);
+                          setOtpExpire(otpToken.expire);
+                          setStatusMessage("A new OTP has been sent to your email.");
+                        } catch (error) {
+                          const message = error instanceof Error ? error.message : "Failed to resend OTP";
+                          alert(message);
+                        } finally {
+                          setIsLoading(false);
+                        }
+                      }}
+                      className="py-3 rounded-xl bg-white/5 border border-white/10 text-sm font-semibold text-zinc-300 hover:bg-white/10 hover:border-white/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Resend OTP
+                    </button>
+                    <button
+                      type="button"
+                      disabled={isLoading}
+                      onClick={() => {
+                        setStep("details");
+                        setOtp("");
+                        setStatusMessage(null);
+                      }}
+                      className="py-3 rounded-xl bg-transparent border border-white/10 text-sm font-semibold text-zinc-500 hover:text-zinc-300 hover:border-white/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Edit Details
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            <div className="pt-2">
+              <motion.button
                 type="submit"
-                className="w-full h-11 mt-6 bg-gradient-to-r from-cyan-500 via-purple-500 to-pink-500 hover:from-cyan-600 hover:via-purple-600 hover:to-pink-600 text-white font-semibold shadow-lg hover:shadow-cyan-500/50 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
                 disabled={isLoading}
+                whileHover={{ scale: isLoading ? 1 : 1.01 }}
+                whileTap={{ scale: isLoading ? 1 : 0.98 }}
+                className="w-full bg-white hover:bg-zinc-100 disabled:bg-zinc-700 disabled:text-zinc-500 text-black rounded-xl py-4 font-semibold text-sm tracking-wide transition-all flex items-center justify-center gap-2 group cursor-pointer disabled:cursor-not-allowed shadow-[0_0_30px_rgba(255,255,255,0.08)]"
               >
                 {isLoading ? (
                   <>
-                    <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                    Creating account...
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-zinc-600 border-t-transparent" />
+                    {step === "otp" ? "Verifying OTP..." : "Sending OTP..."}
                   </>
                 ) : (
                   <>
-                    <UserPlus className="mr-2 h-4 w-4" />
-                    Create Account
+                    {step === "otp" ? "Verify OTP & Create Account" : "Send Email OTP"}
+                    <motion.div
+                      animate={{ x: [0, 4, 0] }}
+                      transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
+                    >
+                      <ArrowRight className="w-4 h-4" />
+                    </motion.div>
                   </>
                 )}
-              </Button>
-            </form>
-          </CardContent>
-
-          <CardFooter className="flex flex-col space-y-4 pt-6 pb-8">
-            <div className="relative w-full">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t border-slate-700" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-slate-900 px-2 text-slate-500">
-                  Already registered?
-                </span>
-              </div>
+              </motion.button>
             </div>
-            <p className="text-center text-sm text-slate-400">
-              Already have an account?{" "}
-              <Link
-                href="/login"
-                className="font-semibold text-cyan-400 hover:text-cyan-300 underline-offset-4 hover:underline transition-colors"
-              >
-                Sign in here
-              </Link>
-            </p>
-          </CardFooter>
-        </div>
-      </Card>
+          </form>
 
-      <style jsx global>{`
-        @keyframes blob {
-          0%, 100% { transform: translate(0, 0) scale(1); }
-          33% { transform: translate(30px, -50px) scale(1.1); }
-          66% { transform: translate(-20px, 20px) scale(0.9); }
-        }
-        @keyframes road-line {
-          0% { transform: translateY(-100%); }
-          100% { transform: translateY(100%); }
-        }
-        @keyframes car-float {
-          0% { transform: translateX(-100%) rotate(-10deg); }
-          100% { transform: translateX(calc(100vw + 100px)) rotate(10deg); }
-        }
-        @keyframes car-float-reverse {
-          0% { transform: translateX(calc(100vw + 100px)) rotate(10deg) scaleX(-1); }
-          100% { transform: translateX(-100%) rotate(-10deg) scaleX(-1); }
-        }
-        @keyframes float {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-10px); }
-        }
-        @keyframes sparkle {
-          0%, 100% { opacity: 0; transform: scale(0); }
-          50% { opacity: 1; transform: scale(1); }
-        }
-        @keyframes fade-in-up {
-          0% { opacity: 0; transform: translateY(20px); }
-          100% { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes shake {
-          0%, 100% { transform: translateX(0); }
-          25% { transform: translateX(-5px); }
-          75% { transform: translateX(5px); }
-        }
-        @keyframes gradient {
-          0%, 100% { background-position: 0% 50%; }
-          50% { background-position: 100% 50%; }
-        }
-        .animate-blob { animation: blob 7s infinite; }
-        .animate-road-line { animation: road-line 3s linear infinite; }
-        .animate-car-float { animation: car-float 15s linear infinite; }
-        .animate-car-float-reverse { animation: car-float-reverse 20s linear infinite; }
-        .animate-float { animation: float 3s ease-in-out infinite; }
-        .animate-sparkle { animation: sparkle 2s ease-in-out infinite; }
-        .animate-fade-in-up { animation: fade-in-up 0.6s ease-out; }
-        .animate-shake { animation: shake 0.3s ease-in-out; }
-        .animate-gradient { 
-          background-size: 200% 200%;
-          animation: gradient 3s ease infinite;
-        }
-        .animation-delay-1000 { animation-delay: 1s; }
-        .animation-delay-2000 { animation-delay: 2s; }
-        .animation-delay-3000 { animation-delay: 3s; }
-        .animation-delay-4000 { animation-delay: 4s; }
-      `}</style>
+          <div className="flex items-center my-8">
+            <div className="flex-1 h-px bg-white/10" />
+            <span className="px-4 text-[10px] uppercase font-bold tracking-widest text-zinc-600">Have an account?</span>
+            <div className="flex-1 h-px bg-white/10" />
+          </div>
+
+          <Link
+            href="/login"
+            className="w-full flex items-center justify-center gap-2 py-4 bg-white/5 border border-white/10 rounded-xl text-sm font-semibold text-zinc-300 hover:bg-white/10 hover:border-white/20 transition-all group"
+          >
+            Sign in here
+            <ArrowRight className="w-4 h-4 text-zinc-500 group-hover:text-zinc-300 group-hover:translate-x-1 transition-all" />
+          </Link>
+
+          <p className="text-center text-xs text-zinc-600 mt-8 leading-relaxed">
+            By creating an account, you agree to our{" "}
+            <a href="#" className="underline underline-offset-2 hover:text-zinc-400 transition-colors">Terms of Service</a>
+            {" "}and{" "}
+            <a href="#" className="underline underline-offset-2 hover:text-zinc-400 transition-colors">Privacy Policy</a>.
+          </p>
+        </motion.div>
+      </div>
     </div>
+  );
+}
+
+function GoogleIcon() {
+  return (
+    <svg className="h-5 w-5 flex-shrink-0" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303C33.652 32.657 29.4 36 24 36c-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.967 3.036l5.657-5.657C34.046 6.053 29.278 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.651-.389-3.917z" />
+      <path fill="#FF3D00" d="M6.306 14.691l6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.967 3.036l5.657-5.657C34.046 6.053 29.278 4 24 4 16.318 4 9.656 8.337 6.306 14.691z" />
+      <path fill="#4CAF50" d="M24 44c5.207 0 9.897-1.995 13.466-5.244l-6.21-5.236C29.148 35.091 26.715 36 24 36c-5.379 0-9.625-3.322-11.289-7.957l-6.521 5.025C9.503 39.556 16.227 44 24 44z" />
+      <path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303a12.08 12.08 0 0 1-4.047 5.52l.003-.002 6.21 5.236C36.97 36.804 40 31.2 40 24c0-1.341-.138-2.651-.389-3.917z" />
+    </svg>
   );
 }
