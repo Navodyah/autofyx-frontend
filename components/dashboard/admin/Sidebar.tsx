@@ -70,6 +70,7 @@ const Sidebar = () => {
                 { name: 'Brands', href: '/admin_dashboard/catalog/brands' },
                 { name: 'Models', href: '/admin_dashboard/catalog/models' },
                 { name: 'Engine Types', href: '/admin_dashboard/catalog/engine-types' },
+                { name: 'Images', href: '/admin/images_manage' },
               ].map((item) => (
                 <Link key={item.href} href={item.href} className={`block px-4 py-2 text-sm rounded-lg transition-colors ${pathname.startsWith(item.href) ? 'text-blue-400 bg-blue-500/10' : 'text-slate-500 hover:text-slate-300'}`}>
                   {item.name}
