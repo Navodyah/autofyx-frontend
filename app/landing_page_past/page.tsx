@@ -1,3 +1,4 @@
+
 "use client";
 
 import { motion, useScroll, useTransform } from "framer-motion";
@@ -51,6 +52,7 @@ export default function LandingPage() {
     <div className="min-h-screen bg-[#0a0a0c] text-zinc-50 font-sans selection:bg-zinc-800 selection:text-white overflow-hidden">
 
       {/* Absolute Ambient Lighting with Slow Animation */}
+
       <div className="fixed inset-0 z-0 pointer-events-none flex justify-center overflow-hidden">
         <motion.div
           animate={{
