@@ -4,8 +4,8 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import {
   registerUser,
   loginUser,
-  logoutUser,
-  getUserProfile,
+  performFullLogout,
+  persistBrowserAuthSession,
   updateUserProfile,
   User,
   RegisterInput,
@@ -21,7 +21,7 @@ interface AuthContextType {
   register: (data: RegisterInput) => Promise<void>;
   login: (credentials: LoginInput) => Promise<void>;
   logout: () => Promise<void>;
-  updateProfile: (data: Record<string, any>) => Promise<void>;
+  updateProfile: (data: Record<string, unknown>) => Promise<void>;
   error: string | null;
   clearError: () => void;
 }
@@ -44,7 +44,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (sessionData && userData) {
           const session = JSON.parse(sessionData);
           const parsedUser = JSON.parse(userData);
-
           setSessionId(session.sessionId);
           setUser(parsedUser);
         }
@@ -65,16 +64,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await registerUser(data);
-      
-      // User is registered, but not logged in yet
+      await registerUser(data);
       setError(null);
-      setIsLoading(false);
-    } catch (err: any) {
-      const errorMessage = err.message || 'Registration failed';
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Registration failed';
       setError(errorMessage);
-      setIsLoading(false);
       throw err;
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -83,7 +80,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setError(null);
     try {
       const response = await loginUser(credentials);
-      
+
       const sessionData = {
         sessionId: response.session_id,
         timestamp: new Date().toISOString(),
@@ -98,19 +95,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         session_id: response.session_id,
       });
 
-      // Store in localStorage
       localStorage.setItem('auth_session', JSON.stringify(sessionData));
       localStorage.setItem('user_data', JSON.stringify(userData));
-      localStorage.setItem('token', token);
-      localStorage.setItem('access_token', token);
+      persistBrowserAuthSession(token);
 
       setSessionId(response.session_id ?? null);
       setUser(userData ?? null);
       setError(null);
-    } catch (err: any) {
-      const errorMessage = err.message || 'Login failed';
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Login failed';
       setError(errorMessage);
-      setIsLoading(false);
       throw err;
     } finally {
       setIsLoading(false);
@@ -121,28 +115,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(true);
     setError(null);
     try {
-      if (sessionId) {
-        await logoutUser(sessionId);
-      }
-
-      // Clear localStorage
-      localStorage.removeItem('auth_session');
-      localStorage.removeItem('user_data');
-      localStorage.removeItem('token');
-      localStorage.removeItem('access_token');
-
+      // performFullLogout: deletes Appwrite session + notifies backend + wipes all tokens
+      await performFullLogout(sessionId);
       setSessionId(null);
       setUser(null);
       setError(null);
-    } catch (err: any) {
-      const errorMessage = err.message || 'Logout failed';
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Logout failed';
       setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const updateProfile = async (data: Record<string, any>) => {
+  const updateProfile = async (data: Record<string, unknown>) => {
     if (!user) throw new Error('No user logged in');
 
     setError(null);
@@ -150,13 +136,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await updateUserProfile(user.user_id, data);
 
       // Update local user state
-      const updatedUser = { ...user, ...data };
+      const updatedUser = { ...user, ...data } as User;
       setUser(updatedUser);
 
       // Update localStorage
       localStorage.setItem('user_data', JSON.stringify(updatedUser));
-    } catch (err: any) {
-      const errorMessage = err.message || 'Profile update failed';
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Profile update failed';
       setError(errorMessage);
       throw err;
     }

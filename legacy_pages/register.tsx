@@ -1,20 +1,23 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Eye, EyeOff, Car, ArrowRight, ShieldCheck, Users, FlaskConical } from "lucide-react";
 import { AppwriteException } from "appwrite";
 
 import {
-  completeGoogleAuthFlow,
+  account,
   completeOtpRegistration,
-  deleteCurrentSession,
+  getCurrentSession,
+  persistBrowserAuthSession,
   registerUser,
   sendEmailOtp,
+  setUserRoleLabel,
   signInWithGoogle,
   verifyEmailOtp,
 } from "@/lib/appwrite";
+import { createBrowserAuthToken, resolvePostLoginPath } from "@/lib/auth-token";
 
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -31,63 +34,13 @@ export default function RegisterPage() {
   const [otpExpire, setOtpExpire] = useState("");
   const [step, setStep] = useState<"details" | "otp">("details");
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [oauthError, setOauthError] = useState<string | null>(null);
   const searchParams = useSearchParams();
-  const handledGoogleCallback = useRef(false);
 
+  // Show OAuth failure message if Appwrite redirected back with ?error=
   useEffect(() => {
-    const oauth = searchParams.get("oauth") || searchParams.get("outh");
-    const oauthError = searchParams.get("error");
-    const hasOAuthCallback =
-      oauth === "google" ||
-      searchParams.has("code") ||
-      searchParams.has("state") ||
-      searchParams.has("userId") ||
-      searchParams.has("secret");
-
-    if (oauth === "failed") {
-      setIsGoogleLoading(false);
-      setStatusMessage(oauthError || "Google sign-in failed. Please try again.");
-      return;
-    }
-
-    if (!hasOAuthCallback || typeof window === "undefined" || handledGoogleCallback.current) {
-      return;
-    }
-    handledGoogleCallback.current = true;
-
-    let cancelled = false;
-
-    const syncGoogleSession = async () => {
-      try {
-        setIsGoogleLoading(true);
-        setStatusMessage("Finalizing Google sign-in...");
-
-        const nextPath = searchParams.get("next");
-        const result = await completeGoogleAuthFlow('user', nextPath, {
-          oauthUserId: searchParams.get("userId"),
-          oauthSecret: searchParams.get("secret"),
-        });
-        if (cancelled) {
-          return;
-        }
-
-        setStatusMessage("Google sign-in completed successfully. Redirecting...");
-        window.location.replace(result.dashboardRoute);
-      } catch (error) {
-        console.error("Google OAuth completion error:", error);
-        setStatusMessage("Google sign-in failed. Please try again.");
-      } finally {
-        if (!cancelled) {
-          setIsGoogleLoading(false);
-        }
-      }
-    };
-
-    void syncGoogleSession();
-
-    return () => {
-      cancelled = true;
-    };
+    const err = searchParams.get("error");
+    if (err) setOauthError(decodeURIComponent(err));
   }, [searchParams]);
 
   const sparkles = useMemo(
@@ -123,10 +76,20 @@ export default function RegisterPage() {
           throw new Error("Enter the OTP sent to your email.");
         }
 
-        await verifyEmailOtp(otpUserId, otp.trim());
+        // Verify OTP and complete Appwrite account setup
+        const session = await verifyEmailOtp(otpUserId, otp.trim());
         await completeOtpRegistration(fullName, password);
 
-        await registerUser({
+        // ── Write role as Appwrite label (authoritative source of truth) ──
+        const normalizedRole = role.toLowerCase() as 'user' | 'researcher';
+        try {
+          await setUserRoleLabel(normalizedRole);
+        } catch (labelError) {
+          console.warn('Failed to set Appwrite role label:', labelError);
+        }
+
+        // Save to MongoDB via backend (idempotent upsert)
+        const regResult = await registerUser({
           username: fullName,
           email,
           password,
@@ -134,12 +97,37 @@ export default function RegisterPage() {
           appwrite_id: otpUserId || undefined,
         });
 
-        await deleteCurrentSession().catch(() => undefined);
+        const mongoUser = regResult?.user ?? null;
+        const userType = (mongoUser?.user_type || normalizedRole);
+        const userId = mongoUser?.user_id || "";
+        const sessionId = session.$id;
 
-        setStatusMessage("Registration verified successfully. Redirecting to login...");
+        // Build and persist auth token so the proxy lets the user through
+        const token = createBrowserAuthToken({
+          user_id: userId,
+          appwrite_id: otpUserId || undefined,
+          email,
+          user_type: userType,
+          session_id: sessionId,
+        });
+        persistBrowserAuthSession(token);
+        localStorage.setItem("user_data", JSON.stringify({
+          user_id: userId,
+          appwrite_id: otpUserId,
+          email,
+          username: fullName,
+          user_type: userType,
+        }));
+        localStorage.setItem("auth_session", JSON.stringify({
+          sessionId,
+          timestamp: new Date().toISOString(),
+        }));
+
+        setStatusMessage("Registration complete! Redirecting to your dashboard…");
+        const dashboardPath = resolvePostLoginPath(userType, null);
         window.setTimeout(() => {
-          window.location.href = "/login";
-        }, 1200);
+          window.location.replace(dashboardPath);
+        }, 800);
       }
 
     } catch (error) {
@@ -160,7 +148,6 @@ export default function RegisterPage() {
 
   const roles = [
     { value: "User", label: "User", sub: "Standard access", icon: Users },
-    { value: "Admin", label: "Admin", sub: "Full system access", icon: ShieldCheck },
     { value: "Researcher", label: "Researcher", sub: "Analytics & insights", icon: FlaskConical },
   ];
 
@@ -320,21 +307,32 @@ export default function RegisterPage() {
             </motion.div>
           )}
 
+          {/* OAuth error banner */}
+          {oauthError && (
+            <motion.div
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-4 p-3.5 rounded-xl bg-red-500/10 border border-red-500/20 flex items-start gap-3"
+            >
+              <div className="w-1.5 h-1.5 rounded-full bg-red-400 mt-1.5 flex-shrink-0" />
+              <p className="text-red-300 text-sm leading-relaxed">{oauthError}</p>
+            </motion.div>
+          )}
+
           <form onSubmit={onSubmit} className="space-y-4">
             <button
               type="button"
               onClick={async () => {
-                setIsGoogleLoading(true);
-                setStatusMessage(null);
                 try {
-                  const nextPath = searchParams.get("next");
-                  const redirectPath = nextPath
-                    ? `/register?oauth=google&next=${encodeURIComponent(nextPath)}`
-                    : '/register?oauth=google';
-                  await signInWithGoogle(redirectPath);
+                  setIsGoogleLoading(true);
+                  setStatusMessage(null);
+                  setOauthError(null);
+                  await signInWithGoogle();
+                  // Note: signInWithGoogle triggers a full-page redirect to Google.
+                  // Execution does not continue past this point.
                 } catch (error) {
                   const message = error instanceof Error ? error.message : 'Google sign-in failed';
-                  alert(message);
+                  setOauthError(message);
                   setIsGoogleLoading(false);
                 }
               }}
@@ -342,7 +340,7 @@ export default function RegisterPage() {
               className="w-full flex items-center justify-center gap-3 py-3.5 bg-white/5 border border-white/10 rounded-xl text-sm font-semibold text-zinc-200 hover:bg-white/10 hover:border-white/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed mb-6"
             >
               <GoogleIcon />
-              {isGoogleLoading ? 'Connecting to Google...' : 'Continue with Google'}
+              {isGoogleLoading ? 'Redirecting to Google...' : 'Continue with Google'}
             </button>
 
             <AnimatePresence mode="wait">
@@ -417,7 +415,7 @@ export default function RegisterPage() {
                     <label className="block text-sm font-medium text-zinc-400 mb-2 tracking-wide">
                       Account Role
                     </label>
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className="grid grid-cols-2 gap-2">
                       {roles.map(({ value, label, sub, icon: Icon }) => (
                         <button
                           key={value}

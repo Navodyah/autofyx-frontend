@@ -1,6 +1,7 @@
 'use client';
 
-import { Client, Account, ID, Models } from 'appwrite';
+import { Client, Account, ID, Models, OAuthProvider } from 'appwrite';
+import { createBrowserAuthToken, resolvePostLoginPath } from '@/lib/auth-token';
 
 const client = new Client()
   .setEndpoint(process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT || 'http://localhost:80/v1')
@@ -50,6 +51,9 @@ export interface UserPreferencesInput {
   usage_purpose: 'Office' | 'Family' | 'Travel' | 'Rent';
   fuel_preference: 'Petrol' | 'Hybrid' | 'Electric' | 'Diesel';
   priority: 'Fuel Efficiency' | 'Resale Value' | 'Comfort' | 'Performance';
+  preferred_vehicle_types?: string[];
+  budget_min?: number;
+  budget_max?: number;
 }
 
 export interface RegistrationPreferencesPayload extends UserPreferencesInput {
@@ -65,6 +69,33 @@ export interface RegistrationPreferencesRecord extends RegistrationPreferencesPa
   onboarding_completed?: boolean;
   created_at?: string;
   updated_at?: string;
+}
+
+export interface GoogleAuthCompletion {
+  token: string;
+  dashboardRoute: string;
+  user_type: string;
+  user: User;
+}
+
+type CompleteGoogleAuthOptions = {
+  oauthUserId?: string | null;
+  oauthSecret?: string | null;
+  retries?: number;
+  retryDelayMs?: number;
+};
+
+/**
+ * Persist auth token in localStorage and cookie for client + proxy route protection.
+ */
+export function persistBrowserAuthSession(token: string): void {
+  if (typeof window === 'undefined') return;
+
+  localStorage.setItem('token', token);
+  localStorage.setItem('access_token', token);
+  localStorage.setItem('auth_token', token);
+  document.cookie = `auth_token=${encodeURIComponent(token)}; path=/; max-age=604800; samesite=lax`;
+  document.cookie = `token=${encodeURIComponent(token)}; path=/; max-age=604800; samesite=lax`;
 }
 
 /**
@@ -171,21 +202,67 @@ export async function updateUserProfile(userId: string, data: Record<string, unk
 }
 
 /**
- * Logout user
+ * Logout user (backend notification only — use performFullLogout for a complete sign-out).
  */
 export async function logoutUser(sessionId: string): Promise<void> {
   try {
     await fetch(`${API_BASE_URL}/users/logout`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ session_id: sessionId }),
     });
   } catch (error) {
     console.error('Logout error:', error);
-    throw error;
+    // Don't re-throw — backend failure must NOT block client-side sign-out
   }
+}
+
+/**
+ * Wipe every auth token from localStorage and cookies.
+ * Call this whenever you need to clear the session client-side.
+ */
+export function clearAllAuthTokens(): void {
+  if (typeof window === 'undefined') return;
+
+  // localStorage keys written by persistBrowserAuthSession + login/register flows
+  const lsKeys = ['token', 'access_token', 'auth_token', 'user_data', 'auth_session'];
+  lsKeys.forEach((k) => localStorage.removeItem(k));
+
+  // Expire every cookie the app sets
+  const cookieKeys = ['auth_token', 'token'];
+  cookieKeys.forEach((k) => {
+    document.cookie = `${k}=; path=/; max-age=0; samesite=lax`;
+  });
+}
+
+/**
+ * Full sign-out: deletes the Appwrite session, clears all local tokens, and
+ * notifies the backend. Safe to call from any component — errors are swallowed
+ * so the user is always logged out locally even if Appwrite or the backend fail.
+ *
+ * @param sessionId  Appwrite session ID stored in `auth_session` localStorage key.
+ *                   Pass null/undefined if not available; the Appwrite "current"
+ *                   session will be deleted as a fallback.
+ */
+export async function performFullLogout(sessionId?: string | null): Promise<void> {
+  // 1. Delete Appwrite session (prevents token reuse)
+  try {
+    if (sessionId) {
+      await account.deleteSession(sessionId);
+    } else {
+      await account.deleteSession('current');
+    }
+  } catch {
+    // Session may already be expired — not a fatal error
+  }
+
+  // 2. Notify backend (best-effort)
+  if (sessionId) {
+    await logoutUser(sessionId);
+  }
+
+  // 3. Wipe every local auth artifact
+  clearAllAuthTokens();
 }
 
 /**
@@ -242,6 +319,178 @@ export async function completeOtpRegistration(name: string, password: string): P
     console.error('Complete OTP registration error:', error);
     throw error;
   }
+}
+
+/**
+ * Set the user's role as an Appwrite label.
+ * Labels are the authoritative source of role for this app.
+ * Only 'user' and 'researcher' are valid labels.
+ */
+export async function setUserRoleLabel(role: 'user' | 'researcher'): Promise<void> {
+  try {
+    await account.updateLabels([role]);
+  } catch (error) {
+    console.error('Set user role label error:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get the authoritative user role from Appwrite labels.
+ * Falls back to 'user' if no recognised label is present.
+ */
+export async function getUserRoleFromLabels(): Promise<'user' | 'researcher'> {
+  try {
+    const user = await account.get();
+    const labels: string[] = (user as unknown as { labels?: string[] }).labels ?? [];
+    if (labels.includes('researcher')) return 'researcher';
+    return 'user';
+  } catch {
+    return 'user';
+  }
+}
+
+/**
+ * Upgrade the currently logged-in user to researcher role.
+ * Updates both Appwrite labels and the backend MongoDB record.
+ */
+export async function applyForResearcher(appwriteId: string, email: string): Promise<void> {
+  // 1. Update Appwrite label
+  await setUserRoleLabel('researcher');
+
+  // 2. Sync role change to MongoDB backend (best-effort)
+  try {
+    await fetch(`${API_BASE_URL}/users/update-role`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ appwrite_id: appwriteId, email, user_type: 'researcher' }),
+    });
+  } catch (error) {
+    console.warn('Backend role sync failed during researcher upgrade:', error);
+  }
+}
+
+/**
+ * Start Google OAuth login/signup through Appwrite.
+ * Always redirects through the dedicated /auth/oauth callback page.
+ */
+export async function signInWithGoogle(): Promise<void> {
+  return handleOAuthLogin(OAuthProvider.Google, 'Google');
+}
+
+/**
+ * Shared OAuth initiator.
+ * Clears any stale session, then starts the Appwrite OAuth redirect.
+ *
+ * Success → /auth/oauth?provider={provider}  (handled by OAuthCallbackPage)
+ * Failure → /login?error={message}
+ */
+export async function handleOAuthLogin(
+  provider: OAuthProvider,
+  providerLabel: string,
+): Promise<void> {
+  if (typeof window === 'undefined') {
+    throw new Error('OAuth sign-in is only available in the browser');
+  }
+
+  // Clear any stale current session (safe no-op if none exists).
+  try {
+    await account.deleteSession('current');
+  } catch {
+    // no existing session – that's fine
+  }
+
+  const origin = window.location.origin;
+  const successURL = `${origin}/auth/oauth?provider=${provider}`;
+  const failureURL = `${origin}/login?error=${encodeURIComponent(`${providerLabel} login cancelled or failed`)}`;
+
+  // createOAuth2Session triggers a full-page redirect – nothing after this runs.
+  account.createOAuth2Session(provider, successURL, failureURL);
+}
+
+/**
+ * Finalize Google OAuth, sync user with backend, persist tokens, and resolve target dashboard.
+ */
+export async function completeGoogleAuthFlow(
+  defaultUserType: 'user' | 'admin' | 'researcher' = 'user',
+  nextPath?: string | null,
+  options?: CompleteGoogleAuthOptions
+): Promise<GoogleAuthCompletion> {
+  const oauthUserId = options?.oauthUserId?.trim() || '';
+  const oauthSecret = options?.oauthSecret?.trim() || '';
+  const retries = options?.retries ?? 12;
+  const retryDelayMs = options?.retryDelayMs ?? 500;
+
+  // Some Appwrite OAuth redirects return userId/secret; create a session explicitly when provided.
+  if (oauthUserId && oauthSecret) {
+    try {
+      await account.createSession(oauthUserId, oauthSecret);
+    } catch (error) {
+      console.warn('OAuth session creation with secret failed, falling back to current session lookup.', error);
+    }
+  }
+
+  let appwriteUser = await getCurrentUser();
+  for (let attempt = 0; !appwriteUser && attempt < retries; attempt += 1) {
+    await new Promise((resolve) => setTimeout(resolve, retryDelayMs));
+    appwriteUser = await getCurrentUser();
+  }
+
+  if (!appwriteUser) {
+    throw new Error('Google sign-in session not found');
+  }
+
+  const displayName = appwriteUser.name || appwriteUser.email.split('@')[0];
+  const userEmail = appwriteUser.email;
+  let result: AuthResponse | null = null;
+
+  try {
+    result = await registerUser({
+      username: displayName,
+      email: userEmail,
+      password: `oauth-${Date.now()}`,
+      user_type: defaultUserType,
+      appwrite_id: appwriteUser.$id,
+    });
+  } catch (error) {
+    // Keep Google login usable even if backend profile sync temporarily fails.
+    console.warn('Backend sync failed during Google auth. Continuing with Appwrite session.', error);
+  }
+
+  const appwriteSession = await getCurrentSession();
+  const resolvedUserType = (result?.user?.user_type || defaultUserType || 'user').toLowerCase();
+  const resolvedUser: User = {
+    user_id: result?.user?.user_id || '',
+    appwrite_id: result?.user?.appwrite_id || appwriteUser.$id,
+    email: result?.user?.email || userEmail,
+    username: result?.user?.username || displayName,
+    user_type: (result?.user?.user_type || resolvedUserType) as 'user' | 'admin' | 'researcher',
+  };
+
+  const token = createBrowserAuthToken({
+    user_id: resolvedUser.user_id || undefined,
+    appwrite_id: resolvedUser.appwrite_id,
+    email: resolvedUser.email,
+    user_type: resolvedUserType,
+    session_id: appwriteSession?.$id,
+  });
+
+  persistBrowserAuthSession(token);
+
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('user_data', JSON.stringify(resolvedUser));
+    localStorage.setItem('auth_session', JSON.stringify({
+      sessionId: appwriteSession?.$id || null,
+      timestamp: new Date().toISOString(),
+    }));
+  }
+
+  return {
+    token,
+    dashboardRoute: resolvePostLoginPath(resolvedUserType, nextPath),
+    user_type: resolvedUserType,
+    user: resolvedUser,
+  };
 }
 
 /**

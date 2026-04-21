@@ -13,6 +13,9 @@ type PreferencePayload = {
   usage_purpose: 'Office' | 'Family' | 'Travel' | 'Rent';
   fuel_preference: 'Petrol' | 'Hybrid' | 'Electric' | 'Diesel';
   priority: 'Fuel Efficiency' | 'Resale Value' | 'Comfort' | 'Performance';
+  preferred_vehicle_types?: string[];
+  budget_min?: number;
+  budget_max?: number;
 };
 
 function validatePayload(body: Partial<PreferencePayload>): body is PreferencePayload {
@@ -22,6 +25,11 @@ function validatePayload(body: Partial<PreferencePayload>): body is PreferencePa
   if (!body.usage_purpose || typeof body.usage_purpose !== 'string') return false;
   if (!body.fuel_preference || typeof body.fuel_preference !== 'string') return false;
   if (!body.priority || typeof body.priority !== 'string') return false;
+  
+  if (body.preferred_vehicle_types && !Array.isArray(body.preferred_vehicle_types)) return false;
+  if (body.budget_min !== undefined && typeof body.budget_min !== 'number') return false;
+  if (body.budget_max !== undefined && typeof body.budget_max !== 'number') return false;
+  
   return true;
 }
 
@@ -128,6 +136,9 @@ export async function POST(request: Request) {
       usage_purpose: body.usage_purpose,
       fuel_preference: body.fuel_preference,
       priority: body.priority,
+      preferred_vehicle_types: body.preferred_vehicle_types || [],
+      budget_min: body.budget_min || 0,
+      budget_max: body.budget_max || 0,
       onboarding_completed: true,
       updated_at: now,
     };
