@@ -14,7 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { getRegistrationPreferences } from '@/lib/appwrite';
-import { parseBrowserAuthToken } from '@/lib/auth-token';
+import { parseBrowserAuthToken, type BrowserAuthTokenPayload } from '@/lib/auth-token';
 
 type CatalogListResponse = { items: string[] };
 type YearsListResponse = { items: number[] };
@@ -144,8 +144,8 @@ export default function ComparePage() {
   const [result, setResult] = useState<CompareResponse | null>(null);
 
   // User preferences
-  const identity = React.useMemo(() => {
-    if (typeof window === 'undefined') return {};
+  const identity = useMemo<BrowserAuthTokenPayload | null>(() => {
+    if (typeof window === 'undefined') return null;
     const token = window.localStorage.getItem('access_token') || window.localStorage.getItem('token');
     return parseBrowserAuthToken(token);
   }, []);
@@ -154,9 +154,13 @@ export default function ComparePage() {
 
   useEffect(() => {
     (async () => {
-       if (identity && identity.user_id) {
+       if (identity?.user_id) {
           try {
-             const p = await getRegistrationPreferences(identity.user_id);
+           const p = await getRegistrationPreferences({
+            user_id: identity.user_id,
+            appwrite_id: identity.appwrite_id,
+            email: identity.email,
+           });
              setPreferences(p);
           } catch(e) {
              console.error('Failed to load user preferences for recommendation', e);

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import dynamic from "next/dynamic";
 import { motion, AnimatePresence } from "framer-motion";
@@ -60,13 +60,13 @@ const itemVariants = {
   visible: {
     opacity: 1,
     y: 0,
-    transition: { type: "spring", stiffness: 100, damping: 15 }
+    transition: { type: "spring" as const, stiffness: 100, damping: 15 }
   }
 };
 
 const floatAnimation = {
   y: [-3, 3, -3],
-  transition: { duration: 5, repeat: Infinity, ease: "easeInOut" }
+  transition: { duration: 5, repeat: Infinity, ease: "easeInOut" as const }
 };
 
 function DashboardOverview() {
@@ -93,7 +93,7 @@ function DashboardOverview() {
   }, []);
 
   // First name only for the greeting
-  const firstName = userName ? userName.split(' ')[0] : '…';
+  const firstName = userName ? userName.split(' ')[0] : 'â€¦';
 
 
   const modules = [
@@ -108,7 +108,7 @@ function DashboardOverview() {
   const stats = [
     { label: "Analyzed Models", value: "854", sub: "+12 this week", icon: CarFront },
     { label: "Saved Matches", value: "3", sub: "1 high confidence", icon: Trophy },
-    { label: "Market Trend", value: "−2.4%", sub: "Prices dropping", icon: TrendingDown },
+    { label: "Market Trend", value: "âˆ’2.4%", sub: "Prices dropping", icon: TrendingDown },
     { label: "Active Alerts", value: "2", sub: "Price drop found", icon: Bell },
   ];
 
@@ -150,7 +150,7 @@ function DashboardOverview() {
         animate="visible"
         className="space-y-10 relative z-10 max-w-7xl mx-auto"
       >
-        {/* ── Header Area ── */}
+        {/* â”€â”€ Header Area â”€â”€ */}
         <motion.div variants={itemVariants} className="flex flex-col sm:flex-row sm:items-end justify-between gap-6">
           <div className="space-y-2">
             <motion.div
@@ -196,7 +196,7 @@ function DashboardOverview() {
               </AnimatePresence>
             </motion.button>
 
-            {/* Researcher Dashboard button — only for researchers */}
+            {/* Researcher Dashboard button â€” only for researchers */}
             {userRole === 'researcher' && (
               <Link
                 href="/researcher"
@@ -209,7 +209,7 @@ function DashboardOverview() {
               </Link>
             )}
 
-            {/* Apply for Researcher button — only for plain users */}
+            {/* Apply for Researcher button â€” only for plain users */}
             {userRole === 'user' && (
               <motion.button
                 onClick={async () => {
@@ -238,7 +238,7 @@ function DashboardOverview() {
                     }));
 
                     setUserRole('researcher');
-                    setApplyMsg('🎉 You are now a Researcher! Redirecting...');
+                    setApplyMsg('ðŸŽ‰ You are now a Researcher! Redirecting...');
                     setTimeout(() => window.location.replace('/researcher'), 1500);
                   } catch (err) {
                     setApplyMsg(err instanceof Error ? err.message : 'Failed to apply. Please try again.');
@@ -286,10 +286,10 @@ function DashboardOverview() {
               exit={{ opacity: 0, y: -8 }}
               className="px-4 py-3 rounded-xl text-sm font-medium"
               style={{
-                background: applyMsg.startsWith('🎉') ? (isDarkMode ? "rgba(139,92,246,0.15)" : "#EDE9FE") : "rgba(239,68,68,0.1)",
+                background: applyMsg.startsWith('ðŸŽ‰') ? (isDarkMode ? "rgba(139,92,246,0.15)" : "#EDE9FE") : "rgba(239,68,68,0.1)",
                 borderWidth: "1px", borderStyle: "solid",
-                borderColor: applyMsg.startsWith('🎉') ? (isDarkMode ? "rgba(139,92,246,0.3)" : "#C4B5FD") : "rgba(239,68,68,0.3)",
-                color: applyMsg.startsWith('🎉') ? (isDarkMode ? "#C4B5FD" : "#6D28D9") : "rgb(239,68,68)"
+                borderColor: applyMsg.startsWith('ðŸŽ‰') ? (isDarkMode ? "rgba(139,92,246,0.3)" : "#C4B5FD") : "rgba(239,68,68,0.3)",
+                color: applyMsg.startsWith('ðŸŽ‰') ? (isDarkMode ? "#C4B5FD" : "#6D28D9") : "rgb(239,68,68)"
               }}
             >
               {applyMsg}
@@ -297,7 +297,7 @@ function DashboardOverview() {
           )}
         </AnimatePresence>
 
-        {/* ── Quick Access Grid ── */}
+        {/* â”€â”€ Quick Access Grid â”€â”€ */}
         <motion.div variants={itemVariants} className="space-y-4">
           <p className="text-xs font-bold uppercase tracking-widest ml-1 transition-colors duration-500" style={{ color: P.muted }}>Modules</p>
           <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
@@ -338,7 +338,7 @@ function DashboardOverview() {
           </div>
         </motion.div>
 
-        {/* ── Stat Cards ── */}
+        {/* â”€â”€ Stat Cards â”€â”€ */}
         <div className="grid grid-cols-2 xl:grid-cols-4 gap-5">
           {stats.map((stat, i) => (
             <motion.div key={i} variants={itemVariants}>
@@ -370,7 +370,7 @@ function DashboardOverview() {
           ))}
         </div>
 
-        {/* ── Main Layout Content ── */}
+        {/* â”€â”€ Main Layout Content â”€â”€ */}
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
 
           {/* Left Column */}
@@ -401,7 +401,7 @@ function DashboardOverview() {
 
                   <motion.img
                     whileHover={{ scale: 1.03 }}
-                    transition={{ type: "spring", stiffness: 100 }}
+                    transition={{ type: "spring" as const, stiffness: 100 }}
                     src={isDarkMode ? "https://images.unsplash.com/photo-1563720223185-11003d516935?q=80&w=1500&auto=format&fit=crop" : "https://images.unsplash.com/photo-1503376713356-2dbfdfaa52a1?q=80&w=1500&auto=format&fit=crop"}
                     alt="Recommended Car"
                     className={`relative z-0 w-[130%] max-w-none -translate-x-6 object-cover ${isDarkMode ? 'mt-4 opacity-90' : 'mt-8 drop-shadow-xl'} transition-opacity duration-1000`}
@@ -494,7 +494,7 @@ function DashboardOverview() {
                       <motion.div
                         initial={{ height: 0 }}
                         animate={{ height: `${h}%` }}
-                        transition={{ duration: 1, delay: i * 0.1, type: "spring" }}
+                        transition={{ duration: 1, delay: i * 0.1, type: "spring" as const }}
                         className="w-full rounded-t-sm transition-all duration-500 relative overflow-hidden"
                         style={{ background: i === 6 ? P.primary : (isDarkMode ? "rgba(255,255,255,0.1)" : "#E4E4E7"), opacity: i === 6 ? 1 : 0.6 }}
                       >
