@@ -328,7 +328,20 @@ export async function completeOtpRegistration(name: string, password: string): P
  */
 export async function setUserRoleLabel(role: 'user' | 'researcher'): Promise<void> {
   try {
-    await account.updateLabels([role]);
+    // Appwrite Account SDK does not expose label updates from client-side code.
+    // Keep local role state in sync and rely on backend role persistence.
+    if (typeof window !== 'undefined') {
+      const raw = localStorage.getItem('user_data');
+      if (raw) {
+        try {
+          const parsed = JSON.parse(raw);
+          parsed.user_type = role;
+          localStorage.setItem('user_data', JSON.stringify(parsed));
+        } catch {
+          // ignore malformed local cache
+        }
+      }
+    }
   } catch (error) {
     console.error('Set user role label error:', error);
     throw error;
