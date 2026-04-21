@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Car, Users, FlaskConical } from "lucide-react";
 import {
@@ -80,7 +80,7 @@ async function syncUserWithBackend(body: {
  *  2. Sync with MongoDB: if user already exists, redirect directly.
  *  3. If new user, show role picker → save to MongoDB → redirect.
  */
-export default function OAuthCallbackPage() {
+function OAuthCallbackContent() {
     const searchParams = useSearchParams();
     const handled = useRef(false);
 
@@ -373,6 +373,14 @@ export default function OAuthCallbackPage() {
                 </AnimatePresence>
             </div>
         </div>
+    );
+}
+
+export default function OAuthCallbackPage() {
+    return (
+        <Suspense fallback={<div className="min-h-screen bg-[#0a0a0c]" />}>
+            <OAuthCallbackContent />
+        </Suspense>
     );
 }
 
