@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { Car, Map, ArrowLeft, TriangleAlert } from "lucide-react";
@@ -24,7 +24,7 @@ export default function NotFound() {
         <motion.div 
           initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          transition={{ duration: 0.6, ease: "easeOut" }}
+          transition={{ duration: 0.6, ease: "easeOut" as const }}
           className="mb-8 relative"
         >
           <div className="absolute inset-0 bg-red-500/20 blur-2xl rounded-full" />
@@ -79,3 +79,4 @@ export default function NotFound() {
     </div>
   );
 }
+

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -8,6 +8,12 @@ import {
 } from 'lucide-react';
 import { getRegistrationPreferences, saveRegistrationPreferences, UserPreferencesInput, getUserProfile, updateUserProfile } from '@/lib/appwrite';
 import { parseBrowserAuthToken } from '@/lib/auth-token';
+
+type AuthIdentity = {
+  user_id?: string;
+  appwrite_id?: string;
+  email?: string;
+};
 
 // --- Palettes ---
 
@@ -77,7 +83,7 @@ export default function SettingsPage() {
   });
   const [isSavingPersonalDetails, setIsSavingPersonalDetails] = useState(false);
 
-  const identity = React.useMemo(() => {
+  const identity = React.useMemo<AuthIdentity>(() => {
     if (typeof window === 'undefined') return {};
     const token = window.localStorage.getItem('access_token') || window.localStorage.getItem('token');
     if (!token) return {};
@@ -261,7 +267,7 @@ export default function SettingsPage() {
       }}
     >
       
-      {/* ── Settings Header & Sub Nav ── */}
+      {/* â”€â”€ Settings Header & Sub Nav â”€â”€ */}
       <div className="max-w-6xl mx-auto mb-8 rounded-[24px] p-2 flex flex-wrap items-center justify-between gap-4 transition-all duration-500" style={{ background: P.cardBg, border: `1px solid ${P.border}`, boxShadow: P.shadow }}>
         
         <div className="flex items-center gap-1 overflow-x-auto no-scrollbar px-2 flex-1">
@@ -279,7 +285,7 @@ export default function SettingsPage() {
                     layoutId="active-settings-tab"
                     className="absolute inset-0 rounded-2xl z-0"
                     style={{ background: P.primary }}
-                    transition={{ type: "spring", stiffness: 300, damping: 25 }}
+                    transition={{ type: "spring" as const, stiffness: 300, damping: 25 }}
                   />
                 )}
                 <span className="relative z-10 flex items-center gap-2">
@@ -314,11 +320,11 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      {/* ── Main Content Area ── */}
+      {/* â”€â”€ Main Content Area â”€â”€ */}
       <div className="max-w-6xl mx-auto">
         <AnimatePresence mode="wait">
           
-          {/* ────── VEHICLE PREFERENCES TAB ────── */}
+          {/* â”€â”€â”€â”€â”€â”€ VEHICLE PREFERENCES TAB â”€â”€â”€â”€â”€â”€ */}
           {activeTab === 'preferences' && (
             <motion.div
               key="preferences"
@@ -532,7 +538,7 @@ export default function SettingsPage() {
           )}
 
 
-          {/* ────── PERSONAL DETAILS TAB (from previous step) ────── */}
+          {/* â”€â”€â”€â”€â”€â”€ PERSONAL DETAILS TAB (from previous step) â”€â”€â”€â”€â”€â”€ */}
           {activeTab === 'personal' && (
             <motion.div
               key="personal"
@@ -670,7 +676,7 @@ export default function SettingsPage() {
             </motion.div>
           )}
 
-          {/* ────── SECURITY TAB ────── */}
+          {/* â”€â”€â”€â”€â”€â”€ SECURITY TAB â”€â”€â”€â”€â”€â”€ */}
           {activeTab === 'security' && (
             <motion.div
               key="security"
@@ -715,15 +721,15 @@ export default function SettingsPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-7">
                   <div className="md:col-span-2 md:w-1/2">
                     <label className={labelClasses} style={{ color: P.muted }}>Current Password</label>
-                    <input type="password" placeholder="••••••••" className={inputBaseClasses} style={{...inputStyle, borderColor: "transparent", outline: `1px solid ${P.border}`}} />
+                    <input type="password" placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢" className={inputBaseClasses} style={{...inputStyle, borderColor: "transparent", outline: `1px solid ${P.border}`}} />
                   </div>
                   <div>
                     <label className={labelClasses} style={{ color: P.muted }}>New Password</label>
-                    <input type="password" placeholder="••••••••" className={inputBaseClasses} style={{...inputStyle, borderColor: "transparent", outline: `1px solid ${P.border}`}} />
+                    <input type="password" placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢" className={inputBaseClasses} style={{...inputStyle, borderColor: "transparent", outline: `1px solid ${P.border}`}} />
                   </div>
                   <div>
                     <label className={labelClasses} style={{ color: P.muted }}>Confirm New Password</label>
-                    <input type="password" placeholder="••••••••" className={inputBaseClasses} style={{...inputStyle, borderColor: "transparent", outline: `1px solid ${P.border}`}} />
+                    <input type="password" placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢" className={inputBaseClasses} style={{...inputStyle, borderColor: "transparent", outline: `1px solid ${P.border}`}} />
                   </div>
                 </div>
                 <button className="mt-6 flex items-center gap-2 px-8 py-3 rounded-2xl text-[13px] font-bold shadow-md transition-all hover:-translate-y-0.5" style={{ background: P.primary, color: P.primaryText }}>
@@ -783,3 +789,4 @@ export default function SettingsPage() {
     </motion.div>
   );
 }
+

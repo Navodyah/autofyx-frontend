@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -335,7 +335,7 @@ export default function SearchPage() {
             className="relative rounded-2xl p-[2px]"
             style={{ background: "linear-gradient(90deg, #3b82f6, #8b5cf6, #06b6d4, #3b82f6)", backgroundSize: "300% 100%" }}
             animate={{ backgroundPosition: ["0% 0%", "100% 0%", "0% 0%"] }}
-            transition={{ duration: 5, repeat: Infinity, ease: "linear" }}
+            transition={{ duration: 5, repeat: Infinity, ease: "linear" as const }}
           >
             <div className="rounded-[14px] overflow-hidden" style={{ background: "var(--bg-card)" }}>
               <div className="flex flex-wrap items-center md:flex-nowrap">
@@ -571,3 +571,4 @@ export default function SearchPage() {
     </div>
   );
 }
+

@@ -1,4 +1,4 @@
-/*"use client";
+"use client";
 
 import dynamic from "next/dynamic";
 
@@ -10,4 +10,4 @@ function Register() {
   return <RegisterPage />;
 }
 
-export default Register;*/
+export default Register;

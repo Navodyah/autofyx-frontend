@@ -1,4 +1,4 @@
-
+﻿
 "use client";
 
 import { motion, useScroll, useTransform } from "framer-motion";
@@ -37,7 +37,7 @@ export default function LandingPage() {
 
   const slideUp = {
     hidden: { opacity: 0, y: 40 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease: "circOut" } }
+    visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease: "circOut" as const } }
   };
 
   const staggerContainer = {
@@ -59,7 +59,7 @@ export default function LandingPage() {
             rotate: [0, 360],
             scale: [1, 1.1, 1],
           }}
-          transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
+          transition={{ duration: 30, repeat: Infinity, ease: "linear" as const }}
           className="absolute top-[-30%] w-[1000px] h-[800px] bg-[#2a2a30]/15 blur-[150px] rounded-[100%] mix-blend-screen"
         />
         <div className="absolute inset-0 bg-[url('/noise.png')] opacity-[0.03] mix-blend-overlay" />
@@ -69,7 +69,7 @@ export default function LandingPage() {
       <motion.nav
         initial={{ y: -100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.8, ease: "easeOut" }}
+        transition={{ duration: 0.8, ease: "easeOut" as const }}
         className={`fixed top-0 inset-x-0 z-50 transition-all duration-500 border-b ${scrolled ? "bg-black/70 backdrop-blur-xl border-zinc-800/50 py-4" : "bg-transparent border-transparent py-8"
           }`}
       >
@@ -117,7 +117,7 @@ export default function LandingPage() {
             <Car className="w-4 h-4 text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.8)]" />
             <motion.div
               animate={{ opacity: [0, 1, 0], scaleX: [0.5, 1.5, 0.5] }}
-              transition={{ repeat: Infinity, duration: 2, ease: "linear" }}
+              transition={{ repeat: Infinity, duration: 2, ease: "linear" as const }}
               className="w-12 h-[1px] bg-gradient-to-l from-white/80 to-transparent ml-1 origin-left"
             />
           </motion.div>
@@ -133,7 +133,7 @@ export default function LandingPage() {
         <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
           <motion.div
             animate={{ x: ["-10vw", "110vw"] }}
-            transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
+            transition={{ duration: 25, repeat: Infinity, ease: "linear" as const }}
             className="absolute top-[20%] opacity-30"
           >
             <Car className="w-8 h-8 text-zinc-400" />
@@ -141,7 +141,7 @@ export default function LandingPage() {
 
           <motion.div
             animate={{ x: ["110vw", "-10vw"] }}
-            transition={{ duration: 35, repeat: Infinity, ease: "linear", delay: 5 }}
+            transition={{ duration: 35, repeat: Infinity, ease: "linear" as const, delay: 5 }}
             className="absolute top-[50%] opacity-20"
           >
             <Car className="w-6 h-6 text-zinc-500" />
@@ -149,7 +149,7 @@ export default function LandingPage() {
 
           <motion.div
             animate={{ x: ["-10vw", "110vw"] }}
-            transition={{ duration: 45, repeat: Infinity, ease: "linear", delay: 12 }}
+            transition={{ duration: 45, repeat: Infinity, ease: "linear" as const, delay: 12 }}
             className="absolute top-[80%] opacity-10"
           >
             <Car className="w-10 h-10 text-zinc-600" />
@@ -160,7 +160,7 @@ export default function LandingPage() {
           <motion.div
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            transition={{ duration: 1, type: "spring", stiffness: 100 }}
+            transition={{ duration: 1, type: "spring" as const, stiffness: 100 }}
             className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-zinc-800 bg-zinc-900/50 text-zinc-300 text-xs font-medium tracking-widest uppercase mb-8 backdrop-blur-md"
           >
             <span className="w-1.5 h-1.5 rounded-full bg-zinc-400 animate-pulse" />
@@ -177,7 +177,7 @@ export default function LandingPage() {
               <motion.span
                 initial={{ left: 0 }}
                 animate={{ left: "100%" }}
-                transition={{ duration: 2, ease: "easeInOut", repeat: Infinity, repeatDelay: 3 }}
+                transition={{ duration: 2, ease: "easeInOut" as const, repeat: Infinity, repeatDelay: 3 }}
                 className="absolute top-0 bottom-0 w-[1px] bg-white/20 blur-[1px]"
               />
             </span>
@@ -202,7 +202,7 @@ export default function LandingPage() {
             {/* Subtle Glare Effect passing over the pill */}
             <motion.div
               animate={{ x: ["-100%", "200%"] }}
-              transition={{ duration: 3, repeat: Infinity, repeatDelay: 5, ease: "linear" }}
+              transition={{ duration: 3, repeat: Infinity, repeatDelay: 5, ease: "linear" as const }}
               className="absolute top-0 bottom-0 w-[20%] bg-gradient-to-r from-transparent via-white/10 to-transparent skew-x-[-20deg]"
             />
 
@@ -253,7 +253,7 @@ export default function LandingPage() {
               Analyze Options
               <motion.div
                 animate={{ x: [0, 4, 0] }}
-                transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
+                transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" as const }}
               >
                 <ArrowRight className="w-5 h-5" />
               </motion.div>
@@ -277,14 +277,14 @@ export default function LandingPage() {
                <div className="absolute inset-0 bg-gradient-to-b from-[#121215] via-transparent to-[#121215] z-20 pointer-events-none" />
                <motion.div
                  animate={{ scale: [1, 1.03, 1] }}
-                 transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
+                 transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" as const }}
                  className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1553440569-bcc63803a83d?q=80&w=2000&auto=format&fit=crop')] bg-cover bg-center bg-no-repeat opacity-50 grayscale"
                />
                
                {/* Advanced Laser Scan Animation */}
                <motion.div 
                  animate={{ top: ["-20%", "120%"] }}
-                 transition={{ duration: 3.5, repeat: Infinity, ease: "linear" }}
+                 transition={{ duration: 3.5, repeat: Infinity, ease: "linear" as const }}
                  className="absolute left-0 right-0 h-[2px] bg-white/70 shadow-[0_0_20px_rgba(255,255,255,0.9)] z-10"
                />
                
@@ -306,12 +306,12 @@ export default function LandingPage() {
                 {/* Processing Rings */}
                 <motion.div 
                   animate={{ scale: [1, 2], opacity: [0.5, 0] }}
-                  transition={{ duration: 1.5, repeat: Infinity, ease: "easeOut" }}
+                  transition={{ duration: 1.5, repeat: Infinity, ease: "easeOut" as const }}
                   className="absolute w-12 h-12 border border-white/40 rounded-full"
                 />
                 <motion.div 
                   animate={{ scale: [1, 2.5], opacity: [0.3, 0] }}
-                  transition={{ duration: 1.5, repeat: Infinity, ease: "easeOut", delay: 0.5 }}
+                  transition={{ duration: 1.5, repeat: Infinity, ease: "easeOut" as const, delay: 0.5 }}
                   className="absolute w-12 h-12 border border-white/20 rounded-full"
                 />
               </div>
@@ -322,7 +322,7 @@ export default function LandingPage() {
                 </p>
                 <motion.span 
                   animate={{ opacity: [0, 1, 0] }}
-                  transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }}
+                  transition={{ duration: 0.8, repeat: Infinity, ease: "linear" as const }}
                   className="mt-4 w-1.5 h-4 bg-white block"
                 />
               </div>
@@ -423,7 +423,7 @@ export default function LandingPage() {
                   <motion.div
                     key={i}
                     whileHover={{ y: -5, zIndex: 50 }}
-                    transition={{ type: "spring", stiffness: 300 }}
+                    transition={{ type: "spring" as const, stiffness: 300 }}
                     className={`w-20 h-20 rounded-full border-4 border-[#0a0a0a] bg-zinc-800 flex items-center justify-center z-10 shadow-xl`}
                     style={{ zIndex: 30 - i }}
                   >
@@ -500,3 +500,4 @@ export default function LandingPage() {
     </div>
   );
 }
+

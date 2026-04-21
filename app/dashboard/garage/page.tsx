@@ -3,7 +3,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Heart, Trash2, Car, SearchX, Zap } from "lucide-react";
-import { parseBrowserAuthToken } from '@/lib/auth-token';
+import { parseBrowserAuthToken, type BrowserAuthTokenPayload } from '@/lib/auth-token';
 
 type VehicleData = {
   vehicle_id: number;
@@ -24,8 +24,8 @@ export default function GaragePage() {
   const [wishlistIds, setWishlistIds] = useState<number[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const identity = useMemo(() => {
-    if (typeof window === 'undefined') return {};
+  const identity = useMemo<BrowserAuthTokenPayload | null>(() => {
+    if (typeof window === 'undefined') return null;
     const token = window.localStorage.getItem('access_token') || window.localStorage.getItem('token');
     return parseBrowserAuthToken(token);
   }, []);

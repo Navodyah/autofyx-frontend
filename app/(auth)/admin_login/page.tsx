@@ -1,6 +1,6 @@
-"use client";
+﻿"use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Eye, EyeOff, ShieldAlert, ArrowRight, Lock, Activity, ShieldCheck } from "lucide-react";
@@ -12,7 +12,7 @@ import {
 import { createBrowserAuthToken, resolvePostLoginPath } from "@/lib/auth-token";
 import { motion } from "framer-motion";
 
-export default function AdminLoginPage() {
+function AdminLoginContent() {
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [email, setEmail] = useState("");
@@ -109,11 +109,11 @@ export default function AdminLoginPage() {
 
     return (
         <div className="min-h-screen flex bg-[#050505] overflow-hidden">
-            {/* ── Ambient background glow ── */}
+            {/* â”€â”€ Ambient background glow â”€â”€ */}
             <div className="fixed inset-0 z-0 pointer-events-none">
                 <motion.div
                     animate={{ rotate: [0, 360], scale: [1, 1.1, 1] }}
-                    transition={{ duration: 40, repeat: Infinity, ease: "linear" }}
+                    transition={{ duration: 40, repeat: Infinity, ease: "linear" as const }}
                     className="absolute top-[-20%] right-[-10%] w-[900px] h-[700px] bg-red-900/10 blur-[150px] rounded-full"
                 />
                 <div
@@ -125,19 +125,19 @@ export default function AdminLoginPage() {
                 />
             </div>
 
-            {/* ── Left Visual Panel ─────────────────────────────────────────── */}
+            {/* â”€â”€ Left Visual Panel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
             <div className="hidden lg:flex w-[52%] relative overflow-hidden">
                 <motion.div
                     initial={{ scale: 1.05 }}
                     animate={{ scale: 1 }}
-                    transition={{ duration: 12, ease: "easeOut" }}
+                    transition={{ duration: 12, ease: "easeOut" as const }}
                     className="absolute inset-0 bg-cover bg-center"
                     style={{ backgroundImage: "url('https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=2000&auto=format&fit=crop')" }}
                 />
                 <div className="absolute inset-0 bg-gradient-to-br from-[#050505]/90 via-[#050505]/60 to-[#050505]/80" />
                 <motion.div
                     animate={{ top: ["-10%", "110%"] }}
-                    transition={{ duration: 6, repeat: Infinity, ease: "linear" }}
+                    transition={{ duration: 6, repeat: Infinity, ease: "linear" as const }}
                     className="absolute left-0 right-0 h-[1px] bg-red-500/30 shadow-[0_0_15px_rgba(239,68,68,0.6)] z-10"
                 />
                 <div className="relative z-10 flex flex-col justify-between p-12 w-full">
@@ -180,7 +180,7 @@ export default function AdminLoginPage() {
                 </div>
             </div>
 
-            {/* ── Right Form Panel ──────────────────────────────────────────── */}
+            {/* â”€â”€ Right Form Panel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
             <div className="w-full lg:w-[48%] flex flex-col justify-center px-6 sm:px-12 xl:px-20 py-12 relative z-10 bg-[#050505]">
                 <div className="lg:hidden flex items-center gap-2 mb-10">
                     <div className="w-9 h-9 rounded-sm bg-red-500/10 border border-red-500/20 flex items-center justify-center">
@@ -225,7 +225,7 @@ export default function AdminLoginPage() {
                                 <input
                                     id="password"
                                     type={showPassword ? "text" : "password"}
-                                    placeholder="••••••••"
+                                    placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
                                     disabled={isLoading}
@@ -253,7 +253,7 @@ export default function AdminLoginPage() {
                                 ) : (
                                     <>
                                         Authorize Access
-                                        <motion.div animate={{ x: [0, 4, 0] }} transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}>
+                                        <motion.div animate={{ x: [0, 4, 0] }} transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" as const }}>
                                             <ArrowRight className="w-4 h-4" />
                                         </motion.div>
                                     </>
@@ -272,3 +272,12 @@ export default function AdminLoginPage() {
         </div>
     );
 }
+
+export default function AdminLoginPage() {
+    return (
+        <Suspense fallback={<div className="min-h-screen bg-[#050505]" />}>
+            <AdminLoginContent />
+        </Suspense>
+    );
+}
+
