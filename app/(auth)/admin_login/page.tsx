@@ -5,9 +5,9 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Eye, EyeOff, ShieldAlert, ArrowRight, Lock, Activity, ShieldCheck } from "lucide-react";
 import {
-    account,
+    loginUser,
+    performFullLogout,
     persistBrowserAuthSession,
-    registerUser,
 } from "@/lib/appwrite";
 import { createBrowserAuthToken, resolvePostLoginPath } from "@/lib/auth-token";
 import { motion } from "framer-motion";
@@ -30,60 +30,38 @@ function AdminLoginContent() {
         setIsLoading(true);
         setErrorMsg(null);
         try {
-            // Step 1: authenticate with Appwrite
-            const session = await account.createEmailPasswordSession(email.trim().toLowerCase(), password);
-            const sessionId = session.$id;
-            const appwriteUserId = session.userId;
+            // Backend /users/login authenticates against Appwrite and returns Appwrite session/user details.
+            const response = await loginUser({
+                email: email.trim().toLowerCase(),
+                password,
+            });
 
-            // Step 2: get Appwrite user details
-            const appwriteUser = await account.get();
-            const displayName = appwriteUser.name || email.split("@")[0];
+            const sessionId = response.session_id || "";
+            const user = response.user;
+            const userType = (user?.user_type || "").toLowerCase();
 
-            // Step 3: Check backend profile
-            let mongoUser = null;
-            try {
-                const syncResult = await registerUser({
-                    username: displayName,
-                    email: email.trim().toLowerCase(),
-                    password: `session-${sessionId}`,
-                    user_type: "user", // fallback
-                    appwrite_id: appwriteUserId,
-                });
-                mongoUser = syncResult?.user ?? null;
-            } catch {
-                // Ignore sync errors
-            }
-
-            const userType = (mongoUser?.user_type || "user").toLowerCase();
-            const userId = mongoUser?.user_id || "";
-
-            // Access Control: Ensure the user is an admin
+            // Access control: only admin users are allowed here.
             if (userType !== 'admin') {
-                // Try to clean up local session
-                try {
-                    await account.deleteSession(sessionId);
-                } catch {
-                    // Ignore
-                }
+                await performFullLogout(sessionId || undefined);
                 throw new Error("Access Denied: Administrator privileges required.");
             }
 
-            // Step 4: build and persist auth token
+            // Build and persist auth token for proxy.ts role-based authorization.
             const token = createBrowserAuthToken({
-                user_id: userId,
-                appwrite_id: appwriteUserId,
+                user_id: user?.user_id,
+                appwrite_id: user?.appwrite_id,
                 email: email.trim().toLowerCase(),
                 user_type: userType,
-                session_id: sessionId,
+                session_id: sessionId || undefined,
             });
             persistBrowserAuthSession(token);
 
-            // Step 5: persist user_data for context
+            // Persist user session metadata for client-side auth context.
             localStorage.setItem("user_data", JSON.stringify({
-                user_id: userId,
-                appwrite_id: appwriteUserId,
+                user_id: user?.user_id || "",
+                appwrite_id: user?.appwrite_id || "",
                 email: email.trim().toLowerCase(),
-                username: displayName,
+                username: user?.username || email.trim().toLowerCase().split("@")[0],
                 user_type: userType,
             }));
             localStorage.setItem("auth_session", JSON.stringify({
@@ -91,8 +69,8 @@ function AdminLoginContent() {
                 timestamp: new Date().toISOString(),
             }));
 
-            // Step 6: redirect to dashboard
-            const redirectPath = resolvePostLoginPath(userType, searchParams.get("next"));
+            // Redirect only to admin-allowed destinations.
+            const redirectPath = resolvePostLoginPath("admin", searchParams.get("next"));
             window.location.replace(redirectPath);
 
         } catch (error: unknown) {
