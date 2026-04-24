@@ -12,7 +12,11 @@ import {
   Cpu,
   TrendingUp,
   SlidersHorizontal,
-  Zap
+  Zap,
+  Facebook,
+  Twitter,
+  Send,
+  Mail
 } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect } from "react";
@@ -95,7 +99,7 @@ export default function LandingPage() {
           <div className="flex items-center gap-6 text-sm font-medium">
             <Link href="/login" className="text-zinc-400 hover:text-white transition-colors hidden sm:block">Sign In</Link>
             <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-              <Link href="/register" className="px-6 py-2.5 bg-white text-black hover:bg-zinc-200 transition-colors rounded-sm tracking-wide">
+              <Link href="/register" className="px-6 py-2.5 bg-blue-600 text-white hover:bg-blue-700 transition-colors rounded-sm tracking-wide">
                 Start Match
               </Link>
             </motion.div>
@@ -246,7 +250,7 @@ export default function LandingPage() {
               variants={slideUp}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className="w-full md:w-auto mt-2 md:mt-0 px-8 py-5 bg-white text-black hover:bg-zinc-200 transition-all rounded-xl md:rounded-full font-semibold flex items-center justify-center gap-2 flex-shrink-0"
+              className="w-full md:w-auto mt-2 md:mt-0 px-8 py-5 bg-blue-600 text-white hover:bg-blue-700 transition-all rounded-xl md:rounded-full font-semibold flex items-center justify-center gap-2 flex-shrink-0"
             >
               Analyze Options
               <motion.div
@@ -272,53 +276,53 @@ export default function LandingPage() {
           >
             {/* Dark Vehicle Background Pattern */}
             <div className="absolute inset-0 z-0">
-               <div className="absolute inset-0 bg-gradient-to-b from-[#121215] via-transparent to-[#121215] z-20 pointer-events-none" />
-               <motion.div
-                 animate={{ scale: [1, 1.03, 1] }}
-                 transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
-                 className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1553440569-bcc63803a83d?q=80&w=2000&auto=format&fit=crop')] bg-cover bg-center bg-no-repeat opacity-50 grayscale"
-               />
-               
-               {/* Advanced Laser Scan Animation */}
-               <motion.div 
-                 animate={{ top: ["-20%", "120%"] }}
-                 transition={{ duration: 3.5, repeat: Infinity, ease: "linear" }}
-                 className="absolute left-0 right-0 h-[2px] bg-white/70 shadow-[0_0_20px_rgba(255,255,255,0.9)] z-10"
-               />
-               
-               <div className="absolute inset-0 bg-black/40 z-10 mix-blend-overlay pointer-events-none" />
+              <div className="absolute inset-0 bg-gradient-to-b from-[#121215] via-transparent to-[#121215] z-20 pointer-events-none" />
+              <motion.div
+                animate={{ scale: [1, 1.03, 1] }}
+                transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
+                className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1553440569-bcc63803a83d?q=80&w=2000&auto=format&fit=crop')] bg-cover bg-center bg-no-repeat opacity-50 grayscale"
+              />
+
+              {/* Advanced Laser Scan Animation */}
+              <motion.div
+                animate={{ top: ["-20%", "120%"] }}
+                transition={{ duration: 3.5, repeat: Infinity, ease: "linear" }}
+                className="absolute left-0 right-0 h-[2px] bg-white/70 shadow-[0_0_20px_rgba(255,255,255,0.9)] z-10"
+              />
+
+              <div className="absolute inset-0 bg-black/40 z-10 mix-blend-overlay pointer-events-none" />
             </div>
 
             {/* Content (Z-index active so it's above the dark car background) */}
             <div className="relative z-30 flex flex-col items-center justify-center space-y-6 text-center">
-              <motion.div 
+              <motion.div
                 animate={{ opacity: [0.6, 1, 0.6] }}
                 transition={{ duration: 2, repeat: Infinity }}
                 className="text-white/80 tracking-[0.25em] uppercase text-[10px] md:text-xs font-bold font-sans"
               >
                 Analysis Engine Active
               </motion.div>
-              
+
               <div className="relative flex items-center justify-center">
                 <Cpu className="w-8 h-8 md:w-10 md:h-10 text-white relative z-10" strokeWidth={1.5} />
                 {/* Processing Rings */}
-                <motion.div 
+                <motion.div
                   animate={{ scale: [1, 2], opacity: [0.5, 0] }}
                   transition={{ duration: 1.5, repeat: Infinity, ease: "easeOut" }}
                   className="absolute w-12 h-12 border border-white/40 rounded-full"
                 />
-                <motion.div 
+                <motion.div
                   animate={{ scale: [1, 2.5], opacity: [0.3, 0] }}
                   transition={{ duration: 1.5, repeat: Infinity, ease: "easeOut", delay: 0.5 }}
                   className="absolute w-12 h-12 border border-white/20 rounded-full"
                 />
               </div>
-              
+
               <div className="flex items-center gap-2">
                 <p className="text-[#a0a0a0] font-mono text-xs md:text-sm tracking-widest mt-4">
                   Processing 1,402 metrics against 850+ active models
                 </p>
-                <motion.span 
+                <motion.span
                   animate={{ opacity: [0, 1, 0] }}
                   transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }}
                   className="mt-4 w-1.5 h-4 bg-white block"
@@ -430,7 +434,7 @@ export default function LandingPage() {
                 ))}
                 <motion.div
                   whileHover={{ scale: 1.1, zIndex: 50 }}
-                  className="w-20 h-20 rounded-full border-4 border-[#0a0a0a] bg-white flex items-center justify-center text-black font-bold text-sm uppercase shadow-xl cursor-pointer"
+                  className="w-20 h-20 rounded-full border-4 border-[#0a0a0a] bg-blue-600 flex items-center justify-center text-white font-bold text-sm uppercase shadow-xl cursor-pointer"
                   style={{ zIndex: 40 }}
                 >
                   +2k
@@ -458,16 +462,16 @@ export default function LandingPage() {
             <h2 className="text-4xl md:text-5xl lg:text-[3.5rem] font-light text-zinc-300 mb-6 tracking-tight relative z-10">
               Stop searching. <span className="font-semibold text-white">Start driving.</span>
             </h2>
-            
+
             <p className="text-[17px] text-[#7a7a7a] max-w-2xl mx-auto mb-10 font-normal leading-relaxed relative z-10">
               Join discerning drivers who used our analytical methodology to find their ideal vehicle without the dealership stress.
             </p>
-            
+
             <div className="flex justify-center relative z-10">
               <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
-                <Link 
-                  href="/register" 
-                  className="px-8 py-3.5 rounded-full bg-white text-black text-sm font-semibold tracking-wide flex items-center justify-center gap-2 hover:bg-zinc-100 transition-all font-sans"
+                <Link
+                  href="/register"
+                  className="px-8 py-3.5 rounded-full bg-blue-600 text-white text-sm font-semibold tracking-wide flex items-center justify-center gap-2 hover:bg-blue-700 transition-all font-sans"
                 >
                   Launch Recommendation AI
                   <ArrowRight className="w-4 h-4 ml-1" />
@@ -478,20 +482,67 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="relative z-10 border-t border-white/10 bg-[#060608] py-8">
-        <div className="max-w-[88rem] mx-auto px-6 md:px-12 flex flex-col md:flex-row justify-between items-center gap-4">
-          <div className="flex flex-col items-center md:items-start gap-1">
-            <div className="flex items-center gap-2">
-              <Car className="w-5 h-5 text-white" />
-              <span className="text-lg font-semibold text-white tracking-wide">AutoFyx</span>
+      {/* Modern Creative Footer */}
+      <footer className="relative z-10 bg-[#08080a] border-t border-white/5 pt-20 pb-10">
+        <div className="max-w-[88rem] mx-auto px-6 md:px-12">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
+            
+            {/* Brand Column */}
+            <div className="lg:col-span-1">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 border border-zinc-700 bg-gradient-to-br from-zinc-800 to-black text-white flex items-center justify-center rounded-lg shadow-xl">
+                  <Car className="w-5 h-5" />
+                </div>
+                <span className="text-2xl font-bold tracking-tight text-white">AutoFyx</span>
+              </div>
+              <p className="text-zinc-500 text-sm leading-relaxed max-w-xs">
+                AutoFyx is an intelligent vehicle curation platform designed to help you find the perfect automotive match through data-driven analysis and lifestyle integration.
+              </p>
             </div>
-            <p className="text-xs text-zinc-500 font-light">Intelligent Vehicle Curation</p>
+
+            {/* Quick Links Column */}
+            <div className="flex flex-col gap-4">
+              <h4 className="text-white font-semibold uppercase tracking-widest text-xs mb-2">Quick Links</h4>
+              <Link href="#how-it-works" className="text-zinc-500 hover:text-white transition-colors text-sm">About Platform</Link>
+              <Link href="#features" className="text-zinc-500 hover:text-white transition-colors text-sm">Features</Link>
+              <Link href="/dashboard" className="text-zinc-500 hover:text-white transition-colors text-sm">Dashboard</Link>
+              <Link href="#catalog" className="text-zinc-500 hover:text-white transition-colors text-sm">Inventory Map</Link>
+            </div>
+
+            {/* Empty column for spacing or future links */}
+            <div className="hidden lg:block"></div>
+
+            {/* Connect Column */}
+            <div className="flex flex-col gap-4">
+              <h4 className="text-white font-semibold uppercase tracking-widest text-xs mb-2">Connect With Us</h4>
+              <div className="flex items-center gap-4 mb-2">
+                <motion.a whileHover={{ y: -3 }} href="#" className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-zinc-400 hover:text-white hover:bg-white/10 transition-all">
+                  <Facebook className="w-4 h-4" />
+                </motion.a>
+                <motion.a whileHover={{ y: -3 }} href="#" className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-zinc-400 hover:text-white hover:bg-white/10 transition-all">
+                  <Twitter className="w-4 h-4" />
+                </motion.a>
+                <motion.a whileHover={{ y: -3 }} href="#" className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-zinc-400 hover:text-white hover:bg-white/10 transition-all">
+                  <Send className="w-4 h-4" />
+                </motion.a>
+              </div>
+              <a href="mailto:contact@autofyx.com" className="flex items-center gap-2 text-zinc-500 hover:text-white transition-colors text-sm">
+                <Mail className="w-4 h-4" />
+                contact@autofyx.com
+              </a>
+            </div>
           </div>
-          <div className="flex items-center gap-6 text-xs font-light text-zinc-400">
-            <Link href="#" className="hover:text-white transition-colors">Platform</Link>
-            <Link href="#" className="hover:text-white transition-colors">Privacy</Link>
-            <Link href="#" className="hover:text-white transition-colors">Terms</Link>
+
+          {/* Bottom Bar */}
+          <div className="pt-10 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-6">
+            <p className="text-zinc-600 text-xs tracking-wide">
+              © {new Date().getFullYear()} AutoFyx Platform. All rights reserved.
+            </p>
+            <div className="flex items-center gap-8">
+              <Link href="#" className="text-zinc-600 hover:text-white transition-colors text-xs font-medium">Privacy Policy</Link>
+              <Link href="#" className="text-zinc-600 hover:text-white transition-colors text-xs font-medium">Terms of Service</Link>
+              <Link href="#" className="text-zinc-600 hover:text-white transition-colors text-xs font-medium">Contact</Link>
+            </div>
           </div>
         </div>
       </footer>
