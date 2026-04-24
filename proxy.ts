@@ -7,7 +7,7 @@ type TokenPayload = {
   appwrite_id?: string;
 };
 
-const AUTH_PAGES = ['/login', '/register', '/auth/login', '/auth/register'];
+const AUTH_PAGES = ['/login', '/register', '/admin_login', '/auth/login', '/auth/register', '/auth/admin_login'];
 const UNPROTECTED_PREFIXES = ['/auth/oauth', '/auth/callback'];
 const USER_PROTECTED_PREFIXES = ['/dashboard'];
 const ADMIN_PROTECTED_PREFIXES = ['/admin', '/admin_dashboard'];
@@ -110,7 +110,7 @@ export function proxy(request: NextRequest) {
 
   if (!isAuthenticated) {
     const loginUrl = request.nextUrl.clone();
-    loginUrl.pathname = '/login';
+    loginUrl.pathname = pathStartsWithAny(pathname, ADMIN_PROTECTED_PREFIXES) ? '/admin_login' : '/login';
     loginUrl.search = `?next=${encodeURIComponent(`${pathname}${search}`)}`;
     return NextResponse.redirect(loginUrl);
   }
