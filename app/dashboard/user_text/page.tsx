@@ -72,8 +72,8 @@ function toNumberOrUndefined(v: string): number | undefined {
 
 export default function VehiclesSearchPage() {
   // ---- API base URL ----
-  // Put in .env.local => NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:8000
-  const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000";
+  // Put in .env.local => NEXT_PUBLIC_API_URL=http://127.0.0.1:8000
+  const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
 
   // ---- Form state ----
   const [monthlyIncome, setMonthlyIncome] = useState<string>(""); // LKR

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -10,7 +10,7 @@ import {
   GroqExtracted,
   DEFAULT_VALUES,
 } from "@/components/recommendations/RecommendForm";
-import { FinanceSummary }  from "@/components/recommendations/FinanceSummary";
+import { FinanceSummary } from "@/components/recommendations/FinanceSummary";
 import { VehicleCardGrid } from "@/components/recommendations/VehicleCardGrid";
 import {
   getSalaryInfo,
@@ -80,34 +80,34 @@ function mergeParams(form: FormValues, groq: GroqExtracted | null): {
   };
 
   const rawSalary = pick(form.salary, DEFAULT_VALUES.salary, groq?.salary);
-  const salary   = parseFloat(rawSalary) || 0;
+  const salary = parseFloat(rawSalary) || 0;
 
   return {
     salary,
-    purpose:        pick(form.purpose,  DEFAULT_VALUES.purpose,  groq?.purpose),
-    area:           pick(form.area,     DEFAULT_VALUES.area,      groq?.area),
-    fuel:           pickOrEmpty(form.fuel,         groq?.fuel),
-    transmission:   pickOrEmpty(form.transmission, groq?.transmission),
-    maxFuel:        pickOrEmpty(form.maxFuel,       groq?.max_comb_l_per_100),
-    rate:           pick(form.rate,    DEFAULT_VALUES.rate,    groq?.rate_of_interest),
-    months:         pick(form.months,  DEFAULT_VALUES.months,  groq?.number_of_months),
-    dpa:            pickOrEmpty(form.dpa, groq?.down_payment_amount),
-    dpr:            pick(form.dpr, DEFAULT_VALUES.dpr, groq?.down_payment_ratio),
+    purpose: pick(form.purpose, DEFAULT_VALUES.purpose, groq?.purpose),
+    area: pick(form.area, DEFAULT_VALUES.area, groq?.area),
+    fuel: pickOrEmpty(form.fuel, groq?.fuel),
+    transmission: pickOrEmpty(form.transmission, groq?.transmission),
+    maxFuel: pickOrEmpty(form.maxFuel, groq?.max_comb_l_per_100),
+    rate: pick(form.rate, DEFAULT_VALUES.rate, groq?.rate_of_interest),
+    months: pick(form.months, DEFAULT_VALUES.months, groq?.number_of_months),
+    dpa: pickOrEmpty(form.dpa, groq?.down_payment_amount),
+    dpr: pick(form.dpr, DEFAULT_VALUES.dpr, groq?.down_payment_ratio),
     maintainability: pickOrEmpty(form.maintainability, groq?.maintainability_priority),
   };
 }
 
 /* ── Page ───────────────────────────────────────────────────── */
 export default function RecommendationPage() {
-  const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000";
+  const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
 
-  const [values,      setValues]      = useState<FormValues>(DEFAULT_VALUES);
-  const [groqParams,  setGroqParams]  = useState<GroqExtracted | null>(null);
+  const [values, setValues] = useState<FormValues>(DEFAULT_VALUES);
+  const [groqParams, setGroqParams] = useState<GroqExtracted | null>(null);
   const [groqLoading, setGroqLoading] = useState(false);
-  const [groqError,   setGroqError]   = useState<string | null>(null);
-  const [loading,     setLoading]     = useState(false);
-  const [error,       setError]       = useState<string | null>(null);
-  const [results,     setResults]     = useState<RecommendResponse | null>(null);
+  const [groqError, setGroqError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [results, setResults] = useState<RecommendResponse | null>(null);
 
   const handleChange = useCallback((key: keyof FormValues, val: string) => {
     setValues((prev) => ({ ...prev, [key]: val }));
@@ -120,10 +120,10 @@ export default function RecommendationPage() {
     setGroqParams(null);
 
     try {
-      const res  = await fetch("/api/groq-parse", {
-        method:  "POST",
+      const res = await fetch("/api/groq-parse", {
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-        body:    JSON.stringify({ text }),
+        body: JSON.stringify({ text }),
       });
       const json = await res.json() as { ok: boolean; params?: GroqExtracted; message?: string };
 
@@ -163,34 +163,34 @@ export default function RecommendationPage() {
     setError(null);
     setResults(null);
 
-    const salInfo  = getSalaryInfo(merged.salary);
-    const purpCls  = getPurposeClasses(merged.purpose, merged.area);
-    const vcOver   = values.vcOverride || (gp?.vehicle_class ?? "");
+    const salInfo = getSalaryInfo(merged.salary);
+    const purpCls = getPurposeClasses(merged.purpose, merged.area);
+    const vcOver = values.vcOverride || (gp?.vehicle_class ?? "");
     const finalCls = vcOver ? [vcOver] : intersectClasses(salInfo.classes, purpCls);
 
     try {
       const body: Record<string, unknown> = {
-        salary:          merged.salary,
-        purpose:         merged.purpose,
-        area:            merged.area,
+        salary: merged.salary,
+        purpose: merged.purpose,
+        area: merged.area,
         vehicle_classes: finalCls,
       };
       if (vcOver) body.vehicle_class = vcOver;
       if (merged.maintainability) body.maintainability_priority = merged.maintainability;
-      if (merged.fuel)           body.fuel           = merged.fuel;
-      if (merged.transmission)   body.transmission   = merged.transmission;
-      addOpt(body, "rate_of_interest",   merged.rate,    parseFloat);
-      addOpt(body, "number_of_months",   merged.months,  parseInt);
-      addOpt(body, "down_payment_ratio", merged.dpr,     parseFloat);
-      addOpt(body, "down_payment_amount",merged.dpa,     parseFloat);
+      if (merged.fuel) body.fuel = merged.fuel;
+      if (merged.transmission) body.transmission = merged.transmission;
+      addOpt(body, "rate_of_interest", merged.rate, parseFloat);
+      addOpt(body, "number_of_months", merged.months, parseInt);
+      addOpt(body, "down_payment_ratio", merged.dpr, parseFloat);
+      addOpt(body, "down_payment_amount", merged.dpa, parseFloat);
       addOpt(body, "max_comb_l_per_100", merged.maxFuel, parseFloat);
-      addOpt(body, "top_n",          values.topN,           parseInt);
-      addOpt(body, "candidate_limit",values.candidateLimit, parseInt);
+      addOpt(body, "top_n", values.topN, parseInt);
+      addOpt(body, "candidate_limit", values.candidateLimit, parseInt);
 
-      const res  = await fetch(`${API_BASE}/recommendations/`, {
-        method:  "POST",
+      const res = await fetch(`${API_BASE}/recommendations/`, {
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-        body:    JSON.stringify(body),
+        body: JSON.stringify(body),
       });
       const data = (await res.json()) as RecommendResponse;
       if (!res.ok) throw new Error(JSON.stringify(data, null, 2));
@@ -212,8 +212,8 @@ export default function RecommendationPage() {
         }),
       );
       const enriched = (data.items || []).map((item) => {
-        const next     = { ...item };
-        const fuelId   = asNumber(readValue(item, ["fuel_type_id"]));
+        const next = { ...item };
+        const fuelId = asNumber(readValue(item, ["fuel_type_id"]));
         const fuelPrice =
           asNumber(readValue(item, ["fuel_price"])) ??
           (fuelId !== null ? (fuelPriceMap.get(fuelId) ?? null) : null);
@@ -237,14 +237,14 @@ export default function RecommendationPage() {
   }
 
   /* Derived display values */
-  const merged   = mergeParams(values, groqParams);
-  const salInfo  = getSalaryInfo(merged.salary);
-  const purpCls  = getPurposeClasses(merged.purpose, merged.area);
-  const vcOver   = values.vcOverride || (groqParams?.vehicle_class ?? "");
+  const merged = mergeParams(values, groqParams);
+  const salInfo = getSalaryInfo(merged.salary);
+  const purpCls = getPurposeClasses(merged.purpose, merged.area);
+  const vcOver = values.vcOverride || (groqParams?.vehicle_class ?? "");
   const finalCls = vcOver ? [vcOver] : intersectClasses(salInfo.classes, purpCls);
 
-  const items    = results?.items    || [];
-  const finance  = results?.finance  || {};
+  const items = results?.items || [];
+  const finance = results?.finance || {};
   const hasItems = items.length > 0;
 
   return (
