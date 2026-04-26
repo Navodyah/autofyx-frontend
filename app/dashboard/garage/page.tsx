@@ -17,7 +17,7 @@ type VehicleData = {
   vehicle_class?: { class_name: string };
 };
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
 
 export default function GaragePage() {
   const [vehicles, setVehicles] = useState<VehicleData[]>([]);
