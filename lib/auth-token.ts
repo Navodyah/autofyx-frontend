@@ -47,7 +47,7 @@ export function getUserTypeFromToken(token: string | null): string | null {
 export function getDashboardRouteByUserType(userType: string | null | undefined): string {
   const normalized = (userType || '').toLowerCase();
 
-  if (normalized === 'admin') return '/admin_dashboard';
+  if (normalized === 'admin') return '/admin';
   if (normalized === 'researcher') return '/researcher';
   return '/dashboard';
 }
@@ -60,7 +60,7 @@ export function isPathAllowedForUserType(pathname: string, userType: string | nu
   const normalizedRole = (userType || '').toLowerCase();
 
   if (normalizedRole === 'admin') {
-    return pathStartsWith(pathname, '/admin') || pathStartsWith(pathname, '/admin_dashboard');
+    return pathStartsWith(pathname, '/admin') || pathStartsWith(pathname, '/admin');
   }
 
   if (normalizedRole === 'researcher') {
@@ -77,8 +77,10 @@ export function sanitizeNextPath(nextPath: string | null | undefined): string | 
   if (
     pathStartsWith(nextPath, '/login') ||
     pathStartsWith(nextPath, '/register') ||
+    pathStartsWith(nextPath, '/admin_login') ||
     pathStartsWith(nextPath, '/auth/login') ||
-    pathStartsWith(nextPath, '/auth/register')
+    pathStartsWith(nextPath, '/auth/register') ||
+    pathStartsWith(nextPath, '/auth/admin_login')
   ) {
     return null;
   }

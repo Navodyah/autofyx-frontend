@@ -39,7 +39,7 @@ type CompareItem = {
 
 type CompareResponse = CompareItem[];
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
 
 async function fetchJSON<T>(url: string): Promise<T> {
   const res = await fetch(url, { cache: "no-store" });
@@ -117,7 +117,7 @@ function SelectField({
 
 export default function ComparePage() {
   const [makes, setMakes] = useState<string[]>([]);
-  
+
   // States A
   const [modelsA, setModelsA] = useState<string[]>([]);
   const [yearsA, setYearsA] = useState<number[]>([]);
@@ -154,18 +154,18 @@ export default function ComparePage() {
 
   useEffect(() => {
     (async () => {
-       if (identity?.user_id) {
-          try {
-           const p = await getRegistrationPreferences({
+      if (identity?.user_id) {
+        try {
+          const p = await getRegistrationPreferences({
             user_id: identity.user_id,
             appwrite_id: identity.appwrite_id,
             email: identity.email,
-           });
-             setPreferences(p);
-          } catch(e) {
-             console.error('Failed to load user preferences for recommendation', e);
-          }
-       }
+          });
+          setPreferences(p);
+        } catch (e) {
+          console.error('Failed to load user preferences for recommendation', e);
+        }
+      }
     })();
   }, [identity]);
 
@@ -188,7 +188,7 @@ export default function ComparePage() {
       try {
         const data = await fetchJSON<CatalogListResponse>(`${API_BASE}/lookup/models?make=${encodeURIComponent(makeA)}`);
         setModelsA(data.items || []);
-      } catch (e) {}
+      } catch (e) { }
     })();
   }, [makeA]);
 
@@ -199,7 +199,7 @@ export default function ComparePage() {
       try {
         const data = await fetchJSON<CatalogListResponse>(`${API_BASE}/lookup/models?make=${encodeURIComponent(makeB)}`);
         setModelsB(data.items || []);
-      } catch (e) {}
+      } catch (e) { }
     })();
   }, [makeB]);
 
@@ -210,7 +210,7 @@ export default function ComparePage() {
       try {
         const data = await fetchJSON<CatalogListResponse>(`${API_BASE}/lookup/models?make=${encodeURIComponent(makeC)}`);
         setModelsC(data.items || []);
-      } catch (e) {}
+      } catch (e) { }
     })();
   }, [makeC]);
 
@@ -222,7 +222,7 @@ export default function ComparePage() {
       try {
         const data = await fetchJSON<YearsListResponse>(`${API_BASE}/lookup/years?make=${encodeURIComponent(makeA)}&model=${encodeURIComponent(modelA)}`);
         setYearsA(data.items || []);
-      } catch (e) {}
+      } catch (e) { }
     })();
   }, [makeA, modelA]);
 
@@ -233,7 +233,7 @@ export default function ComparePage() {
       try {
         const data = await fetchJSON<YearsListResponse>(`${API_BASE}/lookup/years?make=${encodeURIComponent(makeB)}&model=${encodeURIComponent(modelB)}`);
         setYearsB(data.items || []);
-      } catch (e) {}
+      } catch (e) { }
     })();
   }, [makeB, modelB]);
 
@@ -244,14 +244,14 @@ export default function ComparePage() {
       try {
         const data = await fetchJSON<YearsListResponse>(`${API_BASE}/lookup/years?make=${encodeURIComponent(makeC)}&model=${encodeURIComponent(modelC)}`);
         setYearsC(data.items || []);
-      } catch (e) {}
+      } catch (e) { }
     })();
   }, [makeC, modelC]);
 
   const canCompare = useMemo(() => {
     return makeA && modelA && yearA !== "" &&
-           makeB && modelB && yearB !== "" &&
-           makeC && modelC && yearC !== "";
+      makeB && modelB && yearB !== "" &&
+      makeC && modelC && yearC !== "";
   }, [makeA, modelA, yearA, makeB, modelB, yearB, makeC, modelC, yearC]);
 
   async function onCompare() {
@@ -306,21 +306,21 @@ export default function ComparePage() {
   const recommendedIndex = useMemo(() => {
     if (!result || result.length < 3) return -1;
     let scores = [0, 0, 0];
-    
+
     result.forEach((v, i) => {
       if (!v.found) {
         scores[i] = -999;
         return;
       }
       if (!preferences) {
-         // Default generic scoring if no preferences are found
-         if (v.comb_l_per_100) {
-           const val = parseFloat(String(v.comb_l_per_100));
-           if (!isNaN(val)) scores[i] += (20 - val);
-         }
-         return;
+        // Default generic scoring if no preferences are found
+        if (v.comb_l_per_100) {
+          const val = parseFloat(String(v.comb_l_per_100));
+          if (!isNaN(val)) scores[i] += (20 - val);
+        }
+        return;
       }
-      
+
       // Matched Fuel Preference
       if (preferences.fuel_preference && v.fuel) {
         const pref = preferences.fuel_preference.toLowerCase();
@@ -329,13 +329,13 @@ export default function ComparePage() {
           scores[i] += 15;
         }
       }
-      
+
       // Match Vehicle Type Class
       if (preferences.preferred_vehicle_types?.length && v.vehicle_class) {
-        const prefc = preferences.preferred_vehicle_types.map((c:string)=>c.toLowerCase());
+        const prefc = preferences.preferred_vehicle_types.map((c: string) => c.toLowerCase());
         const VC = v.vehicle_class.toLowerCase();
         if (prefc.some((c: string) => VC.includes(c) || c.includes(VC))) {
-           scores[i] += 15;
+          scores[i] += 15;
         }
       }
 
@@ -344,7 +344,7 @@ export default function ComparePage() {
         const val = parseFloat(String(v.comb_l_per_100));
         if (!isNaN(val)) scores[i] += (25 - val);
       }
-      
+
       // Newer model bias
       if (v.year) scores[i] += (v.year - 2000) * 0.2;
     });
@@ -567,11 +567,11 @@ export default function ComparePage() {
                             <ShieldCheck className="w-3.5 h-3.5" /> Best Match
                           </div>
                         )}
-                        <p className="text-[11px] font-bold tracking-widest uppercase mb-1" style={{ color: isRec ? '#10b981' : 'var(--text-muted)'}}>
+                        <p className="text-[11px] font-bold tracking-widest uppercase mb-1" style={{ color: isRec ? '#10b981' : 'var(--text-muted)' }}>
                           Vehicle {['A', 'B', 'C'][idx]}
                         </p>
                         <p className="text-base font-extrabold leading-tight" style={{ color: 'var(--text-primary)' }}>
-                          {it?.name || `Vehicle ${['A','B','C'][idx]}`}
+                          {it?.name || `Vehicle ${['A', 'B', 'C'][idx]}`}
                         </p>
                         {!it?.found && (
                           <p className="text-xs font-bold text-red-500 mt-1">Status: Not found</p>

@@ -28,7 +28,7 @@ const D = {
   shadow: '0 4px 24px -4px rgba(0, 0, 0, 0.5)', iconBg: 'rgba(255,255,255,0.03)',
 };
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://127.0.0.1:8000';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
 
 type VehicleData = {
   vehicle_id: number;
@@ -98,7 +98,7 @@ export default function SearchPage() {
         try {
           const obj = JSON.parse(stored);
           setUserId(obj?.user_id || obj?._id || obj?.id || '');
-        } catch {}
+        } catch { }
       }
     }
   }, []);
@@ -192,7 +192,7 @@ export default function SearchPage() {
   // ------ Filtered results ------
   const filteredVehicles = useMemo(() => {
     const hasAnyAppliedFilters = Object.values(applied).some((v) => v !== '');
-    
+
     // If no search is applied, show up to 100 vehicles by default
     if (!hasAnyAppliedFilters) {
       return vehicles.slice(0, 100);
@@ -351,7 +351,7 @@ export default function SearchPage() {
                 onClick={applyFilters}
                 className="flex items-center gap-2 px-6 py-4 rounded-2xl text-[14px] font-bold border transition-colors shadow-lg hover:opacity-90 whitespace-nowrap"
                 style={{
-                  background: "var(--bg-primary, #2563eb)", 
+                  background: "var(--bg-primary, #2563eb)",
                   borderColor: "transparent",
                   color: "#ffffff",
                 }}

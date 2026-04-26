@@ -59,8 +59,8 @@ function getInitials(name: string): string {
 
 function roleBadge(role: string): { label: string; color: string; bg: string } {
   if (role === 'researcher') return { label: 'Researcher', color: '#7C3AED', bg: '#EDE9FE' };
-  if (role === 'admin')      return { label: 'Admin',      color: '#B45309', bg: '#FEF3C7' };
-  return                            { label: 'Member',     color: '#059669', bg: '#D1FAE5' };
+  if (role === 'admin') return { label: 'Admin', color: '#B45309', bg: '#FEF3C7' };
+  return { label: 'Member', color: '#059669', bg: '#D1FAE5' };
 }
 
 /** Read and merge user profile from localStorage (user_data + auth_token fallback) */
@@ -99,23 +99,23 @@ function readSessionUser(): SessionUser | null {
 
 /* ─── Nav items ──────────────────────────────────────────────── */
 const navItems = [
-  { label: 'Overview',         href: '/dashboard',                  icon: LayoutDashboard },
-  { label: 'Recommendation',   href: '/dashboard/recomendation',    icon: LineChart       },
-  { label: 'Vehicle Search',   href: '/dashboard/search',           icon: SearchCheck     },
-  { label: 'Compare',          href: '/dashboard/compare',          icon: Scale           },
-  { label: 'Cost Calculation', href: '/dashboard/cost-calculation', icon: Calculator      },
-  { label: 'My Garage',        href: '/dashboard/garage',           icon: Heart           },
-  { label: 'Settings',         href: '/dashboard/settings',         icon: Settings        },
+  { label: 'Overview', href: '/dashboard', icon: LayoutDashboard },
+  { label: 'Recommendation', href: '/dashboard/recomendation', icon: LineChart },
+  { label: 'Vehicle Search', href: '/dashboard/search', icon: SearchCheck },
+  { label: 'Compare', href: '/dashboard/compare', icon: Scale },
+  { label: 'Cost Calculation', href: '/dashboard/cost-calculation', icon: Calculator },
+  { label: 'My Garage', href: '/dashboard/garage', icon: Heart },
+  { label: 'Settings', href: '/dashboard/settings', icon: Settings },
 ];
 
 /* ─── Avatar component ───────────────────────────────────────── */
 function UserAvatar({ name, size = 'md' }: { name: string; size?: 'sm' | 'md' }) {
-  const dim  = size === 'sm' ? 'w-8 h-8 text-xs' : 'w-10 h-10 text-sm';
+  const dim = size === 'sm' ? 'w-8 h-8 text-xs' : 'w-10 h-10 text-sm';
   const colors = [
     ['#6366F1', '#EEF2FF'], ['#8B5CF6', '#F5F3FF'], ['#EC4899', '#FDF2F8'],
     ['#0EA5E9', '#F0F9FF'], ['#14B8A6', '#F0FDFA'], ['#F59E0B', '#FFFBEB'],
   ];
-  const idx   = (name.charCodeAt(0) || 0) % colors.length;
+  const idx = (name.charCodeAt(0) || 0) % colors.length;
   const [fg, bg] = colors[idx];
 
   return (
@@ -131,13 +131,13 @@ function UserAvatar({ name, size = 'md' }: { name: string; size?: 'sm' | 'md' })
 
 /* ─── Layout ─────────────────────────────────────────────────── */
 function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
-  const router       = useRouter();
-  const pathname     = usePathname();
+  const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
 
   const [isNavigating, setIsNavigating] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const [sessionUser, setSessionUser]   = useState<SessionUser | null>(null);
+  const [sessionUser, setSessionUser] = useState<SessionUser | null>(null);
   const [isUserLoaded, setIsUserLoaded] = useState(false);
 
   /* Load user from localStorage once on mount (client-only) */
@@ -145,7 +145,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
     const user = readSessionUser();
     setSessionUser(user);
     setIsUserLoaded(true);
-    
+
     // Periodically sync user_data from LocalStorage to update avatar in layout real-time
     const interval = setInterval(() => {
       const liveUser = readSessionUser();
@@ -167,7 +167,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
     if (isLoggingOut) return;
     setIsLoggingOut(true);
     try {
-      const raw       = typeof window !== 'undefined' ? localStorage.getItem('auth_session') : null;
+      const raw = typeof window !== 'undefined' ? localStorage.getItem('auth_session') : null;
       const sessionId = raw ? (JSON.parse(raw) as { sessionId?: string }).sessionId : null;
       await performFullLogout(sessionId);
     } catch {
@@ -181,8 +181,8 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   /* Derived display values */
   const displayName = sessionUser?.username || '…';
   const displayEmail = sessionUser?.email || '';
-  const userRole     = sessionUser?.user_type || 'user';
-  const badge        = roleBadge(userRole);
+  const userRole = sessionUser?.user_type || 'user';
+  const badge = roleBadge(userRole);
   const isResearcher = userRole === 'researcher';
   const finalDisplayName = capitalizeFirstLetters(displayName);
 
@@ -264,11 +264,11 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
             </div>
             {/* Role badge dot */}
             {userRole !== 'user' && (
-               <span
-                 className="w-2 h-2 rounded-full flex-shrink-0"
-                 style={{ background: badge.color }}
-                 title={badge.label}
-               />
+              <span
+                className="w-2 h-2 rounded-full flex-shrink-0"
+                style={{ background: badge.color }}
+                title={badge.label}
+              />
             )}
           </div>
 
@@ -297,9 +297,8 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                   key={`${item.href}-${item.label}`}
                   href={item.href}
                   onClick={() => handleNavClick(item.href)}
-                  className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
-                    isActive ? 'bg-white text-slate-900 shadow-md' : 'text-white/60 hover:bg-white/10 hover:text-white'
-                  }`}
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${isActive ? 'bg-white text-slate-900 shadow-md' : 'text-white/60 hover:bg-white/10 hover:text-white'
+                    }`}
                 >
                   <item.icon className={`w-4 h-4 flex-shrink-0 ${isActive ? 'text-slate-700' : 'text-white/50'}`} />
                   <span className="truncate">{item.label}</span>
@@ -340,151 +339,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
       <div className="flex-1 flex flex-col h-screen overflow-hidden min-w-0">
 
         {/* Top floating glass header */}
-        <header
-          className="h-[72px] flex items-center justify-between px-6 lg:px-8 z-10 flex-shrink-0 mt-4 mx-4 rounded-3xl transition-all"
-          style={{
-            background: 'rgba(255, 255, 255, 0.6)',
-            backdropFilter: 'blur(16px)',
-            border: '1px solid rgba(255, 255, 255, 0.4)',
-            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.03)',
-          }}
-        >
-          {/* Left: mobile hamburger + page title */}
-          <div className="flex items-center gap-4">
-            {/* Mobile hamburger */}
-            <Sheet>
-              <SheetTrigger asChild>
-                <Button suppressHydrationWarning variant="ghost" size="icon" className="lg:hidden text-[#777C6D] hover:bg-black/5 rounded-full">
-                  <Menu className="w-5 h-5" />
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="left" className="w-72 p-0 bg-[#0a0a0c] border-r-0">
-                <SheetHeader className="px-6 py-5 border-b border-white/5">
-                  <SheetTitle className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-lg bg-white/10 border border-white/10 flex items-center justify-center">
-                      <Car className="w-4 h-4 text-white" />
-                    </div>
-                    <span className="text-lg font-bold tracking-tight text-white">AutoFyx</span>
-                  </SheetTitle>
-                </SheetHeader>
 
-                <div className="px-4 pt-4 pb-2">
-                  <div className="flex items-center gap-3 px-3 py-2.5 rounded-2xl bg-white/5 border border-white/8">
-                    {sessionUser?.profile_image_url ? (
-                      <img src={sessionUser.profile_image_url} alt="Profile" className="w-8 h-8 rounded-full object-cover border border-white/20" />
-                    ) : (
-                      <UserAvatar name={finalDisplayName} size="sm" />
-                    )}
-                    <div className="min-w-0">
-                      <p className="text-sm font-bold text-white truncate">{finalDisplayName}</p>
-                      {userRole !== 'user' && (
-                        <span
-                          className="inline-block text-[10px] font-semibold px-1.5 py-0.5 rounded-full mt-0.5"
-                          style={{ background: badge.bg + '33', color: badge.color }}
-                        >
-                          {badge.label}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                <nav className="px-4 py-3 space-y-1">
-                  {navItems.map((item) => (
-                    <SheetClose asChild key={`mobile-${item.href}-${item.label}`}>
-                      <Link
-                        href={item.href}
-                        onClick={() => handleNavClick(item.href)}
-                        className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
-                          pathname === item.href ? 'bg-white text-slate-900' : 'text-white/60 hover:bg-white/10 hover:text-white'
-                        }`}
-                      >
-                        <item.icon className="w-4 h-4" />
-                        {item.label}
-                      </Link>
-                    </SheetClose>
-                  ))}
-                  {isResearcher && (
-                    <SheetClose asChild>
-                      <Link
-                        href="/researcher"
-                        className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-purple-300 hover:bg-purple-900/20 transition-all"
-                      >
-                        <FlaskConical className="w-4 h-4" />
-                        Researcher Dashboard
-                      </Link>
-                    </SheetClose>
-                  )}
-                </nav>
-
-                {/* Mobile logout */}
-                <div className="px-4 pt-2 border-t border-white/5 mt-2">
-                  <button
-                    onClick={handleLogout}
-                    disabled={isLoggingOut}
-                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-white/50 hover:text-white hover:bg-white/10 transition-all disabled:opacity-50"
-                  >
-                    <LogOut className="w-4 h-4" />
-                    {isLoggingOut ? 'Signing out...' : 'Logout'}
-                  </button>
-                </div>
-              </SheetContent>
-            </Sheet>
-
-            {/* Page title */}
-            <div>
-              <h2 className="text-sm font-extrabold tracking-wide" style={{ color: '#2d3027' }}>Dashboard</h2>
-              <p className="text-[11px] font-bold" style={{ color: '#777C6D' }}>
-                Welcome back,{' '}
-                <span className={skeletonCls}>{finalDisplayName}</span>
-              </p>
-            </div>
-          </div>
-
-          {/* Right: bell + profile */}
-          <div className="flex items-center gap-4">
-            {/* Bell */}
-            <button
-              className="relative w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/5"
-              style={{ background: 'rgba(0, 0, 0, 0.04)' }}
-              aria-label="Notifications"
-            >
-              <Bell className="w-4 h-4" style={{ color: '#2d3027' }} />
-              <span className="absolute top-2 right-2.5 w-2 h-2 bg-emerald-500 rounded-full shadow-sm" />
-            </button>
-
-            {/* Profile chip */}
-            <div
-              className="flex items-center gap-3 pl-4 cursor-pointer group"
-              style={{ borderLeft: '1.5px solid rgba(0,0,0,0.06)' }}
-            >
-              <div className="hidden sm:flex flex-col items-end">
-                <span className={`text-sm font-extrabold leading-tight text-[#2d3027] ${skeletonCls}`}>
-                  {finalDisplayName}
-                </span>
-                {userRole !== 'user' && (
-                  <span
-                    className="text-[11px] font-semibold px-1.5 py-0.5 rounded-full mt-0.5"
-                    style={{ background: badge.bg, color: badge.color }}
-                  >
-                    {isUserLoaded ? badge.label : '…'}
-                  </span>
-                )}
-              </div>
-
-              {/* Avatar */}
-              {isUserLoaded ? (
-                sessionUser?.profile_image_url ? (
-                  <img src={sessionUser.profile_image_url} alt="Profile" className="w-10 h-10 rounded-full object-cover border-2 border-white shadow-sm" />
-                ) : (
-                  <UserAvatar name={finalDisplayName} />
-                )
-              ) : (
-                <div className="w-10 h-10 rounded-full bg-zinc-200 animate-pulse" />
-              )}
-            </div>
-          </div>
-        </header>
 
         {/* Page content */}
         <main className="flex-1 overflow-y-auto" style={{ background: '#F4F2EC' }}>
