@@ -25,9 +25,9 @@ type NavItem = {
 
 const navItems: NavItem[] = [
   { label: 'Overview', href: '/researcher', icon: LayoutDashboard },
-  { label: 'Recommendations', href: '/dashboard/recomendation', icon: LineChart },
-  { label: 'Vehicle Search', href: '/dashboard/search', icon: Search },
-  { label: 'Compare Insights', href: '/dashboard/compare', icon: BarChart3 },
+  { label: 'analatical data', href: '/researcher/analatical', icon: LineChart },
+  { label: 'access data', href: '/researcher/access_data', icon: Search },
+
 ];
 
 export default function ResearcherLayout({ children }: { children: React.ReactNode }) {
@@ -59,9 +59,8 @@ export default function ResearcherLayout({ children }: { children: React.ReactNo
       <div className="min-h-screen bg-slate-50 text-slate-900">
         <div className="flex min-h-screen">
           <aside
-            className={`fixed inset-y-0 left-0 z-40 w-72 border-r border-slate-200 bg-white transition-transform duration-300 lg:translate-x-0 ${
-              open ? 'translate-x-0' : '-translate-x-full'
-            }`}
+            className={`fixed inset-y-0 left-0 z-40 w-72 border-r border-slate-200 bg-white transition-transform duration-300 lg:translate-x-0 ${open ? 'translate-x-0' : '-translate-x-full'
+              }`}
           >
             <div className="flex h-16 items-center justify-between border-b border-slate-200 px-5">
               <div className="flex items-center gap-2">
@@ -87,9 +86,8 @@ export default function ResearcherLayout({ children }: { children: React.ReactNo
                     key={item.href}
                     href={item.href}
                     onClick={() => setOpen(false)}
-                    className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition ${
-                      active ? 'bg-violet-100 text-violet-800' : 'text-slate-600 hover:bg-slate-100'
-                    }`}
+                    className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition ${active ? 'bg-violet-100 text-violet-800' : 'text-slate-600 hover:bg-slate-100'
+                      }`}
                   >
                     <Icon className="h-4 w-4" />
                     {item.label}
