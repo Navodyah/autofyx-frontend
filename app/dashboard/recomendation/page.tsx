@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -25,10 +25,9 @@ interface RecommendResponse {
   items: Record<string, unknown>[];
   finance?: Record<string, unknown>;
 }
-interface FuelTypeResponse {
-  fuel_type_id: number;
-  fuel_price?: number | null;
-}
+
+/* ── Constants ──────────────────────────────────────────────── */
+const KM_PER_YEAR = 10_000; // assumption: 10,000 km/year
 
 /* ── Helpers ────────────────────────────────────────────────── */
 function asNumber(v: unknown): number | null {
@@ -49,39 +48,19 @@ function addOpt<T extends Record<string, unknown>>(
   if (raw.trim() !== "") obj[key as keyof T] = parse(raw) as T[keyof T];
 }
 
-/**
- * Merge groq-extracted params with manual form values.
- * Rule: if a form field differs from its DEFAULT, it wins (priority 1).
- *       Otherwise the groq-extracted value is used (priority 2).
- */
-function mergeParams(form: FormValues, groq: GroqExtracted | null): {
-  salary: number;
-  purpose: string;
-  area: string;
-  fuel: string;
-  transmission: string;
-  maxFuel: string;
-  rate: string;
-  months: string;
-  dpa: string;
-  dpr: string;
-  maintainability: string;
-} {
-  // helpers
+function mergeParams(form: FormValues, groq: GroqExtracted | null) {
   const pick = <T,>(formVal: string, defVal: string, groqVal: T | undefined): string => {
-    if (formVal.trim() !== "" && formVal !== defVal) return formVal;   // manual wins
+    if (formVal.trim() !== "" && formVal !== defVal) return formVal;
     if (groqVal !== undefined && groqVal !== null) return String(groqVal);
     return formVal;
   };
   const pickOrEmpty = <T,>(formVal: string, groqVal: T | undefined): string => {
-    if (formVal.trim() !== "") return formVal;                         // manual wins
+    if (formVal.trim() !== "") return formVal;
     if (groqVal !== undefined && groqVal !== null) return String(groqVal);
     return "";
   };
-
   const rawSalary = pick(form.salary, DEFAULT_VALUES.salary, groq?.salary);
   const salary = parseFloat(rawSalary) || 0;
-
   return {
     salary,
     purpose: pick(form.purpose, DEFAULT_VALUES.purpose, groq?.purpose),
@@ -113,12 +92,8 @@ export default function RecommendationPage() {
     setValues((prev) => ({ ...prev, [key]: val }));
   }, []);
 
-  /* ── Groq parse ─────────────────────────────────────────────── */
   async function handleGroqSearch(text: string) {
-    setGroqLoading(true);
-    setGroqError(null);
-    setGroqParams(null);
-
+    setGroqLoading(true); setGroqError(null); setGroqParams(null);
     try {
       const res = await fetch("/api/groq-parse", {
         method: "POST",
@@ -126,14 +101,12 @@ export default function RecommendationPage() {
         body: JSON.stringify({ text }),
       });
       const json = await res.json() as { ok: boolean; params?: GroqExtracted; message?: string };
-
       if (!res.ok || !json.ok) {
         setGroqError(json.message ?? "Parse failed");
       } else {
         setGroqParams(json.params ?? null);
-        // Auto-submit after successful extraction
         handleSubmitWithGroq(json.params ?? null);
-        return; // handleSubmitWithGroq sets loading
+        return;
       }
     } catch (e) {
       setGroqError(e instanceof Error ? e.message : "Network error");
@@ -142,15 +115,8 @@ export default function RecommendationPage() {
     }
   }
 
-  function handleClearGroq() {
-    setGroqParams(null);
-    setGroqError(null);
-  }
-
-  /* ── Recommendation submit ─────────────────────────────────── */
-  async function handleSubmit() {
-    await handleSubmitWithGroq(groqParams);
-  }
+  function handleClearGroq() { setGroqParams(null); setGroqError(null); }
+  async function handleSubmit() { await handleSubmitWithGroq(groqParams); }
 
   async function handleSubmitWithGroq(gp: GroqExtracted | null) {
     const merged = mergeParams(values, gp);
@@ -158,10 +124,7 @@ export default function RecommendationPage() {
       setError("Monthly salary is required. Enter it in the form or mention it in your prompt.");
       return;
     }
-
-    setLoading(true);
-    setError(null);
-    setResults(null);
+    setLoading(true); setError(null); setResults(null);
 
     const salInfo = getSalaryInfo(merged.salary);
     const purpCls = getPurposeClasses(merged.purpose, merged.area);
@@ -195,56 +158,43 @@ export default function RecommendationPage() {
       const data = (await res.json()) as RecommendResponse;
       if (!res.ok) throw new Error(JSON.stringify(data, null, 2));
 
-      /* Fuel cost enrichment */
-      const uniqueFuelIds = Array.from(new Set(
-        (data.items || [])
-          .map((item) => asNumber(readValue(item, ["fuel_type_id"])))
-          .filter((v): v is number => v !== null),
-      ));
-      const fuelPriceMap = new Map<number, number | null>();
-      await Promise.all(
-        uniqueFuelIds.map(async (fuelId) => {
-          try {
-            const fr = await fetch(`${API_BASE}/fuel_types/${fuelId}`);
-            const fj = (await fr.json()) as FuelTypeResponse;
-            fuelPriceMap.set(fuelId, fr.ok ? asNumber(fj.fuel_price) : null);
-          } catch { fuelPriceMap.set(fuelId, null); }
-        }),
-      );
+      /* ── Enrich items with calculated fuel costs ──
+         The backend now includes fuel_price and fuel_efficiency_combined
+         and maintenance_yearly_cost / maintenance_monthly_cost directly.
+         We just compute the derived annual/monthly fuel cost here. */
       const enriched = (data.items || []).map((item) => {
         const next = { ...item };
-        const fuelId = asNumber(readValue(item, ["fuel_type_id"]));
-        const fuelPrice =
-          asNumber(readValue(item, ["fuel_price"])) ??
-          (fuelId !== null ? (fuelPriceMap.get(fuelId) ?? null) : null);
-        const comb = asNumber(readValue(item, ["COMB (L/100 km)", "COMB_L_100", "comb_l_100"]));
-        next.fuel_price = fuelPrice;
-        if (fuelPrice !== null && comb !== null) next.fuel_cost = fuelPrice * comb * 100;
+
+        const fuelPrice = asNumber(readValue(item, ["fuel_price"]));
+        const comb      = asNumber(readValue(item, ["fuel_efficiency_combined", "COMB (L/100 km)"]));
+
+        // Annual fuel cost = fuelPrice (LKR/L) × (km_per_year / 100) × comb (L/100km)
+        if (fuelPrice !== null && comb !== null) {
+          next.annual_fuel_cost   = fuelPrice * (KM_PER_YEAR / 100) * comb;
+          next.monthly_fuel_cost  = (next.annual_fuel_cost as number) / 12;
+        }
+        next.km_per_year_assumption = KM_PER_YEAR;
+
         return next;
       });
 
       setResults({ ...data, items: enriched });
-      // Store merged salary back so FinanceSummary sees it
-      if (!values.salary) {
-        setValues((p) => ({ ...p, salary: String(merged.salary) }));
-      }
+      if (!values.salary) setValues((p) => ({ ...p, salary: String(merged.salary) }));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Network error");
     } finally {
-      setLoading(false);
-      setGroqLoading(false);
+      setLoading(false); setGroqLoading(false);
     }
   }
 
-  /* Derived display values */
-  const merged = mergeParams(values, groqParams);
-  const salInfo = getSalaryInfo(merged.salary);
-  const purpCls = getPurposeClasses(merged.purpose, merged.area);
-  const vcOver = values.vcOverride || (groqParams?.vehicle_class ?? "");
+  const merged   = mergeParams(values, groqParams);
+  const salInfo  = getSalaryInfo(merged.salary);
+  const purpCls  = getPurposeClasses(merged.purpose, merged.area);
+  const vcOver   = values.vcOverride || (groqParams?.vehicle_class ?? "");
   const finalCls = vcOver ? [vcOver] : intersectClasses(salInfo.classes, purpCls);
 
-  const items = results?.items || [];
-  const finance = results?.finance || {};
+  const items    = results?.items || [];
+  const finance  = results?.finance || {};
   const hasItems = items.length > 0;
 
   return (
@@ -261,13 +211,9 @@ export default function RecommendationPage() {
         onClearGroq={handleClearGroq}
       />
 
-      {/* Error */}
       <AnimatePresence>
         {error && (
-          <motion.div
-            initial={{ opacity: 0, y: -6 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0 }}
+          <motion.div initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
             className="mb-5 rounded-2xl border p-4 text-sm"
             style={{ background: "rgba(239,68,68,0.07)", borderColor: "rgba(239,68,68,0.25)", color: "#ef4444" }}
           >
@@ -277,7 +223,6 @@ export default function RecommendationPage() {
         )}
       </AnimatePresence>
 
-      {/* Loading */}
       {(loading || groqLoading) && (
         <div className="flex flex-col items-center justify-center gap-4 py-20 text-slate-400">
           <div className="relative h-12 w-12">
@@ -290,14 +235,11 @@ export default function RecommendationPage() {
         </div>
       )}
 
-      {/* Placeholder */}
       {!loading && !groqLoading && !results && !error && (
         <div className="flex flex-col items-center justify-center py-16">
           <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm max-w-sm mx-auto">
-            <div
-              className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl"
-              style={{ background: "linear-gradient(135deg, #e0f2fe, #e0e7ff)" }}
-            >
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl"
+              style={{ background: "linear-gradient(135deg, #e0f2fe, #e0e7ff)" }}>
               <Car className="h-7 w-7 text-cyan-600" />
             </div>
             <p className="font-semibold text-slate-700">Describe what you&apos;re looking for</p>
@@ -308,13 +250,8 @@ export default function RecommendationPage() {
         </div>
       )}
 
-      {/* Results */}
       {!loading && !groqLoading && results && (
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.45 }}
-        >
+        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }}>
           <div className="mb-5 flex items-center justify-between">
             <div>
               <h2 className="text-lg font-bold text-slate-800">Recommendations</h2>
@@ -325,22 +262,15 @@ export default function RecommendationPage() {
               </p>
             </div>
             {hasItems && (
-              <span
-                className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold text-white shadow-sm"
-                style={{ background: "linear-gradient(135deg, #0891b2, #4f46e5)" }}
-              >
+              <span className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold text-white shadow-sm"
+                style={{ background: "linear-gradient(135deg, #0891b2, #4f46e5)" }}>
                 <Sparkles className="h-3 w-3" /> AI Ranked
               </span>
             )}
           </div>
 
-          <FinanceSummary
-            finance={finance}
-            salary={merged.salary}
-            purpose={merged.purpose}
-            area={merged.area}
-            vehicleClasses={finalCls}
-          />
+          <FinanceSummary finance={finance} salary={merged.salary} purpose={merged.purpose}
+            area={merged.area} vehicleClasses={finalCls} />
 
           {hasItems ? (
             <VehicleCardGrid items={items} />
