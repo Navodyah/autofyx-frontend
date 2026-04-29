@@ -342,7 +342,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
 
 
         {/* Page content */}
-        <main className="flex-1 overflow-y-auto" style={{ background: '#F4F2EC' }}>
+        <main className="flex-1 overflow-y-auto" style={{ background: '#ffffffff' }}>
           <motion.div
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
