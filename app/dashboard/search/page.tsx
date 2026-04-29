@@ -1,10 +1,9 @@
 'use client';
 
-import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
-  Sun,
-  Moon,
   Search,
   SlidersHorizontal,
   Calendar,
@@ -14,19 +13,11 @@ import {
   ChevronDown,
   Heart,
   SearchX,
+  X,
+  ChevronRight,
+  Fuel,
+  Tag,
 } from 'lucide-react';
-
-// --- Palettes ---
-const L = {
-  bg: '#F7F7F8', cardBg: '#FFFFFF', primary: '#0A0A0B', primaryText: '#FFFFFF',
-  text: '#18181B', muted: '#71717A', border: '#E4E4E7',
-  shadow: '0 4px 20px -2px rgba(0, 0, 0, 0.03)', iconBg: '#F4F4F5',
-};
-const D = {
-  bg: '#0B0F19', cardBg: '#161B22', primary: '#FFFFFF', primaryText: '#000000',
-  text: '#FFFFFF', muted: '#8B949E', border: 'rgba(255, 255, 255, 0.08)',
-  shadow: '0 4px 24px -4px rgba(0, 0, 0, 0.5)', iconBg: 'rgba(255,255,255,0.03)',
-};
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
 
@@ -38,11 +29,10 @@ type VehicleData = {
   max_price: string | null;
   image_url: string | null;
   brand?: { brand_name: string };
-  fuel_type?: { fuel_type_name: string };  // actual field from ORM serialization
+  fuel_type?: { fuel_type_name: string };
   vehicle_class?: { class_name: string };
 };
 
-// Empty filter state
 const EMPTY_FILTERS = {
   searchQuery: '',
   filterMake: '',
@@ -53,175 +43,105 @@ const EMPTY_FILTERS = {
 };
 
 export default function SearchPage() {
-  const [isDarkMode, setIsDarkMode] = useState(true);
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
-  const P = isDarkMode ? D : L;
-
-  // All vehicles from DB
   const [vehicles, setVehicles] = useState<VehicleData[]>([]);
   const [wishlist, setWishlist] = useState<number[]>([]);
   const [loading, setLoading] = useState(true);
-
-  // Brand names from DB
   const [brands, setBrands] = useState<string[]>([]);
-  // Fuel type names from DB
   const [fuelTypes, setFuelTypes] = useState<string[]>([]);
-
-  // Pending filter values (what user is selecting in the dropdown)
   const [pending, setPending] = useState(EMPTY_FILTERS);
-
-  // Applied filters (what is actually used for filtering the results)
   const [applied, setApplied] = useState(EMPTY_FILTERS);
-
-  // Whether any filter was ever applied – controls blank-state
   const [hasSearched, setHasSearched] = useState(false);
-
-  // userId fetched safely on client after mount only
   const [userId, setUserId] = useState<string>('');
 
   useEffect(() => {
-    // Safe client-only localStorage read
-    const token =
-      window.localStorage.getItem('access_token') ||
-      window.localStorage.getItem('token');
+    const token = window.localStorage.getItem('access_token') || window.localStorage.getItem('token');
     if (!token) return;
     try {
       const payload = JSON.parse(atob(token.split('.')[1]));
-      const id =
-        payload?.user_id || payload?.sub || payload?.id || payload?._id || '';
+      const id = payload?.user_id || payload?.sub || payload?.id || payload?._id || '';
       setUserId(String(id));
     } catch {
-      const stored =
-        window.localStorage.getItem('user') ||
-        window.localStorage.getItem('userData');
+      const stored = window.localStorage.getItem('user') || window.localStorage.getItem('userData');
       if (stored) {
-        try {
-          const obj = JSON.parse(stored);
-          setUserId(obj?.user_id || obj?._id || obj?.id || '');
-        } catch { }
+        try { const obj = JSON.parse(stored); setUserId(obj?.user_id || obj?._id || obj?.id || ''); } catch { }
       }
     }
   }, []);
 
-  // Fetch all vehicles, brands, and fuel types on mount
   useEffect(() => {
-    // Vehicles
     fetch(`${API_BASE}/vehicles/?limit=500`)
       .then((r) => r.json())
       .then((data) => { if (Array.isArray(data)) setVehicles(data); })
       .catch(console.error)
       .finally(() => setLoading(false));
 
-    // Brands — fetch directly from brands table
     fetch(`${API_BASE}/brands/?limit=200`)
       .then((r) => r.json())
       .then((data: { brand_name: string }[]) => {
-        if (Array.isArray(data))
-          setBrands(data.map((b) => b.brand_name).filter(Boolean).sort());
+        if (Array.isArray(data)) setBrands(data.map((b) => b.brand_name).filter(Boolean).sort());
       })
       .catch(console.error);
 
-    // Fuel types — fetch directly from fuel_types table
     fetch(`${API_BASE}/fuel_types/?limit=100`)
       .then((r) => r.json())
       .then((data: { fuel_type_name: string }[]) => {
-        if (Array.isArray(data))
-          setFuelTypes(data.map((f) => f.fuel_type_name).filter(Boolean).sort());
+        if (Array.isArray(data)) setFuelTypes(data.map((f) => f.fuel_type_name).filter(Boolean).sort());
       })
       .catch(console.error);
   }, []);
 
-  // Fetch wishlist when userId is known
   useEffect(() => {
     if (!userId) return;
     fetch(`/api/wishlist?user_id=${userId}`)
       .then((r) => r.json())
-      .then((data) => {
-        if (data.items) setWishlist(data.items);
-      })
+      .then((data) => { if (data.items) setWishlist(data.items); })
       .catch(console.error);
   }, [userId]);
 
-  // Available models: when no make is selected, show ALL unique model names from vehicle table
-  // When a make IS selected, scope to that make only
   const availableModels = useMemo(() => {
-    const src = pending.filterMake
-      ? vehicles.filter((v) => v.brand?.brand_name === pending.filterMake)
-      : vehicles;
-    return Array.from(
-      new Set(src.map((v) => v.model_name).filter(Boolean))
-    ).sort() as string[];
+    const src = pending.filterMake ? vehicles.filter((v) => v.brand?.brand_name === pending.filterMake) : vehicles;
+    return Array.from(new Set(src.map((v) => v.model_name).filter(Boolean))).sort() as string[];
   }, [vehicles, pending.filterMake]);
 
-  // Unique years — filtered by make+model in pending (so user sees only relevant years)
   const availableYears = useMemo(() => {
     let src = vehicles;
     if (pending.filterMake) src = src.filter((v) => v.brand?.brand_name === pending.filterMake);
     if (pending.filterModel) src = src.filter((v) => v.model_name === pending.filterModel);
-    return Array.from(
-      new Set(src.map((v) => v.manufacturing_year).filter((y) => y && y > 1900))
-    ).sort((a, b) => b - a) as number[];
+    return Array.from(new Set(src.map((v) => v.manufacturing_year).filter((y) => y && y > 1900))).sort((a, b) => b - a) as number[];
   }, [vehicles, pending.filterMake, pending.filterModel]);
 
-  // Reset downstream filters when make changes
-  useEffect(() => {
-    setPending((p) => ({ ...p, filterModel: '', filterYear: '' }));
-  }, [pending.filterMake]);
+  useEffect(() => { setPending((p) => ({ ...p, filterModel: '', filterYear: '' })); }, [pending.filterMake]);
+  useEffect(() => { setPending((p) => ({ ...p, filterYear: '' })); }, [pending.filterModel]);
 
-  // Reset year when model changes
-  useEffect(() => {
-    setPending((p) => ({ ...p, filterYear: '' }));
-  }, [pending.filterModel]);
-
-  // ------ Apply filters (called on mouse leave from the filter panel) ------
   const applyFilters = useCallback(() => {
     setApplied({ ...pending });
     const hasAny = Object.values(pending).some((v) => v !== '');
-    if (hasAny) {
-      setHasSearched(true);
-      // Auto-close filter bar after applying
-      setIsFiltersOpen(false);
-    }
+    if (hasAny) { setHasSearched(true); setIsFiltersOpen(false); }
   }, [pending]);
 
-  // Update pending text search
-  const handleSearchChange = (val: string) => {
-    setPending((p) => ({ ...p, searchQuery: val }));
-  };
+  const clearAllFilters = useCallback(() => {
+    setPending(EMPTY_FILTERS);
+    setApplied(EMPTY_FILTERS);
+    setHasSearched(false);
+  }, []);
 
-  // ------ Filtered results ------
   const filteredVehicles = useMemo(() => {
     const hasAnyAppliedFilters = Object.values(applied).some((v) => v !== '');
-
-    // If no search is applied, show up to 100 vehicles by default
-    if (!hasAnyAppliedFilters) {
-      return vehicles.slice(0, 100);
-    }
-
+    if (!hasAnyAppliedFilters) return vehicles.slice(0, 100);
     return vehicles.filter((v) => {
-      // Search term
       const term = applied.searchQuery.toLowerCase();
       if (term) {
         const full = `${v.brand?.brand_name} ${v.model_name} ${v.manufacturing_year}`.toLowerCase();
         if (!full.includes(term)) return false;
       }
-      // Make
       if (applied.filterMake && v.brand?.brand_name !== applied.filterMake) return false;
-      // Model
       if (applied.filterModel && v.model_name !== applied.filterModel) return false;
-      // Fuel
-      // Fuel — match fuel_type_name from fuel_types table against vehicle's fuel_type.fuel_type_name
       if (applied.filterFuel) {
         const vFuel = (v.fuel_type?.fuel_type_name || '').toLowerCase();
-        const selFuel = applied.filterFuel.toLowerCase();
-        if (vFuel !== selFuel) return false;
+        if (vFuel !== applied.filterFuel.toLowerCase()) return false;
       }
-      // Year — exact match from DB year values
-      if (applied.filterYear) {
-        const yr = v.manufacturing_year;
-        if (yr !== Number(applied.filterYear)) return false;
-      }
-      // Price
+      if (applied.filterYear && v.manufacturing_year !== Number(applied.filterYear)) return false;
       if (applied.filterPrice) {
         const p = parseFloat(v.minimum_price || '0');
         if (!p) return false;
@@ -234,17 +154,11 @@ export default function SearchPage() {
     });
   }, [vehicles, applied, hasSearched]);
 
-  // ------ Wishlist toggle ------
   const toggleWishlist = async (vehicle_id: number) => {
-    if (!userId) {
-      alert('Please login first to add to Garage.');
-      return;
-    }
+    if (!userId) { alert('Please login first to add to Garage.'); return; }
     const isLiked = wishlist.includes(vehicle_id);
     const action = isLiked ? 'remove' : 'add';
-    setWishlist((prev) =>
-      isLiked ? prev.filter((id) => id !== vehicle_id) : [...prev, vehicle_id]
-    );
+    setWishlist((prev) => isLiked ? prev.filter((id) => id !== vehicle_id) : [...prev, vehicle_id]);
     try {
       const res = await fetch('/api/wishlist', {
         method: 'POST',
@@ -253,285 +167,281 @@ export default function SearchPage() {
       });
       const data = await res.json();
       if (data.items) setWishlist(data.items);
-    } catch (e) {
-      console.error(e);
-    }
+    } catch (e) { console.error(e); }
   };
 
-  const selectClasses = `w-full appearance-none rounded-xl px-4 py-3.5 text-[14px] font-semibold cursor-pointer outline-none transition-all`;
   const activeFiltersCount = Object.values(applied).filter((v) => v !== '').length;
+  const hasResults = filteredVehicles.length > 0;
+
+  const fuelColors: Record<string, string> = {
+    petrol: '#f97316', gasoline: '#f97316', diesel: '#6366f1',
+    electric: '#10b981', hybrid: '#3b82f6', default: '#64748b',
+  };
+  const getFuelColor = (fuel?: string) => {
+    if (!fuel) return fuelColors.default;
+    const key = fuel.toLowerCase();
+    return fuelColors[key] || fuelColors.default;
+  };
+
+  const SelectField = ({
+    icon, value, onChange, placeholder, children,
+  }: {
+    icon: React.ReactNode; value: string;
+    onChange: (v: string) => void; placeholder: string; children: React.ReactNode;
+  }) => (
+    <div className="relative group">
+      <div className="absolute inset-y-0 left-3.5 flex items-center pointer-events-none z-10" style={{ color: '#2563eb' }}>
+        {icon}
+      </div>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full appearance-none pl-10 pr-10 py-3 rounded-xl text-sm font-medium outline-none transition-all cursor-pointer border bg-white"
+        style={{
+          color: value ? '#0f172a' : '#94a3b8',
+          borderColor: value ? '#2563eb' : '#e2e8f0',
+          boxShadow: value ? '0 0 0 3px rgba(37,99,235,0.1)' : 'none',
+        }}
+      >
+        <option value="">{placeholder}</option>
+        {children}
+      </select>
+      <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
+        <ChevronDown className="w-4 h-4" style={{ color: '#94a3b8' }} />
+      </div>
+    </div>
+  );
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      className="min-h-full pb-12 pt-6 px-4 xl:px-6 transition-colors duration-500 rounded-[32px] m-3"
-      style={{ background: P.bg, minHeight: 'calc(100vh - 100px)' }}
-    >
-      <div className="max-w-7xl mx-auto space-y-6">
+    <div className="flex flex-col h-[calc(100vh-4rem)] bg-white overflow-hidden">
+      <div className="shrink-0 max-w-7xl mx-auto w-full px-4 xl:px-6 pt-6 space-y-6">
 
         {/* ── HEADER ── */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-4">
+        <motion.div initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} className="flex items-end justify-between">
           <div>
-            <h1 className="text-2xl font-extrabold tracking-tight" style={{ color: P.text }}>
-              Discover Vehicles
+            <div className="flex items-center gap-2 mb-1">
+              <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: '#2563eb' }}>
+                <Search className="w-3.5 h-3.5 text-white" />
+              </div>
+              <span className="text-xs font-semibold uppercase tracking-widest" style={{ color: '#2563eb' }}>Vehicle Catalog</span>
+            </div>
+            <h1 className="text-3xl font-extrabold tracking-tight" style={{ color: '#0f172a' }}>
+              Find Your Perfect Vehicle
             </h1>
-            <p className="text-sm font-medium mt-1" style={{ color: P.muted }}>
-              Use the filters to search and instantly see matching vehicles.
+            <p className="text-sm mt-1" style={{ color: '#64748b' }}>
+              Browse {vehicles.length.toLocaleString()}+ vehicles — filter by make, model, fuel type & price.
             </p>
           </div>
-          <motion.button
-            onClick={() => setIsDarkMode(!isDarkMode)}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="flex items-center justify-center w-11 h-11 rounded-full transition-colors duration-500 shadow-sm shrink-0"
-            style={{ background: P.cardBg, border: `1px solid ${P.border}`, color: P.text }}
-          >
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={isDarkMode ? 'moon' : 'sun'}
-                initial={{ rotate: -90, opacity: 0 }}
-                animate={{ rotate: 0, opacity: 1 }}
-                exit={{ rotate: 90, opacity: 0 }}
-                transition={{ duration: 0.2 }}
-              >
-                {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-              </motion.div>
-            </AnimatePresence>
-          </motion.button>
-        </div>
+          {activeFiltersCount > 0 && (
+            <motion.button
+              initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
+              onClick={clearAllFilters}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold border transition-all hover:opacity-80"
+              style={{ borderColor: '#fecaca', background: '#fff1f2', color: '#dc2626' }}
+            >
+              <X className="w-3.5 h-3.5" /> Clear Filters
+            </motion.button>
+          )}
+        </motion.div>
 
-        {/* ── SEARCH & FILTERS BAR ── */}
-        <div
-          className="p-3 lg:p-4 rounded-[28px] shadow-lg transition-colors duration-500 border relative z-20"
-          style={{ background: P.cardBg, borderColor: P.border, boxShadow: P.shadow }}
+        {/* ── SEARCH & FILTER BAR ── */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
+          className="relative group rounded-2xl p-[1.5px] transition-all duration-500 bg-slate-200 hover:bg-gradient-to-r hover:from-blue-500 hover:to-indigo-500 shadow-[0_8px_30px_rgb(0,0,0,0.08)] hover:shadow-[0_8px_30px_rgba(37,99,235,0.2)]"
         >
-          {/* Main Search Row */}
-          <div className="flex flex-col lg:flex-row gap-3">
-            {/* Search Input */}
+          <div className="absolute inset-0 bg-blue-500/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl pointer-events-none" />
+          <div className="relative bg-white rounded-[15px] overflow-hidden flex flex-col">
+          {/* Search Row */}
+          <div className="flex flex-col sm:flex-row gap-0 divide-y sm:divide-y-0 sm:divide-x" style={{ borderColor: '#e2e8f0' }}>
             <div className="relative flex-1">
               <div className="absolute inset-y-0 left-5 flex items-center pointer-events-none">
-                <Search className="w-6 h-6" style={{ color: P.muted }} />
+                <Search className="w-5 h-5" style={{ color: '#2563eb' }} />
               </div>
               <input
                 value={pending.searchQuery}
-                onChange={(e) => handleSearchChange(e.target.value)}
+                onChange={(e) => setPending((p) => ({ ...p, searchQuery: e.target.value }))}
+                onKeyDown={(e) => e.key === 'Enter' && applyFilters()}
                 type="text"
-                placeholder="Search by brand or model (e.g. 'Toyota Corolla')"
-                className="w-full pl-14 pr-6 py-4 rounded-2xl text-[16px] font-medium outline-none transition-all placeholder:font-normal"
-                style={{
-                  background: isDarkMode ? 'rgba(255,255,255,0.03)' : '#F4F4F5',
-                  color: P.text,
-                  border: '1px solid transparent',
-                }}
+                placeholder="Search make, model or year…"
+                className="w-full pl-14 pr-5 py-4 text-base font-medium outline-none bg-transparent placeholder:font-normal"
+                style={{ color: '#0f172a' }}
               />
             </div>
-
-            {/* Action Buttons */}
-            <div className="flex gap-3">
-              <button
+            <div className="flex items-center gap-2 px-4 py-3 sm:py-0">
+              <motion.button
+                whileTap={{ scale: 0.97 }}
                 onClick={() => setIsFiltersOpen(!isFiltersOpen)}
-                className="flex items-center gap-2 px-6 py-4 rounded-2xl text-[14px] font-bold border transition-colors hover:opacity-80 whitespace-nowrap relative"
+                className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold border transition-all relative"
                 style={{
-                  background: isFiltersOpen ? P.border : 'transparent',
-                  borderColor: P.border,
-                  color: P.text,
+                  background: isFiltersOpen ? '#eff6ff' : '#f8fafc',
+                  borderColor: isFiltersOpen ? '#93c5fd' : '#e2e8f0',
+                  color: isFiltersOpen ? '#2563eb' : '#475569',
                 }}
               >
                 <SlidersHorizontal className="w-4 h-4" />
-                <span className="hidden sm:inline">Filters</span>
+                Filters
                 {activeFiltersCount > 0 && (
-                  <span className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-blue-500 text-white text-[10px] font-bold flex items-center justify-center">
+                  <span className="absolute -top-2 -right-2 w-5 h-5 rounded-full text-white text-[10px] font-bold flex items-center justify-center" style={{ background: '#2563eb' }}>
                     {activeFiltersCount}
                   </span>
                 )}
-              </button>
-
-              <button
+              </motion.button>
+              <motion.button
+                whileTap={{ scale: 0.97 }}
                 onClick={applyFilters}
-                className="flex items-center gap-2 px-6 py-4 rounded-2xl text-[14px] font-bold border transition-colors shadow-lg hover:opacity-90 whitespace-nowrap"
-                style={{
-                  background: "var(--bg-primary, #2563eb)",
-                  borderColor: "transparent",
-                  color: "#ffffff",
-                }}
+                className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold text-white transition-all"
+                style={{ background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)', boxShadow: '0 4px 14px rgba(37,99,235,0.35)' }}
               >
-                <Search className="w-4 h-4 text-white" />
-                <span className="hidden sm:inline">Search</span>
-              </button>
+                <Search className="w-4 h-4" />
+                Search
+              </motion.button>
             </div>
           </div>
 
-          {/* ── FILTER PANEL ── */}
+          {/* Filter Panel */}
           <AnimatePresence>
             {isFiltersOpen && (
               <motion.div
-                initial={{ height: 0, opacity: 0, marginTop: 0 }}
-                animate={{ height: 'auto', opacity: 1, marginTop: 16 }}
-                exit={{ height: 0, opacity: 0, marginTop: 0 }}
-                className="overflow-hidden"
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.22 }}
+                className="overflow-hidden border-t"
+                style={{ borderColor: '#e2e8f0' }}
               >
-                <div
-                  className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 p-4 rounded-[20px] mb-2 border"
-                  style={{ background: isDarkMode ? 'rgba(255,255,255,0.01)' : '#FAFAFA', borderColor: P.border }}
-                >
-                  {/* Make */}
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
-                      <Car className="w-4 h-4" style={{ color: P.muted }} />
-                    </div>
-                    <select
-                      value={pending.filterMake}
-                      onChange={(e) => setPending((p) => ({ ...p, filterMake: e.target.value }))}
-                      className={`${selectClasses} pl-10`}
-                      style={{ background: P.cardBg, border: `1px solid ${P.border}`, color: P.text }}
-                    >
-                      <option value="">Select Make</option>
-                      {brands.map((m) => <option key={m} value={m}>{m}</option>)}
-                    </select>
-                    <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none">
-                      <ChevronDown className="w-4 h-4" style={{ color: P.muted }} />
-                    </div>
-                  </div>
-
-                  {/* Model — always enabled, scoped to make when make is selected */}
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
-                      <Car className="w-4 h-4" style={{ color: P.muted }} />
-                    </div>
-                    <select
-                      value={pending.filterModel}
-                      onChange={(e) => setPending((p) => ({ ...p, filterModel: e.target.value }))}
-                      className={`${selectClasses} pl-10`}
-                      style={{ background: P.cardBg, border: `1px solid ${P.border}`, color: P.text }}
-                    >
-                      <option value="">Select Model</option>
-                      {availableModels.map((m) => <option key={m} value={m}>{m}</option>)}
-                    </select>
-                    <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none">
-                      <ChevronDown className="w-4 h-4" style={{ color: P.muted }} />
-                    </div>
-                  </div>
-
-                  {/* Year — exact years from vehicles table, scoped by make+model */}
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
-                      <Calendar className="w-4 h-4" style={{ color: P.muted }} />
-                    </div>
-                    <select
-                      value={pending.filterYear}
-                      onChange={(e) => setPending((p) => ({ ...p, filterYear: e.target.value }))}
-                      className={`${selectClasses} pl-10`}
-                      style={{ background: P.cardBg, border: `1px solid ${P.border}`, color: P.text }}
-                    >
-                      <option value="">Select Year</option>
-                      {availableYears.map((y) => <option key={y} value={String(y)}>{y}</option>)}
-                    </select>
-                    <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none">
-                      <ChevronDown className="w-4 h-4" style={{ color: P.muted }} />
-                    </div>
-                  </div>
-
-                  {/* Fuel */}
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
-                      <Zap className="w-4 h-4" style={{ color: P.muted }} />
-                    </div>
-                    <select
-                      value={pending.filterFuel}
-                      onChange={(e) => setPending((p) => ({ ...p, filterFuel: e.target.value }))}
-                      className={`${selectClasses} pl-10`}
-                      style={{ background: P.cardBg, border: `1px solid ${P.border}`, color: P.text }}
-                    >
-                      <option value="">Select Fuel Type</option>
-                      {fuelTypes.map((f) => <option key={f} value={f}>{f}</option>)}
-                    </select>
-                    <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none">
-                      <ChevronDown className="w-4 h-4" style={{ color: P.muted }} />
-                    </div>
-                  </div>
-
-                  {/* Price */}
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
-                      <DollarSign className="w-4 h-4" style={{ color: P.muted }} />
-                    </div>
-                    <select
-                      value={pending.filterPrice}
-                      onChange={(e) => setPending((p) => ({ ...p, filterPrice: e.target.value }))}
-                      className={`${selectClasses} pl-10`}
-                      style={{ background: P.cardBg, border: `1px solid ${P.border}`, color: P.text }}
-                    >
-                      <option value="">Select Price</option>
-                      <option value="Under 5M LKR">Under 5M LKR</option>
-                      <option value="5M - 10M LKR">5M – 10M LKR</option>
-                      <option value="10M - 20M LKR">10M – 20M LKR</option>
-                      <option value="Above 20M LKR">Above 20M LKR</option>
-                    </select>
-                    <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none">
-                      <ChevronDown className="w-4 h-4" style={{ color: P.muted }} />
-                    </div>
-                  </div>
+                <div className="p-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3" style={{ background: '#f8fafc' }}>
+                  <SelectField icon={<Car className="w-4 h-4" />} value={pending.filterMake} onChange={(v) => setPending((p) => ({ ...p, filterMake: v }))} placeholder="All Makes">
+                    {brands.map((m) => <option key={m} value={m}>{m}</option>)}
+                  </SelectField>
+                  <SelectField icon={<Car className="w-4 h-4" />} value={pending.filterModel} onChange={(v) => setPending((p) => ({ ...p, filterModel: v }))} placeholder="All Models">
+                    {availableModels.map((m) => <option key={m} value={m}>{m}</option>)}
+                  </SelectField>
+                  <SelectField icon={<Calendar className="w-4 h-4" />} value={pending.filterYear} onChange={(v) => setPending((p) => ({ ...p, filterYear: v }))} placeholder="All Years">
+                    {availableYears.map((y) => <option key={y} value={String(y)}>{y}</option>)}
+                  </SelectField>
+                  <SelectField icon={<Zap className="w-4 h-4" />} value={pending.filterFuel} onChange={(v) => setPending((p) => ({ ...p, filterFuel: v }))} placeholder="All Fuel Types">
+                    {fuelTypes.map((f) => <option key={f} value={f}>{f}</option>)}
+                  </SelectField>
+                  <SelectField icon={<DollarSign className="w-4 h-4" />} value={pending.filterPrice} onChange={(v) => setPending((p) => ({ ...p, filterPrice: v }))} placeholder="All Prices">
+                    <option value="Under 5M LKR">Under 5M LKR</option>
+                    <option value="5M - 10M LKR">5M – 10M LKR</option>
+                    <option value="10M - 20M LKR">10M – 20M LKR</option>
+                    <option value="Above 20M LKR">Above 20M LKR</option>
+                  </SelectField>
                 </div>
               </motion.div>
             )}
           </AnimatePresence>
-        </div>
+          </div>
+        </motion.div>
 
-        {/* ── RESULTS GRID ── */}
-        <div className="pt-4">
+        {/* ── ACTIVE FILTER CHIPS ── */}
+        <AnimatePresence>
+          {activeFiltersCount > 0 && (
+            <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="flex flex-wrap gap-2">
+              {Object.entries(applied).filter(([, v]) => v !== '').map(([k, v]) => (
+                <motion.span
+                  key={k}
+                  initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border"
+                  style={{ background: '#eff6ff', borderColor: '#bfdbfe', color: '#1d4ed8' }}
+                >
+                  {v}
+                  <button onClick={() => { const next = { ...applied, [k]: '' }; setApplied(next); setPending(next); }} className="hover:text-red-500 transition-colors">
+                    <X className="w-3 h-3" />
+                  </button>
+                </motion.span>
+              ))}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
+      {/* ── SCROLLABLE RESULTS AREA ── */}
+      <ScrollArea className="flex-1 mt-2">
+        <div className="max-w-7xl mx-auto w-full px-4 xl:px-6 pb-16 pt-4">
           {loading ? (
-            <div className="flex justify-center py-20">
-              <div className="w-8 h-8 rounded-full border-4 border-t-blue-500 border-zinc-200 animate-spin" />
+            <div className="flex flex-col items-center justify-center py-24 gap-4">
+              <div className="relative w-12 h-12">
+                <div className="absolute inset-0 rounded-full border-4 border-blue-100" />
+                <div className="absolute inset-0 rounded-full border-4 border-t-blue-600 animate-spin" />
+              </div>
+              <p className="text-sm font-medium" style={{ color: '#64748b' }}>Loading vehicles…</p>
             </div>
-          ) : filteredVehicles.length === 0 ? (
-            <div
-              className="flex flex-col items-center justify-center py-20 rounded-3xl border text-center gap-3"
-              style={{ background: P.cardBg, borderColor: P.border }}
+          ) : !hasResults ? (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }}
+              className="flex flex-col items-center justify-center py-24 rounded-2xl border text-center gap-4"
+              style={{ background: '#ffffff', borderColor: '#e2e8f0' }}
             >
-              <SearchX className="w-14 h-14" style={{ color: P.muted }} />
-              <p className="text-lg font-bold" style={{ color: P.text }}>No vehicles match your filters</p>
-              <p className="text-sm" style={{ color: P.muted }}>Try adjusting your search criteria.</p>
-            </div>
+              <div className="w-16 h-16 rounded-2xl flex items-center justify-center" style={{ background: '#f1f5f9' }}>
+                <SearchX className="w-8 h-8" style={{ color: '#94a3b8' }} />
+              </div>
+              <div>
+                <p className="text-lg font-bold mb-1" style={{ color: '#0f172a' }}>No vehicles match your filters</p>
+                <p className="text-sm" style={{ color: '#64748b' }}>Try adjusting or clearing your search criteria.</p>
+              </div>
+              <button onClick={clearAllFilters} className="mt-2 px-6 py-2.5 rounded-xl text-sm font-semibold text-white" style={{ background: '#2563eb' }}>
+                Clear All Filters
+              </button>
+            </motion.div>
           ) : (
             <>
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-lg font-bold" style={{ color: P.text }}>
-                  {Object.values(applied).some((v) => v !== '') ? 'Search Results' : 'Explore Vehicles'}
-                </h2>
-                <p className="text-[13px] font-bold" style={{ color: P.muted }}>
-                  {filteredVehicles.length} vehicle{filteredVehicles.length !== 1 ? 's' : ''} found
-                </p>
+              {/* Results Header */}
+              <div className="flex items-center justify-between mb-5">
+                <div className="flex items-center gap-3">
+                  <h2 className="text-lg font-bold" style={{ color: '#0f172a' }}>
+                    {Object.values(applied).some((v) => v !== '') ? 'Search Results' : 'All Vehicles'}
+                  </h2>
+                  <span className="px-2.5 py-1 rounded-full text-xs font-bold" style={{ background: '#eff6ff', color: '#2563eb' }}>
+                    {filteredVehicles.length.toLocaleString()} found
+                  </span>
+                </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {/* Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
                 {filteredVehicles.map((car, idx) => {
                   const isLiked = wishlist.includes(car.vehicle_id);
+                  const classLabel = car.vehicle_class?.class_name || 'Standard';
+                  const yearLabel = car.manufacturing_year ? `${car.manufacturing_year} EDITION` : 'EDITION';
                   return (
                     <motion.div
                       key={car.vehicle_id}
-                      initial={{ opacity: 0, y: 12 }}
+                      initial={{ opacity: 0, y: 16 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.3, delay: (idx % 12) * 0.04 }}
-                      className="group flex flex-col rounded-[24px] border overflow-hidden transition-all duration-300 hover:-translate-y-1"
-                      style={{ background: P.cardBg, borderColor: P.border, boxShadow: P.shadow }}
+                      transition={{ duration: 0.28, delay: (idx % 9) * 0.04 }}
+                      className="group relative flex flex-col rounded-2xl overflow-hidden transition-all duration-500 hover:-translate-y-1.5 cursor-pointer p-[1px] bg-slate-200 hover:bg-gradient-to-b hover:from-blue-500 hover:to-indigo-500 hover:shadow-[0_16px_40px_-6px_rgba(37,99,235,0.25)]"
+                      style={{
+                        boxShadow: '0 2px 16px -4px rgba(15,23,42,0.08)',
+                      }}
                     >
-                      {/* Image */}
-                      <div className="relative h-[200px] overflow-hidden flex items-center justify-center"
-                        style={{ background: isDarkMode ? '#0d1117' : '#f1f5f9' }}>
-                        <div className="absolute top-4 left-4 z-10 px-3 py-1 rounded-full text-[11px] font-bold bg-black/40 backdrop-blur-md text-white border border-white/20">
-                          {car.vehicle_class?.class_name || 'Standard'}
+                      <div className="absolute inset-0 bg-blue-500/10 blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl pointer-events-none" />
+                      <div className="relative flex flex-col flex-1 bg-white rounded-[15px] overflow-hidden">
+                      {/* ── IMAGE AREA ── */}
+                      <div className="relative h-[200px] overflow-hidden" style={{ background: '#0f172a' }}>
+                        {/* Class badge — top left */}
+                        <div
+                          className="absolute top-3 left-3 z-10 px-3 py-1 rounded-full text-[10px] font-bold tracking-wide"
+                          style={{ background: 'rgba(255,255,255,0.95)', color: '#0f172a', boxShadow: '0 2px 8px rgba(0,0,0,0.25)' }}
+                        >
+                          {classLabel}
                         </div>
 
-                        {/* Heart / Like button */}
+                        {/* Heart — top right */}
                         <button
-                          onClick={() => toggleWishlist(car.vehicle_id)}
-                          className="absolute top-4 right-4 z-10 w-9 h-9 flex items-center justify-center rounded-full bg-black/40 backdrop-blur-md border border-white/20 transition-all hover:scale-110 shadow-lg"
+                          onClick={(e) => { e.stopPropagation(); toggleWishlist(car.vehicle_id); }}
+                          className="absolute top-3 right-3 z-10 w-8 h-8 flex items-center justify-center rounded-full transition-all hover:scale-110"
+                          style={{
+                            background: isLiked ? '#fff1f2' : 'rgba(255,255,255,0.92)',
+                            boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+                          }}
                           title={isLiked ? 'Remove from Garage' : 'Add to Garage'}
                         >
-                          <Heart className={`w-4 h-4 ${isLiked ? 'fill-red-500 text-red-500' : 'text-white'}`} />
+                          <Heart className={`w-4 h-4 transition-all ${isLiked ? 'fill-red-500 text-red-500' : 'text-slate-500'}`} />
                         </button>
 
+                        {/* Vehicle image */}
                         {car.image_url ? (
                           <img
                             src={car.image_url}
@@ -539,26 +449,77 @@ export default function SearchPage() {
                             className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                           />
                         ) : (
-                          <Car className="w-16 h-16 opacity-10" style={{ color: P.muted }} />
+                          <div className="w-full h-full flex items-center justify-center">
+                            <Car className="w-16 h-16 opacity-20" style={{ color: '#94a3b8' }} />
+                          </div>
                         )}
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent pointer-events-none" />
+
+                        {/* Gradient overlay */}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none" />
                       </div>
 
-                      {/* Details */}
-                      <div className="p-5 flex-1 flex flex-col">
-                        <p className="text-[11px] font-bold uppercase tracking-widest mb-1" style={{ color: P.muted }}>
-                          {car.brand?.brand_name} · {car.manufacturing_year} · {car.fuel_type?.fuel_type_name}
-                        </p>
-                        <h3 className="text-[17px] font-extrabold line-clamp-1 mb-4" style={{ color: P.text }}>
-                          {car.model_name}
-                        </h3>
+                      {/* ── DETAILS AREA ── */}
+                      <div className="p-5 flex-1 flex flex-col gap-3">
 
-                        <div className="mt-auto pt-3 border-t" style={{ borderColor: P.border }}>
-                          <p className="text-xs font-semibold mb-0.5" style={{ color: P.muted }}>Est. Value</p>
-                          <p className="text-xl font-bold tracking-tight" style={{ color: P.text }}>
-                            LKR {car.minimum_price ? parseFloat(car.minimum_price).toLocaleString() : 'N/A'}
+                        {/* Edition label + model name */}
+                        <div>
+                          <p className="text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color: '#94a3b8' }}>
+                            {yearLabel}
                           </p>
+                          <h3 className="text-[17px] font-extrabold leading-snug line-clamp-1" style={{ color: '#0f172a' }}>
+                            {car.brand?.brand_name} {car.model_name}
+                          </h3>
                         </div>
+
+                        {/* 3-column metrics */}
+                        <div
+                          className="grid grid-cols-3 gap-2 py-3 rounded-xl px-2"
+                          style={{ background: '#f8fafc', border: '1px solid #f1f5f9' }}
+                        >
+                          {/* Fuel / Energy */}
+                          <div className="flex flex-col items-center gap-0.5">
+                            <p className="text-[9px] font-bold uppercase tracking-widest" style={{ color: '#94a3b8' }}>Energy</p>
+                            <Fuel className="w-3.5 h-3.5 mt-0.5" style={{ color: '#64748b' }} />
+                            <p className="text-[11px] font-semibold text-center" style={{ color: '#334155' }}>
+                              {car.fuel_type?.fuel_type_name || '—'}
+                            </p>
+                          </div>
+
+                          {/* Divider */}
+                          <div className="flex flex-col items-center gap-0.5 border-x" style={{ borderColor: '#e2e8f0' }}>
+                            <p className="text-[9px] font-bold uppercase tracking-widest" style={{ color: '#94a3b8' }}>Year</p>
+                            <Calendar className="w-3.5 h-3.5 mt-0.5" style={{ color: '#64748b' }} />
+                            <p className="text-[11px] font-semibold" style={{ color: '#334155' }}>
+                              {car.manufacturing_year || '—'}
+                            </p>
+                          </div>
+
+                          {/* Class */}
+                          <div className="flex flex-col items-center gap-0.5">
+                            <p className="text-[9px] font-bold uppercase tracking-widest" style={{ color: '#94a3b8' }}>Class</p>
+                            <Tag className="w-3.5 h-3.5 mt-0.5" style={{ color: '#64748b' }} />
+                            <p className="text-[11px] font-semibold text-center" style={{ color: '#334155' }}>
+                              {car.vehicle_class?.class_name || '—'}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Price + CTA */}
+                        <div className="flex items-center justify-between mt-auto pt-2 border-t" style={{ borderColor: '#f1f5f9' }}>
+                          <div>
+                            <p className="text-[9px] font-bold uppercase tracking-widest mb-0.5" style={{ color: '#94a3b8' }}>Est. Value</p>
+                            <p className="text-[18px] font-extrabold tracking-tight" style={{ color: '#2563eb' }}>
+                              LKR {car.minimum_price ? parseFloat(car.minimum_price).toLocaleString() : 'N/A'}
+                            </p>
+                          </div>
+                          <div
+                            className="flex items-center justify-center w-9 h-9 rounded-full transition-all group-hover:scale-110 shrink-0"
+                            style={{ background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)', boxShadow: '0 4px 14px rgba(37,99,235,0.35)' }}
+                          >
+                            <ChevronRight className="w-4 h-4 text-white" />
+                          </div>
+                        </div>
+                      </div>
                       </div>
                     </motion.div>
                   );
@@ -567,8 +528,7 @@ export default function SearchPage() {
             </>
           )}
         </div>
-
-      </div>
-    </motion.div>
+      </ScrollArea>
+    </div>
   );
 }

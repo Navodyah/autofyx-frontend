@@ -74,11 +74,11 @@ const SUGGESTIONS = [
 ];
 
 const FUEL_PILLS = [
-  { label: "Any",     value: "" },
-  { label: "Petrol",  value: "X" },
+  { label: "Any", value: "" },
+  { label: "Petrol", value: "X" },
   { label: "Premium", value: "Z" },
-  { label: "Diesel",  value: "D" },
-  { label: "Electric",value: "E" },
+  { label: "Diesel", value: "D" },
+  { label: "Electric", value: "E" },
 ];
 
 const sel = "w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 focus:outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100 transition-all";
@@ -92,7 +92,7 @@ export function RecommendForm({
   values, loading, groqParams, groqLoading, groqError,
   onChange, onSubmit, onGroqSearch, onClearGroq,
 }: RecommendFormProps) {
-  const [prompt, setPrompt]         = useState("");
+  const [prompt, setPrompt] = useState("");
   const [filtersOpen, setFiltersOpen] = useState(false);
   const salary = parseFloat(values.salary) || 0;
 
@@ -186,8 +186,8 @@ export function RecommendForm({
             <Pill label={`Salary LKR ${groqParams.salary.toLocaleString()}`} />
           )}
           {groqParams.purpose && <Pill label={`Purpose: ${groqParams.purpose.replace("_", " ")}`} />}
-          {groqParams.area    && <Pill label={`Area: ${groqParams.area}`} />}
-          {groqParams.fuel    && <Pill label={`Fuel: ${groqParams.fuel}`} />}
+          {groqParams.area && <Pill label={`Area: ${groqParams.area}`} />}
+          {groqParams.fuel && <Pill label={`Fuel: ${groqParams.fuel}`} />}
           {groqParams.transmission && <Pill label={`Trans: ${groqParams.transmission}`} />}
           {groqParams.max_comb_l_per_100 && <Pill label={`≤${groqParams.max_comb_l_per_100} L/100`} />}
           {groqParams.vehicle_class && <Pill label={groqParams.vehicle_class} />}
@@ -287,11 +287,10 @@ export function RecommendForm({
                     key={fp.value}
                     type="button"
                     onClick={() => onChange("fuel", fp.value)}
-                    className={`rounded-lg px-3 py-1.5 text-xs font-semibold border transition-all ${
-                      values.fuel === fp.value
-                        ? "border-cyan-500 bg-cyan-500 text-white shadow-sm"
-                        : "border-slate-200 bg-slate-50 text-slate-600 hover:border-cyan-300"
-                    }`}
+                    className={`rounded-lg px-3 py-1.5 text-xs font-semibold border transition-all ${values.fuel === fp.value
+                      ? "border-cyan-500 bg-cyan-500 text-white shadow-sm"
+                      : "border-slate-200 bg-slate-50 text-slate-600 hover:border-cyan-300"
+                      }`}
                   >
                     {fp.label}
                   </button>
@@ -331,15 +330,6 @@ export function RecommendForm({
 
             <ClassPreview salary={salary || (groqParams?.salary ?? 0)} purpose={values.purpose} area={values.area} />
 
-            <div>
-              <FL text="Class Override (optional)" />
-              <select id="rec-vc" className={sel} value={values.vcOverride} onChange={(e) => onChange("vcOverride", e.target.value)}>
-                <option value="">None (auto)</option>
-                {["KEI CAR","MINICOMPACT","SUBCOMPACT","COMPACT","WAGON","MID - SIZE","FULL - SIZE","MPV","SUV - SMALL","SUV - STANDARD","SUV","OFF - ROAD"].map((v) => (
-                  <option key={v} value={v}>{v}</option>
-                ))}
-              </select>
-            </div>
           </div>
 
           {/* Financial Parameters */}
@@ -371,11 +361,7 @@ export function RecommendForm({
                   placeholder={groqParams?.down_payment_amount ? String(groqParams.down_payment_amount) : "Optional"}
                   className={inp} value={values.dpa} onChange={(e) => onChange("dpa", e.target.value)} />
               </div>
-              <div>
-                <FL text="Down Payment Ratio" />
-                <input id="rec-dpr" type="number" step={0.05} min={0} max={1} placeholder="0.5"
-                  className={inp} value={values.dpr} onChange={(e) => onChange("dpr", e.target.value)} />
-              </div>
+
             </div>
 
             <div className="grid grid-cols-2 gap-3 mb-4">

@@ -2,625 +2,402 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Scale, ChevronLeft, RefreshCw, ArrowRight, ShieldCheck } from "lucide-react";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Scale, RefreshCw, ArrowRight, ShieldCheck, ChevronDown, Car, Search, CheckCircle2, AlertTriangle, Info } from "lucide-react";
 import { getRegistrationPreferences } from '@/lib/appwrite';
 import { parseBrowserAuthToken, type BrowserAuthTokenPayload } from '@/lib/auth-token';
 
 type CatalogListResponse = { items: string[] };
 type YearsListResponse = { items: number[] };
-
 type CompareItem = {
-  found: boolean;
-  name: string;
-  message?: string;
-  make?: string;
-  model?: string;
-  year?: number;
-  vehicle_class?: string | null;
-  engine_size?: number | string | null;
-  engine_type?: string | null;
-  transmission?: string | null;
-  fuel?: string | null;
-  comb_l_per_100?: number | string | null;
-  hwy_l_per_100?: number | string | null;
-  tyre_size?: string | null;
-  description?: string | null;
+  found: boolean; name: string; message?: string; make?: string; model?: string; year?: number;
+  vehicle_class?: string | null; engine_size?: number | string | null; engine_type?: string | null;
+  transmission?: string | null; fuel?: string | null; comb_l_per_100?: number | string | null;
+  hwy_l_per_100?: number | string | null; tyre_size?: string | null; description?: string | null;
 };
-
 type CompareResponse = CompareItem[];
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+const API = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
 
 async function fetchJSON<T>(url: string): Promise<T> {
-  const res = await fetch(url, { cache: "no-store" });
-  if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    throw new Error(`Request failed: ${res.status} ${text ? `- ${text}` : ""}`);
-  }
-  return res.json();
+  const r = await fetch(url, { cache: "no-store" });
+  if (!r.ok) throw new Error(`${r.status}`);
+  return r.json();
 }
 
-function fmt(v: any) {
-  if (v === null || v === undefined || v === "") return "—";
-  return String(v);
-}
+function fmt(v: any) { return v === null || v === undefined || v === "" ? "—" : String(v); }
 
-function CompareCell({ a, b, c, label }: { a: any; b: any; c: any; label: string }) {
-  const fmtA = fmt(a);
-  const fmtB = fmt(b);
-  const fmtC = fmt(c);
+// Constants for Vehicle Selection Cards
+const VEHICLE_THEMES = [
+  { id: 'A', bg: 'bg-blue-600', text: 'text-blue-600', light: 'bg-blue-50', border: 'border-blue-200' },
+  { id: 'B', bg: 'bg-indigo-600', text: 'text-indigo-600', light: 'bg-indigo-50', border: 'border-indigo-200' },
+  { id: 'C', bg: 'bg-sky-500', text: 'text-sky-500', light: 'bg-sky-50', border: 'border-sky-200' },
+];
 
-  let aClass = '';
-  let bClass = '';
-  let cClass = '';
-
-  const consumptionFields = ['COMB (L/100 km)', 'HWY (L/100 km)'];
-  if (consumptionFields.includes(label)) {
-    const nums = [fmtA, fmtB, fmtC].map(v => v !== '—' ? parseFloat(v) : Infinity);
-    const min = Math.min(...nums);
-    if (min !== Infinity) {
-      if (nums[0] === min) aClass = 'compare-winner';
-      if (nums[1] === min) bClass = 'compare-winner';
-      if (nums[2] === min) cClass = 'compare-winner';
-    }
-  }
-
-  return (
-    <div
-      className="compare-row grid grid-cols-4 gap-4 py-3 px-5 rounded-lg"
-      style={{ borderBottom: '1px solid var(--border-secondary)' }}
-    >
-      <div className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>{label}</div>
-      <div className={`text-sm ${aClass}`} style={{ color: aClass ? undefined : 'var(--text-secondary)' }}>{fmtA}</div>
-      <div className={`text-sm ${bClass}`} style={{ color: bClass ? undefined : 'var(--text-secondary)' }}>{fmtB}</div>
-      <div className={`text-sm ${cClass}`} style={{ color: cClass ? undefined : 'var(--text-secondary)' }}>{fmtC}</div>
-    </div>
-  );
-}
-
-function SelectField({
-  value,
-  onChange,
-  options,
-  placeholder,
-  disabled,
-}: {
-  value: string;
-  onChange: (v: string) => void;
-  options: string[];
-  placeholder: string;
-  disabled?: boolean;
+function CustomSelect({ value, onChange, options, placeholder, disabled }: {
+  value: string; onChange: (v: string) => void; options: string[]; placeholder: string; disabled?: boolean;
 }) {
   return (
-    <Select value={value} onValueChange={onChange} disabled={disabled}>
-      <SelectTrigger className="w-full bg-[var(--bg-secondary)] border-[var(--border-primary)] text-[var(--text-primary)]">
-        <SelectValue placeholder={placeholder} />
-      </SelectTrigger>
-      <SelectContent>
-        {options.map((o) => (
-          <SelectItem key={o} value={o}>{o}</SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+    <div className="relative">
+      <select 
+        value={value} 
+        onChange={e => onChange(e.target.value)} 
+        disabled={disabled}
+        className={`w-full appearance-none rounded-xl border px-4 py-3 pr-10 text-sm font-semibold outline-none transition-all cursor-pointer ${
+          disabled ? 'opacity-50 cursor-not-allowed bg-slate-50 border-slate-200 text-slate-400' : 
+          value ? 'border-blue-500 bg-blue-50/30 text-blue-900 ring-4 ring-blue-500/10' : 
+          'border-slate-200 bg-white text-slate-700 hover:border-slate-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10'
+        }`}
+      >
+        <option value="" disabled>{placeholder}</option>
+        {options.map(o => <option key={o} value={o}>{o}</option>)}
+      </select>
+      <ChevronDown className={`absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none transition-colors ${value ? 'text-blue-500' : 'text-slate-400'}`} />
+    </div>
   );
 }
 
 export default function ComparePage() {
   const [makes, setMakes] = useState<string[]>([]);
-
-  // States A
-  const [modelsA, setModelsA] = useState<string[]>([]);
-  const [yearsA, setYearsA] = useState<number[]>([]);
-  const [makeA, setMakeA] = useState("");
-  const [modelA, setModelA] = useState("");
-  const [yearA, setYearA] = useState<number | "">("");
-
-  // States B
-  const [modelsB, setModelsB] = useState<string[]>([]);
-  const [yearsB, setYearsB] = useState<number[]>([]);
-  const [makeB, setMakeB] = useState("");
-  const [modelB, setModelB] = useState("");
-  const [yearB, setYearB] = useState<number | "">("");
-
-  // States C
-  const [modelsC, setModelsC] = useState<string[]>([]);
-  const [yearsC, setYearsC] = useState<number[]>([]);
-  const [makeC, setMakeC] = useState("");
-  const [modelC, setModelC] = useState("");
-  const [yearC, setYearC] = useState<number | "">("");
-
+  
+  const [modelsA, setModelsA] = useState<string[]>([]); const [yearsA, setYearsA] = useState<number[]>([]);
+  const [makeA, setMakeA] = useState(""); const [modelA, setModelA] = useState(""); const [yearA, setYearA] = useState<number | ''>('');
+  
+  const [modelsB, setModelsB] = useState<string[]>([]); const [yearsB, setYearsB] = useState<number[]>([]);
+  const [makeB, setMakeB] = useState(""); const [modelB, setModelB] = useState(""); const [yearB, setYearB] = useState<number | ''>('');
+  
+  const [modelsC, setModelsC] = useState<string[]>([]); const [yearsC, setYearsC] = useState<number[]>([]);
+  const [makeC, setMakeC] = useState(""); const [modelC, setModelC] = useState(""); const [yearC, setYearC] = useState<number | ''>('');
+  
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<CompareResponse | null>(null);
+  const [preferences, setPreferences] = useState<any>(null);
 
-  // User preferences
   const identity = useMemo<BrowserAuthTokenPayload | null>(() => {
     if (typeof window === 'undefined') return null;
     const token = window.localStorage.getItem('access_token') || window.localStorage.getItem('token');
     return parseBrowserAuthToken(token);
   }, []);
 
-  const [preferences, setPreferences] = useState<any>(null);
-
   useEffect(() => {
-    (async () => {
-      if (identity?.user_id) {
-        try {
-          const p = await getRegistrationPreferences({
-            user_id: identity.user_id,
-            appwrite_id: identity.appwrite_id,
-            email: identity.email,
-          });
-          setPreferences(p);
-        } catch (e) {
-          console.error('Failed to load user preferences for recommendation', e);
-        }
-      }
-    })();
+    (async () => { if (identity?.user_id) { try { setPreferences(await getRegistrationPreferences({ user_id: identity.user_id, appwrite_id: identity.appwrite_id, email: identity.email })); } catch {} } })();
   }, [identity]);
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const data = await fetchJSON<CatalogListResponse>(`${API_BASE}/lookup/makes`);
-        setMakes(data.items || []);
-      } catch (e: any) {
-        setError(e?.message || "Failed to load makes");
-      }
-    })();
-  }, []);
+  useEffect(() => { (async () => { try { const d = await fetchJSON<CatalogListResponse>(`${API}/lookup/makes`); setMakes(d.items || []); } catch (e: any) { setError("Failed to load vehicle makes."); } })(); }, []);
 
-  // Make changes
-  useEffect(() => {
-    if (!makeA) return;
-    (async () => {
-      setModelA(""); setYearA(""); setYearsA([]);
-      try {
-        const data = await fetchJSON<CatalogListResponse>(`${API_BASE}/lookup/models?make=${encodeURIComponent(makeA)}`);
-        setModelsA(data.items || []);
-      } catch (e) { }
-    })();
-  }, [makeA]);
+  // Fetch Models
+  useEffect(() => { if (!makeA) return; (async () => { setModelA(""); setYearA(''); setYearsA([]); try { const d = await fetchJSON<CatalogListResponse>(`${API}/lookup/models?make=${encodeURIComponent(makeA)}`); setModelsA(d.items || []); } catch {} })(); }, [makeA]);
+  useEffect(() => { if (!makeB) return; (async () => { setModelB(""); setYearB(''); setYearsB([]); try { const d = await fetchJSON<CatalogListResponse>(`${API}/lookup/models?make=${encodeURIComponent(makeB)}`); setModelsB(d.items || []); } catch {} })(); }, [makeB]);
+  useEffect(() => { if (!makeC) return; (async () => { setModelC(""); setYearC(''); setYearsC([]); try { const d = await fetchJSON<CatalogListResponse>(`${API}/lookup/models?make=${encodeURIComponent(makeC)}`); setModelsC(d.items || []); } catch {} })(); }, [makeC]);
 
-  useEffect(() => {
-    if (!makeB) return;
-    (async () => {
-      setModelB(""); setYearB(""); setYearsB([]);
-      try {
-        const data = await fetchJSON<CatalogListResponse>(`${API_BASE}/lookup/models?make=${encodeURIComponent(makeB)}`);
-        setModelsB(data.items || []);
-      } catch (e) { }
-    })();
-  }, [makeB]);
+  // Fetch Years
+  useEffect(() => { if (!makeA || !modelA) return; (async () => { setYearA(''); try { const d = await fetchJSON<YearsListResponse>(`${API}/lookup/years?make=${encodeURIComponent(makeA)}&model=${encodeURIComponent(modelA)}`); setYearsA(d.items || []); } catch {} })(); }, [makeA, modelA]);
+  useEffect(() => { if (!makeB || !modelB) return; (async () => { setYearB(''); try { const d = await fetchJSON<YearsListResponse>(`${API}/lookup/years?make=${encodeURIComponent(makeB)}&model=${encodeURIComponent(modelB)}`); setYearsB(d.items || []); } catch {} })(); }, [makeB, modelB]);
+  useEffect(() => { if (!makeC || !modelC) return; (async () => { setYearC(''); try { const d = await fetchJSON<YearsListResponse>(`${API}/lookup/years?make=${encodeURIComponent(makeC)}&model=${encodeURIComponent(modelC)}`); setYearsC(d.items || []); } catch {} })(); }, [makeC, modelC]);
 
-  useEffect(() => {
-    if (!makeC) return;
-    (async () => {
-      setModelC(""); setYearC(""); setYearsC([]);
-      try {
-        const data = await fetchJSON<CatalogListResponse>(`${API_BASE}/lookup/models?make=${encodeURIComponent(makeC)}`);
-        setModelsC(data.items || []);
-      } catch (e) { }
-    })();
-  }, [makeC]);
-
-  // Model changes
-  useEffect(() => {
-    if (!makeA || !modelA) return;
-    (async () => {
-      setYearA("");
-      try {
-        const data = await fetchJSON<YearsListResponse>(`${API_BASE}/lookup/years?make=${encodeURIComponent(makeA)}&model=${encodeURIComponent(modelA)}`);
-        setYearsA(data.items || []);
-      } catch (e) { }
-    })();
-  }, [makeA, modelA]);
-
-  useEffect(() => {
-    if (!makeB || !modelB) return;
-    (async () => {
-      setYearB("");
-      try {
-        const data = await fetchJSON<YearsListResponse>(`${API_BASE}/lookup/years?make=${encodeURIComponent(makeB)}&model=${encodeURIComponent(modelB)}`);
-        setYearsB(data.items || []);
-      } catch (e) { }
-    })();
-  }, [makeB, modelB]);
-
-  useEffect(() => {
-    if (!makeC || !modelC) return;
-    (async () => {
-      setYearC("");
-      try {
-        const data = await fetchJSON<YearsListResponse>(`${API_BASE}/lookup/years?make=${encodeURIComponent(makeC)}&model=${encodeURIComponent(modelC)}`);
-        setYearsC(data.items || []);
-      } catch (e) { }
-    })();
-  }, [makeC, modelC]);
-
-  const canCompare = useMemo(() => {
-    return makeA && modelA && yearA !== "" &&
-      makeB && modelB && yearB !== "" &&
-      makeC && modelC && yearC !== "";
-  }, [makeA, modelA, yearA, makeB, modelB, yearB, makeC, modelC, yearC]);
+  const canCompare = useMemo(() => makeA && modelA && yearA !== '' && makeB && modelB && yearB !== '' && makeC && modelC && yearC !== '', [makeA, modelA, yearA, makeB, modelB, yearB, makeC, modelC, yearC]);
 
   async function onCompare() {
-    setLoading(true);
-    setError(null);
-    setResult(null);
-
+    setLoading(true); setError(null); setResult(null);
     try {
-      const payload = {
-        selections: [
-          { make: makeA, model: modelA, year: Number(yearA) },
-          { make: makeB, model: modelB, year: Number(yearB) },
-          { make: makeC, model: modelC, year: Number(yearC) },
-        ],
-      };
-
-      const res = await fetch(`${API_BASE}/compare/`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+      const res = await fetch(`${API}/compare/`, { 
+        method: "POST", 
+        headers: { "Content-Type": "application/json" }, 
+        body: JSON.stringify({ selections: [{ make: makeA, model: modelA, year: Number(yearA) }, { make: makeB, model: modelB, year: Number(yearB) }, { make: makeC, model: modelC, year: Number(yearC) }] }) 
       });
-
-      const json = (await res.json()) as any;
-
-      if (!res.ok) {
-        const msg = typeof json?.detail === "string" ? json.detail : json?.message || "Compare failed";
-        setError(msg);
-        return;
-      }
-
+      const json = await res.json() as any;
+      if (!res.ok) { setError(typeof json?.detail === "string" ? json.detail : json?.message || "Compare failed. Please try again."); return; }
       const list: CompareResponse = Array.isArray(json) ? json : json?.items || [];
       setResult(list);
-
-      if (!Array.isArray(list) || list.length < 3) {
-        setError("Compare response invalid. Expected 3 vehicles.");
-      }
-    } catch (e: any) {
-      setError(e?.message || "Network error");
-    } finally {
-      setLoading(false);
-    }
+      if (!Array.isArray(list) || list.length < 3) setError("Expected 3 vehicles in response.");
+    } catch (e: any) { setError("Network error. Please check your connection."); }
+    finally { setLoading(false); }
   }
 
   function onReset() {
-    setMakeA(""); setModelA(""); setYearA(""); setModelsA([]); setYearsA([]);
-    setMakeB(""); setModelB(""); setYearB(""); setModelsB([]); setYearsB([]);
-    setMakeC(""); setModelC(""); setYearC(""); setModelsC([]); setYearsC([]);
+    setMakeA(""); setModelA(""); setYearA(''); setModelsA([]); setYearsA([]);
+    setMakeB(""); setModelB(""); setYearB(''); setModelsB([]); setYearsB([]);
+    setMakeC(""); setModelC(""); setYearC(''); setModelsC([]); setYearsC([]);
     setResult(null); setError(null);
   }
 
-  // Calculate recommendation based on user preferences and vehicle stats
+  // Scoring Logic
   const recommendedIndex = useMemo(() => {
     if (!result || result.length < 3) return -1;
-    let scores = [0, 0, 0];
-
+    const scores = [0, 0, 0];
     result.forEach((v, i) => {
-      if (!v.found) {
-        scores[i] = -999;
-        return;
-      }
-      if (!preferences) {
-        // Default generic scoring if no preferences are found
-        if (v.comb_l_per_100) {
-          const val = parseFloat(String(v.comb_l_per_100));
-          if (!isNaN(val)) scores[i] += (20 - val);
-        }
-        return;
-      }
-
-      // Matched Fuel Preference
-      if (preferences.fuel_preference && v.fuel) {
-        const pref = preferences.fuel_preference.toLowerCase();
-        const fuel = v.fuel.toLowerCase();
-        if (fuel.includes(pref) || (pref === 'petrol' && ['x', 'z'].includes(fuel)) || (pref === 'diesel' && fuel === 'd')) {
-          scores[i] += 15;
-        }
-      }
-
-      // Match Vehicle Type Class
-      if (preferences.preferred_vehicle_types?.length && v.vehicle_class) {
-        const prefc = preferences.preferred_vehicle_types.map((c: string) => c.toLowerCase());
-        const VC = v.vehicle_class.toLowerCase();
-        if (prefc.some((c: string) => VC.includes(c) || c.includes(VC))) {
-          scores[i] += 15;
-        }
-      }
-
-      // Priority Preference
-      if (preferences.priority === 'Fuel Efficiency' && v.comb_l_per_100) {
-        const val = parseFloat(String(v.comb_l_per_100));
-        if (!isNaN(val)) scores[i] += (25 - val);
-      }
-
-      // Newer model bias
+      if (!v.found) { scores[i] = -999; return; }
+      if (!preferences) { if (v.comb_l_per_100) { const val = parseFloat(String(v.comb_l_per_100)); if (!isNaN(val)) scores[i] += (20 - val); } return; }
+      if (preferences.fuel_preference && v.fuel) { const pref = preferences.fuel_preference.toLowerCase(); const fuel = v.fuel.toLowerCase(); if (fuel.includes(pref) || (pref === 'petrol' && ['x', 'z'].includes(fuel)) || (pref === 'diesel' && fuel === 'd')) scores[i] += 15; }
+      if (preferences.preferred_vehicle_types?.length && v.vehicle_class) { const prefc = preferences.preferred_vehicle_types.map((c: string) => c.toLowerCase()); const VC = v.vehicle_class.toLowerCase(); if (prefc.some((c: string) => VC.includes(c) || c.includes(VC))) scores[i] += 15; }
+      if (preferences.priority === 'Fuel Efficiency' && v.comb_l_per_100) { const val = parseFloat(String(v.comb_l_per_100)); if (!isNaN(val)) scores[i] += (25 - val); }
       if (v.year) scores[i] += (v.year - 2000) * 0.2;
     });
-
-    const maxScore = Math.max(...scores);
-    if (maxScore < -100) return -1; // All not found
-    return scores.indexOf(maxScore);
+    const max = Math.max(...scores);
+    return max < -100 ? -1 : scores.indexOf(max);
   }, [result, preferences]);
 
-
   const items = result || [];
-  const compA = items[0];
-  const compB = items[1];
-  const compC = items[2];
-
-  const comparisonRows = [
-    { label: 'Vehicle Class', a: compA?.vehicle_class, b: compB?.vehicle_class, c: compC?.vehicle_class },
-    { label: 'Engine Size', a: compA?.engine_size, b: compB?.engine_size, c: compC?.engine_size },
-    { label: 'Engine Type', a: compA?.engine_type, b: compB?.engine_type, c: compC?.engine_type },
-    { label: 'Transmission', a: compA?.transmission, b: compB?.transmission, c: compC?.transmission },
-    { label: 'Fuel', a: compA?.fuel, b: compB?.fuel, c: compC?.fuel },
-    { label: 'COMB (L/100 km)', a: compA?.comb_l_per_100, b: compB?.comb_l_per_100, c: compC?.comb_l_per_100 },
-    { label: 'HWY (L/100 km)', a: compA?.hwy_l_per_100, b: compB?.hwy_l_per_100, c: compC?.hwy_l_per_100 },
-    { label: 'Tyre Size', a: compA?.tyre_size, b: compB?.tyre_size, c: compC?.tyre_size },
-    { label: 'Description', a: compA?.description, b: compB?.description, c: compC?.description },
-  ];
 
   return (
-    <div className="af-dashboard-bg min-h-screen">
-      {/* Navbar */}
-      <nav
-        className="sticky top-0 z-50 h-14 flex items-center justify-between px-6"
-        style={{
-          background: 'var(--navbar-bg)',
-          borderBottom: '1px solid var(--border-primary)',
-          backdropFilter: 'blur(20px)',
-        }}
-      >
-        <Link href="/dashboard" className="flex items-center gap-2 text-sm transition-colors" style={{ color: 'var(--text-secondary)' }}>
-          <ChevronLeft className="h-4 w-4" />
-          Back to Search
-        </Link>
-        <div className="flex items-center gap-2">
-          <Scale className="h-4 w-4" style={{ color: 'var(--text-accent)' }} />
-          <span className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>
-            Vehicle Comparison
-          </span>
+    <div className="min-h-screen bg-slate-50 pb-20">
+      {/* Dark Hero Banner */}
+      <div className="relative overflow-hidden bg-slate-900 pt-16 pb-40">
+        <div 
+          className="absolute inset-0 opacity-20 mix-blend-overlay"
+          style={{ backgroundImage: 'url(https://images.unsplash.com/photo-1553440569-bcc63803a83d?q=80&w=2000&auto=format&fit=crop)', backgroundSize: 'cover', backgroundPosition: 'center 60%' }} 
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-50 via-slate-900/40 to-slate-900/80" />
+        
+        <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 text-center">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="max-w-3xl mx-auto">
+            <div className="inline-flex items-center gap-2 rounded-full bg-blue-500/10 px-4 py-1.5 mb-6 border border-blue-500/20">
+              <Scale className="h-4 w-4 text-blue-400" />
+              <span className="text-xs font-bold uppercase tracking-widest text-blue-400">Head-to-Head Comparison</span>
+            </div>
+            <h1 className="text-4xl font-extrabold tracking-tight text-white sm:text-5xl mb-6 leading-tight">
+              Compare 3 Vehicles Side-by-Side
+            </h1>
+            <p className="text-base font-medium text-slate-300 leading-relaxed mb-8">
+              Select the Make, Model, and Year for three vehicles. We'll analyze their specifications and recommend the best option tailored to your personal preferences.
+            </p>
+          </motion.div>
         </div>
-        <div className="w-24" />
-      </nav>
+      </div>
 
-      <div className="max-w-7xl mx-auto px-4 py-10 space-y-8">
-
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -16 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
-          <h1 className="text-3xl font-bold" style={{ color: 'var(--text-primary)' }}>
-            Compare Up To 3 Vehicles
-          </h1>
-          <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
-            Select make, model, and year for three vehicles to see a side-by-side comparison. Based on your preferences, we will recommend the best option for you.
-          </p>
-        </motion.div>
-
-        {/* Error */}
+      {/* Vehicle Selection Section */}
+      <div className="relative z-20 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 -mt-28">
+        
         <AnimatePresence>
           {error && (
-            <motion.div
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0 }}
-              className="rounded-xl border p-4 text-sm"
-              style={{
-                background: 'rgba(239,68,68,0.08)',
-                borderColor: 'rgba(239,68,68,0.25)',
-                color: '#f87171',
-              }}
-            >
-              ⚠️ {error}
+            <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, height: 0 }} className="mb-6 rounded-xl bg-red-50 border border-red-200 p-4 flex items-center gap-3 text-red-700 shadow-sm">
+              <AlertTriangle className="h-5 w-5 flex-shrink-0" />
+              <p className="text-sm font-semibold">{error}</p>
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* Selection Grid */}
-        <div className="grid md:grid-cols-3 gap-6">
-          {/* Vehicle A */}
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="space-y-4">
-            <Card className="border-[var(--border-primary)] bg-[var(--bg-card)] shadow-xs">
-              <CardHeader className="pb-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl flex items-center justify-center text-white text-sm font-bold shadow-md" style={{ background: 'linear-gradient(135deg, #3b82f6, #06b6d4)' }}>A</div>
+        <div className="grid lg:grid-cols-3 gap-6 mb-8">
+          {[
+            { make: makeA, setMake: setMakeA, model: modelA, setModel: setModelA, year: yearA, setYear: setYearA, models: modelsA, years: yearsA },
+            { make: makeB, setMake: setMakeB, model: modelB, setModel: setModelB, year: yearB, setYear: setYearB, models: modelsB, years: yearsB },
+            { make: makeC, setMake: setMakeC, model: modelC, setModel: setModelC, year: yearC, setYear: setYearC, models: modelsC, years: yearsC },
+          ].map((v, i) => {
+            const theme = VEHICLE_THEMES[i];
+            const isSelected = v.make && v.model && v.year !== '';
+            
+            return (
+              <motion.div 
+                key={i}
+                initial={{ opacity: 0, y: 20 }} 
+                animate={{ opacity: 1, y: 0 }} 
+                transition={{ delay: i * 0.1 }}
+                className={`rounded-2xl border bg-white shadow-xl shadow-slate-200/40 overflow-hidden transition-all duration-300 ${isSelected ? theme.border : 'border-slate-200 hover:border-blue-300'}`}
+              >
+                {/* Card Header */}
+                <div className={`p-5 flex items-center gap-4 border-b border-slate-100 ${isSelected ? theme.light : 'bg-slate-50'}`}>
+                  <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl font-extrabold text-white text-lg shadow-sm ${theme.bg}`}>
+                    {theme.id}
+                  </div>
                   <div>
-                    <CardTitle className="text-sm" style={{ color: 'var(--text-primary)' }}>Vehicle A</CardTitle>
-                    {makeA && modelA && yearA !== "" && <p className="text-xs" style={{ color: 'var(--text-accent)' }}>{makeA} {modelA} ({yearA})</p>}
+                    <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-0.5">Vehicle {theme.id}</p>
+                    {isSelected ? (
+                      <h3 className={`text-base font-extrabold leading-tight ${theme.text}`}>
+                        {v.make} {v.model} <span className="opacity-70">({v.year})</span>
+                      </h3>
+                    ) : (
+                      <h3 className="text-sm font-semibold text-slate-500">Select specifications</h3>
+                    )}
                   </div>
                 </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <SelectField value={makeA} onChange={setMakeA} options={makes} placeholder="Select Make" />
-                <SelectField value={modelA} onChange={setModelA} options={modelsA} placeholder={makeA ? "Select Model" : "Select Make first"} disabled={!makeA} />
-                <Select value={yearA === "" ? undefined : String(yearA)} onValueChange={(v) => setYearA(Number(v))} disabled={!modelA}>
-                  <SelectTrigger className="w-full bg-[var(--bg-secondary)] border-[var(--border-primary)] text-[var(--text-primary)]">
-                    <SelectValue placeholder={modelA ? "Select Year" : "Select Model first"} />
-                  </SelectTrigger>
-                  <SelectContent>{yearsA.map((y) => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}</SelectContent>
-                </Select>
-              </CardContent>
-            </Card>
-          </motion.div>
 
-          {/* Vehicle B */}
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="space-y-4">
-            <Card className="border-[var(--border-primary)] bg-[var(--bg-card)] shadow-xs">
-              <CardHeader className="pb-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl flex items-center justify-center text-white text-sm font-bold shadow-md" style={{ background: 'linear-gradient(135deg, #8b5cf6, #ec4899)' }}>B</div>
-                  <div>
-                    <CardTitle className="text-sm" style={{ color: 'var(--text-primary)' }}>Vehicle B</CardTitle>
-                    {makeB && modelB && yearB !== "" && <p className="text-xs text-purple-500">{makeB} {modelB} ({yearB})</p>}
-                  </div>
+                {/* Card Body - Dropdowns */}
+                <div className="p-6 space-y-4">
+                  <CustomSelect value={v.make} onChange={v.setMake} options={makes} placeholder="1. Select Make" />
+                  <CustomSelect value={v.model} onChange={v.setModel} options={v.models} placeholder={v.make ? "2. Select Model" : "2. Select Make first"} disabled={!v.make} />
+                  <CustomSelect value={v.year === '' ? '' : String(v.year)} onChange={val => v.setYear(val ? Number(val) : '')} options={v.years.map(String)} placeholder={v.model ? "3. Select Year" : "3. Select Model first"} disabled={!v.model} />
                 </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <SelectField value={makeB} onChange={setMakeB} options={makes} placeholder="Select Make" />
-                <SelectField value={modelB} onChange={setModelB} options={modelsB} placeholder={makeB ? "Select Model" : "Select Make first"} disabled={!makeB} />
-                <Select value={yearB === "" ? undefined : String(yearB)} onValueChange={(v) => setYearB(Number(v))} disabled={!modelB}>
-                  <SelectTrigger className="w-full bg-[var(--bg-secondary)] border-[var(--border-primary)] text-[var(--text-primary)]">
-                    <SelectValue placeholder={modelB ? "Select Year" : "Select Model first"} />
-                  </SelectTrigger>
-                  <SelectContent>{yearsB.map((y) => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}</SelectContent>
-                </Select>
-              </CardContent>
-            </Card>
-          </motion.div>
-
-          {/* Vehicle C */}
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="space-y-4">
-            <Card className="border-[var(--border-primary)] bg-[var(--bg-card)] shadow-xs">
-              <CardHeader className="pb-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl flex items-center justify-center text-white text-sm font-bold shadow-md" style={{ background: 'linear-gradient(135deg, #f59e0b, #ef4444)' }}>C</div>
-                  <div>
-                    <CardTitle className="text-sm" style={{ color: 'var(--text-primary)' }}>Vehicle C</CardTitle>
-                    {makeC && modelC && yearC !== "" && <p className="text-xs text-orange-500">{makeC} {modelC} ({yearC})</p>}
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <SelectField value={makeC} onChange={setMakeC} options={makes} placeholder="Select Make" />
-                <SelectField value={modelC} onChange={setModelC} options={modelsC} placeholder={makeC ? "Select Model" : "Select Make first"} disabled={!makeC} />
-                <Select value={yearC === "" ? undefined : String(yearC)} onValueChange={(v) => setYearC(Number(v))} disabled={!modelC}>
-                  <SelectTrigger className="w-full bg-[var(--bg-secondary)] border-[var(--border-primary)] text-[var(--text-primary)]">
-                    <SelectValue placeholder={modelC ? "Select Year" : "Select Model first"} />
-                  </SelectTrigger>
-                  <SelectContent>{yearsC.map((y) => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}</SelectContent>
-                </Select>
-              </CardContent>
-            </Card>
-          </motion.div>
+              </motion.div>
+            );
+          })}
         </div>
 
         {/* Action Buttons */}
-        <div className="flex gap-3 pt-2">
-          <Button
-            disabled={!canCompare || loading}
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+          <motion.button 
+            whileHover={{ scale: canCompare && !loading ? 1.02 : 1 }}
+            whileTap={{ scale: canCompare && !loading ? 0.98 : 1 }}
+            disabled={!canCompare || loading} 
             onClick={onCompare}
-            className="py-3 px-6 shadow-md disabled:opacity-50 text-white font-semibold transition-all hover:-translate-y-0.5"
-            style={{ background: 'linear-gradient(135deg, #10b981, #059669)' }}
+            className={`flex items-center justify-center gap-2 w-full sm:w-auto px-10 py-4 rounded-xl text-base font-bold text-white shadow-lg transition-all duration-300 ${
+              canCompare ? 'bg-blue-600 hover:bg-blue-700 shadow-blue-600/30' : 'bg-slate-300 cursor-not-allowed shadow-none'
+            }`}
           >
             {loading ? (
-              <>
-                <span className="af-spinner mr-2" style={{ borderTopColor: '#fff', borderColor: 'rgba(255,255,255,0.3)' }} />
-                Comparing...
-              </>
+              <><span className="h-5 w-5 rounded-full border-2 border-white/30 border-t-white animate-spin" /> Analyzing Specifications...</>
             ) : (
-              <>
-                <ArrowRight className="h-4 w-4 mr-2" />
-                Compare 3 Vehicles
-              </>
+              <><Search className="h-5 w-5" /> Compare Vehicles Now</>
             )}
-          </Button>
-
-          <Button
+          </motion.button>
+          
+          <button 
             onClick={onReset}
-            variant="outline"
-            className="py-3 px-5 border-[var(--border-primary)] bg-[var(--bg-card)] text-[var(--text-secondary)] font-medium"
+            className="flex items-center justify-center gap-2 w-full sm:w-auto px-6 py-4 rounded-xl text-sm font-bold text-slate-500 bg-white border border-slate-200 hover:bg-slate-50 hover:text-slate-700 transition-colors"
           >
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Reset All
-          </Button>
+            <RefreshCw className="h-4 w-4" /> Reset Filters
+          </button>
         </div>
 
-        {/* Results */}
+        {/* --- COMPARISON RESULTS (3 CARDS UI) --- */}
         <AnimatePresence>
           {items.length === 3 && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0 }}
-              className="rounded-2xl overflow-hidden shadow-xl"
+            <motion.div 
+              initial={{ opacity: 0, y: 40 }} 
+              animate={{ opacity: 1, y: 0 }} 
+              exit={{ opacity: 0, y: -20 }} 
+              transition={{ duration: 0.5, ease: "easeOut" }}
+              className="mt-16"
             >
-              <Card className="rounded-2xl overflow-hidden border-[var(--border-primary)] bg-[var(--bg-card)] gap-0">
-                {/* Comparison Header */}
-                <div
-                  className="grid grid-cols-4 gap-4 px-5 py-6 items-end"
-                  style={{ background: 'var(--bg-tertiary)', borderBottom: '1px solid var(--border-primary)' }}
-                >
-                  <div className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: 'var(--text-muted)' }}>
-                    Specification
-                  </div>
-                  {[0, 1, 2].map(idx => {
-                    const it = items[idx];
-                    const isRec = idx === recommendedIndex;
-                    return (
-                      <div key={idx} className={`relative p-4 rounded-xl transition-all border-2 ${isRec ? 'bg-green-50/50 border-green-500 shadow-sm' : 'border-transparent'}`}>
-                        {isRec && (
-                          <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-green-500 text-white text-[11px] font-extrabold px-3 py-1 rounded-full flex items-center gap-1.5 shadow-md z-10 whitespace-nowrap">
-                            <ShieldCheck className="w-3.5 h-3.5" /> Best Match
-                          </div>
-                        )}
-                        <p className="text-[11px] font-bold tracking-widest uppercase mb-1" style={{ color: isRec ? '#10b981' : 'var(--text-muted)' }}>
-                          Vehicle {['A', 'B', 'C'][idx]}
-                        </p>
-                        <p className="text-base font-extrabold leading-tight" style={{ color: 'var(--text-primary)' }}>
-                          {it?.name || `Vehicle ${['A', 'B', 'C'][idx]}`}
-                        </p>
-                        {!it?.found && (
-                          <p className="text-xs font-bold text-red-500 mt-1">Status: Not found</p>
-                        )}
-                      </div>
-                    )
-                  })}
+              <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
+                <div>
+                  <h2 className="text-2xl font-extrabold text-slate-900">Analysis Results</h2>
+                  <p className="text-sm font-medium text-slate-500 mt-1">Detailed breakdown of specifications and our tailored recommendation.</p>
                 </div>
-
-                {/* Not found warning globally */}
-                {(!compA?.found || !compB?.found || !compC?.found) && (
-                  <div
-                    className="mx-5 my-4 rounded-xl border-l-4 p-4 text-sm font-medium shadow-sm"
-                    style={{
-                      background: 'rgba(245,158,11,0.06)',
-                      borderColor: '#fbbf24',
-                      color: '#b45309',
-                    }}
-                  >
-                    {!compA?.found && <div>⚠️ <b>Vehicle A</b>: {compA?.message || "Not found in database."}</div>}
-                    {!compB?.found && <div>⚠️ <b>Vehicle B</b>: {compB?.message || "Not found in database."}</div>}
-                    {!compC?.found && <div>⚠️ <b>Vehicle C</b>: {compC?.message || "Not found in database."}</div>}
+                
+                {/* Recommendation Banner */}
+                {recommendedIndex !== -1 && (
+                  <div className="inline-flex items-center gap-2 bg-emerald-50 border border-emerald-200 text-emerald-700 px-4 py-2 rounded-xl text-sm font-bold shadow-sm">
+                    <ShieldCheck className="w-5 h-5" />
+                    <span>Best Match identified based on your profile</span>
                   </div>
                 )}
+              </div>
 
-                {/* Rows */}
-                <div className="py-2 px-2">
-                  {comparisonRows.map((row) => (
-                    <CompareCell key={row.label} label={row.label} a={row.a} b={row.b} c={row.c} />
-                  ))}
-                </div>
+              {/* 3 Result Cards Grid */}
+              <div className="grid lg:grid-cols-3 gap-6">
+                {[0, 1, 2].map((idx) => {
+                  const vehicle = items[idx];
+                  const isRec = idx === recommendedIndex;
+                  const theme = VEHICLE_THEMES[idx];
+                  
+                  return (
+                    <div 
+                      key={idx} 
+                      className={`relative flex flex-col rounded-2xl bg-white transition-all duration-300 ${
+                        isRec 
+                          ? 'ring-4 ring-emerald-500 border-emerald-500 shadow-2xl shadow-emerald-500/20 scale-[1.02] z-10' 
+                          : 'border border-slate-200 shadow-xl shadow-slate-200/40 hover:border-slate-300 hover:shadow-2xl hover:shadow-slate-200/50'
+                      }`}
+                    >
+                      {/* Best Match Badge */}
+                      {isRec && (
+                        <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-emerald-500 text-white px-5 py-1.5 rounded-full text-xs font-extrabold uppercase tracking-widest shadow-lg flex items-center gap-1.5 z-20">
+                          <CheckCircle2 className="w-4 h-4" /> 
+                          Recommended For You
+                        </div>
+                      )}
 
-                <div
-                  className="px-5 py-4 text-xs font-medium border-t-2"
-                  style={{
-                    borderColor: 'var(--border-secondary)',
-                    color: 'var(--text-muted)',
-                    background: 'var(--bg-tertiary)',
-                  }}
-                >
-                  <div className="flex items-center gap-2">
-                    <ShieldCheck className="w-4 h-4 text-green-500" />
-                    <span><b>Best Match</b> is recommended by analyzing your customized vehicle preferences, prioritizing your fuel choice, and vehicle class.</span>
-                  </div>
-                </div>
-              </Card>
+                      {/* Card Header (Vehicle Identity) */}
+                      <div className={`p-6 pb-5 border-b rounded-t-2xl ${isRec ? 'bg-emerald-50/50 border-emerald-100' : 'bg-slate-50/50 border-slate-100'}`}>
+                        <div className="flex items-center gap-2 mb-3">
+                          <span className={`px-2.5 py-1 rounded-md text-[10px] font-extrabold uppercase tracking-widest ${theme.bg} text-white`}>
+                            Option {theme.id}
+                          </span>
+                          {!vehicle.found && (
+                            <span className="px-2.5 py-1 rounded-md text-[10px] font-extrabold uppercase tracking-widest bg-red-100 text-red-600">
+                              Not Found
+                            </span>
+                          )}
+                        </div>
+                        
+                        <h3 className="text-xl font-extrabold text-slate-900 leading-tight min-h-[56px] flex items-center">
+                          {vehicle.name || `Unknown Vehicle ${theme.id}`}
+                        </h3>
+                        
+                        {vehicle.found ? (
+                          <div className="mt-3 flex items-center gap-1.5 text-xs font-bold text-slate-500">
+                            <Car className="w-4 h-4" /> 
+                            {vehicle.vehicle_class || 'Standard Class'}
+                          </div>
+                        ) : (
+                          <p className="mt-3 text-xs font-medium text-red-500">{vehicle.message || 'Data unavailable in catalog.'}</p>
+                        )}
+                      </div>
+
+                      {/* Card Body (Specs List) */}
+                      <div className="flex-1 p-6 space-y-4">
+                        {[
+                          { label: 'Engine Size', value: vehicle.engine_size, suffix: 'L' },
+                          { label: 'Engine Type', value: vehicle.engine_type },
+                          { label: 'Transmission', value: vehicle.transmission },
+                          { label: 'Fuel Type', value: vehicle.fuel },
+                          { label: 'City / Comb (L/100km)', value: vehicle.comb_l_per_100, isEfficiency: true },
+                          { label: 'Highway (L/100km)', value: vehicle.hwy_l_per_100, isEfficiency: true },
+                          { label: 'Tyre Size', value: vehicle.tyre_size },
+                        ].map((spec, specIdx) => {
+                          const val = fmt(spec.value);
+                          
+                          // Determine if this is the best efficiency value among the 3 vehicles
+                          let isWinner = false;
+                          if (spec.isEfficiency && vehicle.found && val !== '—') {
+                            const currentVal = parseFloat(val);
+                            if (!isNaN(currentVal)) {
+                              const allVals = items.map(it => {
+                                const v = it[specIdx === 4 ? 'comb_l_per_100' : 'hwy_l_per_100'];
+                                return v != null && v !== '' ? parseFloat(String(v)) : Infinity;
+                              });
+                              const minVal = Math.min(...allVals);
+                              if (currentVal === minVal && minVal !== Infinity) {
+                                isWinner = true;
+                              }
+                            }
+                          }
+
+                          return (
+                            <div key={specIdx} className="flex flex-col gap-1 border-b border-slate-100 pb-3 last:border-0 last:pb-0">
+                              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                                {spec.label}
+                              </span>
+                              <div className="flex items-center gap-2">
+                                <span className={`text-sm font-semibold ${isWinner ? 'text-emerald-600' : 'text-slate-800'} ${val === '—' ? 'opacity-50' : ''}`}>
+                                  {val} {val !== '—' && spec.suffix && spec.suffix}
+                                </span>
+                                {isWinner && (
+                                  <span className="px-1.5 py-0.5 rounded text-[9px] font-extrabold bg-emerald-100 text-emerald-700 uppercase tracking-wider">
+                                    Best
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {/* Optional Description at bottom */}
+                      {vehicle.description && vehicle.description !== '—' && (
+                        <div className="p-5 bg-slate-50 border-t border-slate-100 rounded-b-2xl">
+                          <p className="text-xs font-medium text-slate-500 leading-relaxed line-clamp-3">
+                            {vehicle.description}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+              
+              {/* Informational Footer */}
+              <div className="mt-8 flex items-start gap-3 bg-blue-50 border border-blue-100 rounded-xl p-5">
+                <Info className="w-5 h-5 text-blue-500 shrink-0 mt-0.5" />
+                <p className="text-sm font-medium text-blue-800 leading-relaxed">
+                  The recommended <strong className="font-extrabold text-blue-900">Best Match</strong> is calculated by analyzing your customized profile preferences, prioritizing your preferred fuel type, vehicle class requirements, and fuel efficiency scoring against our extensive database.
+                </p>
+              </div>
+              
             </motion.div>
           )}
         </AnimatePresence>
+
       </div>
     </div>
   );
