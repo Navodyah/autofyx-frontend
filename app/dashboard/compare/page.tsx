@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Scale, RefreshCw, ArrowRight, ShieldCheck, ChevronDown, Car, Search, CheckCircle2, AlertTriangle, Info } from "lucide-react";
+import { Scale, RefreshCw, ArrowRight, ShieldCheck, ChevronDown, Car, Search, CheckCircle2, AlertTriangle, Info, Settings, Settings2, Fuel, Disc, GitBranch, Activity } from "lucide-react";
 import { getRegistrationPreferences } from '@/lib/appwrite';
 import { parseBrowserAuthToken, type BrowserAuthTokenPayload } from '@/lib/auth-token';
 
@@ -26,15 +26,38 @@ async function fetchJSON<T>(url: string): Promise<T> {
 
 function fmt(v: any) { return v === null || v === undefined || v === "" ? "—" : String(v); }
 
+// ── Palettes (mirror dashboard/page.tsx) ────────────────────────────────
+const L = {
+  bg: '#F0F4FF', cardBg: '#FFFFFF', primary: '#155dfc', primaryText: '#FFFFFF',
+  text: '#030304', muted: '#6B7280', border: '#DBEAFE',
+  shadow: '0 4px 20px -2px rgba(21,93,252,0.06), 0 0 3px rgba(21,93,252,0.04)',
+  hoverShadow: '0 12px 24px -4px rgba(21,93,252,0.12)', iconBg: '#EFF6FF',
+};
+const D = {
+  bg: '#030304', cardBg: '#0F111A', primary: '#155dfc', primaryText: '#FFFFFF',
+  text: '#FFFFFF', muted: '#8B949E', border: 'rgba(21,93,252,0.2)',
+  shadow: '0 4px 24px -4px rgba(0,0,0,0.5)',
+  hoverShadow: '0 12px 30px -4px rgba(0,0,0,0.5), 0 0 25px rgba(21,93,252,0.12)',
+  iconBg: 'rgba(21,93,252,0.08)',
+};
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: { opacity: 1, transition: { staggerChildren: 0.05, delayChildren: 0.04 } },
+};
+const itemVariants = {
+  hidden: { opacity: 0, y: 15 },
+  visible: { opacity: 1, y: 0, transition: { type: 'spring' as const, stiffness: 100, damping: 15 } },
+};
+
 // Constants for Vehicle Selection Cards
 const VEHICLE_THEMES = [
-  { id: 'A', bg: 'bg-blue-600', text: 'text-blue-600', light: 'bg-blue-50', border: 'border-blue-200' },
-  { id: 'B', bg: 'bg-indigo-600', text: 'text-indigo-600', light: 'bg-indigo-50', border: 'border-indigo-200' },
-  { id: 'C', bg: 'bg-sky-500', text: 'text-sky-500', light: 'bg-sky-50', border: 'border-sky-200' },
+  { id: 'A', bg: 'bg-[#155dfc]', text: 'text-[#155dfc]', light: 'bg-blue-50', border: 'border-[#155dfc]/30' },
+  { id: 'B', bg: 'bg-[#1d4ed8]', text: 'text-[#1d4ed8]', light: 'bg-blue-50', border: 'border-[#1d4ed8]/30' },
+  { id: 'C', bg: 'bg-[#2563eb]', text: 'text-[#2563eb]', light: 'bg-blue-50', border: 'border-[#2563eb]/30' },
 ];
 
-function CustomSelect({ value, onChange, options, placeholder, disabled }: {
-  value: string; onChange: (v: string) => void; options: string[]; placeholder: string; disabled?: boolean;
+function CustomSelect({ value, onChange, options, placeholder, disabled, isDarkMode, P }: {
+  value: string; onChange: (v: string) => void; options: string[]; placeholder: string; disabled?: boolean; isDarkMode?: boolean; P?: any;
 }) {
   return (
     <div className="relative">
@@ -43,20 +66,26 @@ function CustomSelect({ value, onChange, options, placeholder, disabled }: {
         onChange={e => onChange(e.target.value)} 
         disabled={disabled}
         className={`w-full appearance-none rounded-xl border px-4 py-3 pr-10 text-sm font-semibold outline-none transition-all cursor-pointer ${
-          disabled ? 'opacity-50 cursor-not-allowed bg-slate-50 border-slate-200 text-slate-400' : 
-          value ? 'border-blue-500 bg-blue-50/30 text-blue-900 ring-4 ring-blue-500/10' : 
-          'border-slate-200 bg-white text-slate-700 hover:border-slate-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10'
+          disabled ? 'opacity-50 cursor-not-allowed' : 
+          value ? 'border-[#155dfc] ring-4 ring-[#155dfc]/10' : 
+          'hover:border-blue-400 focus:border-[#155dfc] focus:ring-4 focus:ring-[#155dfc]/10'
         }`}
+        style={{
+          background: disabled ? (isDarkMode ? '#1a1a24' : '#f8fafc') : (isDarkMode ? '#0a0a14' : '#ffffff'),
+          borderColor: value ? '#155dfc' : (isDarkMode ? 'rgba(21,93,252,0.2)' : '#e2e8f0'),
+          color: disabled ? (isDarkMode ? '#6b7280' : '#94a3b8') : (P?.text || '#030304')
+        }}
       >
         <option value="" disabled>{placeholder}</option>
         {options.map(o => <option key={o} value={o}>{o}</option>)}
       </select>
-      <ChevronDown className={`absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none transition-colors ${value ? 'text-blue-500' : 'text-slate-400'}`} />
+      <ChevronDown className={`absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none transition-colors ${value ? 'text-[#155dfc]' : 'text-slate-400'}`} />
     </div>
   );
 }
 
 export default function ComparePage() {
+  const [isDarkMode, setIsDarkMode] = useState(false);
   const [makes, setMakes] = useState<string[]>([]);
   
   const [modelsA, setModelsA] = useState<string[]>([]); const [yearsA, setYearsA] = useState<number[]>([]);
@@ -80,8 +109,16 @@ export default function ComparePage() {
   }, []);
 
   useEffect(() => {
+    const handler = () => setIsDarkMode(prev => !prev);
+    window.addEventListener('themeToggle', handler);
+    return () => window.removeEventListener('themeToggle', handler);
+  }, []);
+
+  useEffect(() => {
     (async () => { if (identity?.user_id) { try { setPreferences(await getRegistrationPreferences({ user_id: identity.user_id, appwrite_id: identity.appwrite_id, email: identity.email })); } catch {} } })();
   }, [identity]);
+
+  const P = isDarkMode ? D : L;
 
   useEffect(() => { (async () => { try { const d = await fetchJSON<CatalogListResponse>(`${API}/lookup/makes`); setMakes(d.items || []); } catch (e: any) { setError("Failed to load vehicle makes."); } })(); }, []);
 
@@ -140,33 +177,37 @@ export default function ComparePage() {
   const items = result || [];
 
   return (
-    <div className="min-h-screen bg-slate-50 pb-20">
-      {/* Dark Hero Banner */}
-      <div className="relative overflow-hidden bg-slate-900 pt-16 pb-40">
-        <div 
-          className="absolute inset-0 opacity-20 mix-blend-overlay"
-          style={{ backgroundImage: 'url(https://images.unsplash.com/photo-1553440569-bcc63803a83d?q=80&w=2000&auto=format&fit=crop)', backgroundSize: 'cover', backgroundPosition: 'center 60%' }} 
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-50 via-slate-900/40 to-slate-900/80" />
+    <motion.div
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5 }}
+      className="min-h-full pb-20 pt-6 px-4 xl:px-6 relative overflow-hidden transition-colors duration-500"
+      style={{ background: P.bg, borderRadius: '32px', margin: '1px', minHeight: 'calc(100vh - 100px)' }}
+    >
+      <motion.div variants={containerVariants} initial="hidden" animate="visible" className="relative z-10 max-w-7xl mx-auto space-y-8">
         
-        <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 text-center">
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="max-w-3xl mx-auto">
-            <div className="inline-flex items-center gap-2 rounded-full bg-blue-500/10 px-4 py-1.5 mb-6 border border-blue-500/20">
-              <Scale className="h-4 w-4 text-blue-400" />
-              <span className="text-xs font-bold uppercase tracking-widest text-blue-400">Head-to-Head Comparison</span>
-            </div>
-            <h1 className="text-4xl font-extrabold tracking-tight text-white sm:text-5xl mb-6 leading-tight">
+        {/* HEADER */}
+        <motion.div variants={itemVariants} className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+          <div className="space-y-2">
+            <motion.div
+              initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}
+              className="inline-flex items-center gap-2.5 px-3 py-1.5 rounded-full transition-colors duration-500"
+              style={{ background: isDarkMode ? 'rgba(21,93,252,0.08)' : '#FFFFFF', borderWidth: '1px', borderStyle: 'solid', borderColor: P.border }}
+            >
+              <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: P.primary }}>
+                <Scale className="w-3.5 h-3.5" style={{ color: P.primaryText }} />
+              </div>
+              <span className="text-[10px] font-bold uppercase tracking-widest transition-colors duration-500" style={{ color: P.primary }}>Head-to-Head Comparison</span>
+            </motion.div>
+            <h1 className="text-3xl xl:text-4xl font-extrabold tracking-tight transition-colors duration-500" style={{ color: P.text }}>
               Compare 3 Vehicles Side-by-Side
             </h1>
-            <p className="text-base font-medium text-slate-300 leading-relaxed mb-8">
+            <p className="text-sm font-medium transition-colors duration-500" style={{ color: P.muted }}>
               Select the Make, Model, and Year for three vehicles. We'll analyze their specifications and recommend the best option tailored to your personal preferences.
             </p>
-          </motion.div>
-        </div>
-      </div>
+          </div>
+        </motion.div>
 
       {/* Vehicle Selection Section */}
-      <div className="relative z-20 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 -mt-28">
+      <motion.div variants={itemVariants} className="relative z-20">
         
         <AnimatePresence>
           {error && (
@@ -192,30 +233,31 @@ export default function ComparePage() {
                 initial={{ opacity: 0, y: 20 }} 
                 animate={{ opacity: 1, y: 0 }} 
                 transition={{ delay: i * 0.1 }}
-                className={`rounded-2xl border bg-white shadow-xl shadow-slate-200/40 overflow-hidden transition-all duration-300 ${isSelected ? theme.border : 'border-slate-200 hover:border-blue-300'}`}
+                className={`rounded-2xl border shadow-xl overflow-hidden transition-all duration-500`}
+                style={{ background: P.cardBg, borderColor: isSelected ? theme.border : P.border, boxShadow: P.shadow }}
               >
                 {/* Card Header */}
-                <div className={`p-5 flex items-center gap-4 border-b border-slate-100 ${isSelected ? theme.light : 'bg-slate-50'}`}>
+                <div className={`p-5 flex items-center gap-4 border-b`} style={{ borderColor: P.border, background: isSelected ? (isDarkMode ? 'rgba(21,93,252,0.1)' : theme.light) : (isDarkMode ? '#0a0a0a' : '#f8fafc') }}>
                   <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl font-extrabold text-white text-lg shadow-sm ${theme.bg}`}>
                     {theme.id}
                   </div>
                   <div>
-                    <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-0.5">Vehicle {theme.id}</p>
+                    <p className="text-xs font-bold uppercase tracking-wider mb-0.5 transition-colors duration-500" style={{ color: P.muted }}>Vehicle {theme.id}</p>
                     {isSelected ? (
                       <h3 className={`text-base font-extrabold leading-tight ${theme.text}`}>
                         {v.make} {v.model} <span className="opacity-70">({v.year})</span>
                       </h3>
                     ) : (
-                      <h3 className="text-sm font-semibold text-slate-500">Select specifications</h3>
+                      <h3 className="text-sm font-semibold transition-colors duration-500" style={{ color: P.muted }}>Select specifications</h3>
                     )}
                   </div>
                 </div>
 
                 {/* Card Body - Dropdowns */}
                 <div className="p-6 space-y-4">
-                  <CustomSelect value={v.make} onChange={v.setMake} options={makes} placeholder="1. Select Make" />
-                  <CustomSelect value={v.model} onChange={v.setModel} options={v.models} placeholder={v.make ? "2. Select Model" : "2. Select Make first"} disabled={!v.make} />
-                  <CustomSelect value={v.year === '' ? '' : String(v.year)} onChange={val => v.setYear(val ? Number(val) : '')} options={v.years.map(String)} placeholder={v.model ? "3. Select Year" : "3. Select Model first"} disabled={!v.model} />
+                  <CustomSelect value={v.make} onChange={v.setMake} options={makes} placeholder="1. Select Make" isDarkMode={isDarkMode} P={P} />
+                  <CustomSelect value={v.model} onChange={v.setModel} options={v.models} placeholder={v.make ? "2. Select Model" : "2. Select Make first"} disabled={!v.make} isDarkMode={isDarkMode} P={P} />
+                  <CustomSelect value={v.year === '' ? '' : String(v.year)} onChange={val => v.setYear(val ? Number(val) : '')} options={v.years.map(String)} placeholder={v.model ? "3. Select Year" : "3. Select Model first"} disabled={!v.model} isDarkMode={isDarkMode} P={P} />
                 </div>
               </motion.div>
             );
@@ -223,15 +265,16 @@ export default function ComparePage() {
         </div>
 
         {/* Action Buttons */}
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-8">
           <motion.button 
             whileHover={{ scale: canCompare && !loading ? 1.02 : 1 }}
             whileTap={{ scale: canCompare && !loading ? 0.98 : 1 }}
             disabled={!canCompare || loading} 
             onClick={onCompare}
-            className={`flex items-center justify-center gap-2 w-full sm:w-auto px-10 py-4 rounded-xl text-base font-bold text-white shadow-lg transition-all duration-300 ${
-              canCompare ? 'bg-blue-600 hover:bg-blue-700 shadow-blue-600/30' : 'bg-slate-300 cursor-not-allowed shadow-none'
+            className={`flex items-center justify-center gap-2 w-full sm:w-auto px-10 py-4 rounded-xl text-base font-bold text-white transition-all duration-300 ${
+              canCompare ? '' : 'cursor-not-allowed opacity-50'
             }`}
+            style={{ background: canCompare ? P.primary : (isDarkMode ? '#334155' : '#cbd5e1'), boxShadow: canCompare ? `0 8px 24px -4px rgba(21,93,252,0.3)` : 'none' }}
           >
             {loading ? (
               <><span className="h-5 w-5 rounded-full border-2 border-white/30 border-t-white animate-spin" /> Analyzing Specifications...</>
@@ -242,7 +285,8 @@ export default function ComparePage() {
           
           <button 
             onClick={onReset}
-            className="flex items-center justify-center gap-2 w-full sm:w-auto px-6 py-4 rounded-xl text-sm font-bold text-slate-500 bg-white border border-slate-200 hover:bg-slate-50 hover:text-slate-700 transition-colors"
+            className="flex items-center justify-center gap-2 w-full sm:w-auto px-6 py-4 rounded-xl text-sm font-bold transition-colors duration-500 border"
+            style={{ background: P.cardBg, borderColor: P.border, color: P.muted }}
           >
             <RefreshCw className="h-4 w-4" /> Reset Filters
           </button>
@@ -258,17 +302,37 @@ export default function ComparePage() {
               transition={{ duration: 0.5, ease: "easeOut" }}
               className="mt-16"
             >
-              <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
-                <div>
-                  <h2 className="text-2xl font-extrabold text-slate-900">Analysis Results</h2>
-                  <p className="text-sm font-medium text-slate-500 mt-1">Detailed breakdown of specifications and our tailored recommendation.</p>
+              {/* Super Modern Header */}
+              <div 
+                className="relative overflow-hidden rounded-2xl p-6 mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border transition-colors duration-500 shadow-sm"
+                style={{ background: isDarkMode ? 'rgba(21,93,252,0.05)' : '#F0F4FF', borderColor: P.border }}
+              >
+                {/* Decorative background shape */}
+                <div className="absolute -right-10 -top-10 w-48 h-48 rounded-full mix-blend-multiply filter blur-3xl opacity-40 transition-colors duration-500" style={{ background: P.primary }} />
+                
+                <div className="relative z-10">
+                  <div className="inline-flex items-center gap-1.5 mb-2 px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest transition-colors duration-500 shadow-sm" style={{ background: isDarkMode ? 'rgba(21,93,252,0.15)' : '#FFFFFF', color: P.primary }}>
+                    <Activity className="w-3 h-3" />
+                    Data Driven Insights
+                  </div>
+                  <h2 className="text-2xl font-black tracking-tight transition-colors duration-500" style={{ color: P.text }}>
+                    Analysis Results
+                  </h2>
+                  <p className="text-xs font-medium mt-1 max-w-lg transition-colors duration-500 leading-relaxed" style={{ color: P.muted }}>
+                    We've crunched the numbers and analyzed the specifications to help you make an informed decision.
+                  </p>
                 </div>
                 
                 {/* Recommendation Banner */}
                 {recommendedIndex !== -1 && (
-                  <div className="inline-flex items-center gap-2 bg-emerald-50 border border-emerald-200 text-emerald-700 px-4 py-2 rounded-xl text-sm font-bold shadow-sm">
-                    <ShieldCheck className="w-5 h-5" />
-                    <span>Best Match identified based on your profile</span>
+                  <div className="relative z-10 flex-shrink-0">
+                    <div className="flex flex-col items-center justify-center px-5 py-3 rounded-xl border backdrop-blur-md shadow-sm transition-colors duration-500" style={{ background: isDarkMode ? 'rgba(16,185,129,0.1)' : '#ecfdf5', borderColor: isDarkMode ? 'rgba(16,185,129,0.2)' : '#a7f3d0' }}>
+                      <div className="flex items-center justify-center w-8 h-8 rounded-full mb-1.5 shadow-inner" style={{ background: '#10b981', color: '#ffffff' }}>
+                        <ShieldCheck className="w-4 h-4" />
+                      </div>
+                      <span className="text-[9px] font-extrabold uppercase tracking-widest text-[#10b981] mb-0.5">Success</span>
+                      <span className="text-xs font-bold text-center" style={{ color: isDarkMode ? '#e5e7eb' : '#065f46' }}>Best Match</span>
+                    </div>
                   </div>
                 )}
               </div>
@@ -283,59 +347,67 @@ export default function ComparePage() {
                   return (
                     <div 
                       key={idx} 
-                      className={`relative flex flex-col rounded-2xl bg-white transition-all duration-300 ${
-                        isRec 
-                          ? 'ring-4 ring-emerald-500 border-emerald-500 shadow-2xl shadow-emerald-500/20 scale-[1.02] z-10' 
-                          : 'border border-slate-200 shadow-xl shadow-slate-200/40 hover:border-slate-300 hover:shadow-2xl hover:shadow-slate-200/50'
-                      }`}
+                      className={`relative flex flex-col rounded-3xl transition-all duration-500 border`}
+                      style={{
+                        background: P.cardBg,
+                        borderColor: isRec ? '#10b981' : P.border,
+                        boxShadow: isRec ? '0 10px 40px -10px rgba(16,185,129,0.4)' : P.shadow,
+                        transform: isRec ? 'scale(1.03) translateY(-10px)' : 'scale(1)',
+                        zIndex: isRec ? 10 : 1
+                      }}
                     >
+                      {/* Subtle ambient glow inside the card */}
+                      <div className="absolute inset-0 rounded-3xl opacity-20 pointer-events-none transition-colors duration-500 overflow-hidden" 
+                           style={{ background: `radial-gradient(circle at 50% 0%, ${theme.bg.replace('bg-[', '').replace(']', '')}, transparent 60%)` }} />
+
                       {/* Best Match Badge */}
                       {isRec && (
-                        <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-emerald-500 text-white px-5 py-1.5 rounded-full text-xs font-extrabold uppercase tracking-widest shadow-lg flex items-center gap-1.5 z-20">
+                        <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-gradient-to-r from-emerald-400 to-emerald-600 text-white px-6 py-1.5 rounded-full text-[11px] font-extrabold uppercase tracking-widest shadow-xl shadow-emerald-500/30 flex items-center gap-1.5 z-20 border border-emerald-300/30 backdrop-blur-sm">
                           <CheckCircle2 className="w-4 h-4" /> 
-                          Recommended For You
+                          Top Choice
                         </div>
                       )}
 
                       {/* Card Header (Vehicle Identity) */}
-                      <div className={`p-6 pb-5 border-b rounded-t-2xl ${isRec ? 'bg-emerald-50/50 border-emerald-100' : 'bg-slate-50/50 border-slate-100'}`}>
-                        <div className="flex items-center gap-2 mb-3">
-                          <span className={`px-2.5 py-1 rounded-md text-[10px] font-extrabold uppercase tracking-widest ${theme.bg} text-white`}>
+                      <div className={`p-8 pb-6 border-b rounded-t-3xl relative z-10 overflow-hidden`} style={{ borderColor: P.border, background: isRec ? (isDarkMode ? 'rgba(16,185,129,0.05)' : '#f0fdf4') : 'transparent' }}>
+                        <div className="flex items-center gap-2 mb-4">
+                          <span className={`px-3 py-1 rounded-lg text-[10px] font-extrabold uppercase tracking-widest ${theme.bg} text-white shadow-md`}>
                             Option {theme.id}
                           </span>
                           {!vehicle.found && (
-                            <span className="px-2.5 py-1 rounded-md text-[10px] font-extrabold uppercase tracking-widest bg-red-100 text-red-600">
+                            <span className="px-3 py-1 rounded-lg text-[10px] font-extrabold uppercase tracking-widest bg-red-100 text-red-600 shadow-sm">
                               Not Found
                             </span>
                           )}
                         </div>
                         
-                        <h3 className="text-xl font-extrabold text-slate-900 leading-tight min-h-[56px] flex items-center">
+                        <h3 className="text-2xl font-black leading-tight min-h-[64px] flex items-center transition-colors duration-500 drop-shadow-sm" style={{ color: P.text }}>
                           {vehicle.name || `Unknown Vehicle ${theme.id}`}
                         </h3>
                         
                         {vehicle.found ? (
-                          <div className="mt-3 flex items-center gap-1.5 text-xs font-bold text-slate-500">
+                          <div className="mt-4 flex items-center gap-2 text-xs font-bold transition-colors duration-500" style={{ color: P.muted }}>
                             <Car className="w-4 h-4" /> 
                             {vehicle.vehicle_class || 'Standard Class'}
                           </div>
                         ) : (
-                          <p className="mt-3 text-xs font-medium text-red-500">{vehicle.message || 'Data unavailable in catalog.'}</p>
+                          <p className="mt-4 text-xs font-medium text-red-500">{vehicle.message || 'Data unavailable in catalog.'}</p>
                         )}
                       </div>
 
                       {/* Card Body (Specs List) */}
-                      <div className="flex-1 p-6 space-y-4">
+                      <div className="flex-1 p-8 space-y-6 relative z-10">
                         {[
-                          { label: 'Engine Size', value: vehicle.engine_size, suffix: 'L' },
-                          { label: 'Engine Type', value: vehicle.engine_type },
-                          { label: 'Transmission', value: vehicle.transmission },
-                          { label: 'Fuel Type', value: vehicle.fuel },
-                          { label: 'City / Comb (L/100km)', value: vehicle.comb_l_per_100, isEfficiency: true },
-                          { label: 'Highway (L/100km)', value: vehicle.hwy_l_per_100, isEfficiency: true },
-                          { label: 'Tyre Size', value: vehicle.tyre_size },
+                          { label: 'Engine Size', value: vehicle.engine_size, suffix: 'L', icon: Settings },
+                          { label: 'Engine Type', value: vehicle.engine_type, icon: Settings2 },
+                          { label: 'Transmission', value: vehicle.transmission, icon: GitBranch },
+                          { label: 'Fuel Type', value: vehicle.fuel, icon: Fuel },
+                          { label: 'City / Comb (L/100km)', value: vehicle.comb_l_per_100, isEfficiency: true, icon: Activity },
+                          { label: 'Highway (L/100km)', value: vehicle.hwy_l_per_100, isEfficiency: true, icon: Activity },
+                          { label: 'Tyre Size', value: vehicle.tyre_size, icon: Disc },
                         ].map((spec, specIdx) => {
                           const val = fmt(spec.value);
+                          const Icon = spec.icon;
                           
                           // Determine if this is the best efficiency value among the 3 vehicles
                           let isWinner = false;
@@ -354,17 +426,22 @@ export default function ComparePage() {
                           }
 
                           return (
-                            <div key={specIdx} className="flex flex-col gap-1 border-b border-slate-100 pb-3 last:border-0 last:pb-0">
-                              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                                {spec.label}
-                              </span>
+                            <div key={specIdx} className="flex items-center justify-between group">
+                              <div className="flex items-center gap-3">
+                                <div className="flex h-9 w-9 items-center justify-center rounded-xl transition-colors duration-500" style={{ background: isDarkMode ? 'rgba(21,93,252,0.1)' : '#EFF6FF', color: P.primary }}>
+                                  <Icon className="h-4 w-4" />
+                                </div>
+                                <span className="text-[11px] font-extrabold uppercase tracking-wider transition-colors duration-500" style={{ color: P.muted }}>
+                                  {spec.label}
+                                </span>
+                              </div>
                               <div className="flex items-center gap-2">
-                                <span className={`text-sm font-semibold ${isWinner ? 'text-emerald-600' : 'text-slate-800'} ${val === '—' ? 'opacity-50' : ''}`}>
+                                <span className={`text-sm font-extrabold ${val === '—' ? 'opacity-40' : ''} transition-colors duration-500`} style={{ color: isWinner ? '#10b981' : P.text }}>
                                   {val} {val !== '—' && spec.suffix && spec.suffix}
                                 </span>
                                 {isWinner && (
-                                  <span className="px-1.5 py-0.5 rounded text-[9px] font-extrabold bg-emerald-100 text-emerald-700 uppercase tracking-wider">
-                                    Best
+                                  <span className="px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-widest shadow-sm" style={{ background: '#10b981', color: '#ffffff' }}>
+                                    Top
                                   </span>
                                 )}
                               </div>
@@ -375,8 +452,8 @@ export default function ComparePage() {
 
                       {/* Optional Description at bottom */}
                       {vehicle.description && vehicle.description !== '—' && (
-                        <div className="p-5 bg-slate-50 border-t border-slate-100 rounded-b-2xl">
-                          <p className="text-xs font-medium text-slate-500 leading-relaxed line-clamp-3">
+                        <div className="p-6 border-t rounded-b-3xl relative z-10 transition-colors duration-500" style={{ background: isDarkMode ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)', borderColor: P.border }}>
+                          <p className="text-[11px] font-medium leading-relaxed line-clamp-3 transition-colors duration-500" style={{ color: P.muted }}>
                             {vehicle.description}
                           </p>
                         </div>
@@ -387,18 +464,25 @@ export default function ComparePage() {
               </div>
               
               {/* Informational Footer */}
-              <div className="mt-8 flex items-start gap-3 bg-blue-50 border border-blue-100 rounded-xl p-5">
-                <Info className="w-5 h-5 text-blue-500 shrink-0 mt-0.5" />
-                <p className="text-sm font-medium text-blue-800 leading-relaxed">
-                  The recommended <strong className="font-extrabold text-blue-900">Best Match</strong> is calculated by analyzing your customized profile preferences, prioritizing your preferred fuel type, vehicle class requirements, and fuel efficiency scoring against our extensive database.
-                </p>
+              <div className="mt-10 relative overflow-hidden rounded-3xl p-6 md:p-8 flex flex-col md:flex-row items-start md:items-center gap-6 transition-colors duration-500 border" style={{ background: P.cardBg, borderColor: P.border, boxShadow: P.shadow }}>
+                <div className="absolute left-0 top-0 bottom-0 w-2 transition-colors duration-500" style={{ background: P.primary }} />
+                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl transition-colors duration-500 shadow-sm" style={{ background: isDarkMode ? 'rgba(21,93,252,0.1)' : '#EFF6FF', color: P.primary }}>
+                  <Info className="w-7 h-7" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-extrabold uppercase tracking-widest mb-1.5 transition-colors duration-500" style={{ color: P.text }}>How we calculate this</h4>
+                  <p className="text-sm font-medium leading-relaxed transition-colors duration-500 max-w-4xl" style={{ color: P.muted }}>
+                    The recommended <strong className="font-extrabold transition-colors duration-500" style={{ color: P.primary }}>Best Match</strong> is dynamically calculated by analyzing your customized profile preferences, prioritizing your preferred fuel type, vehicle class requirements, and fuel efficiency scoring against our extensive local database.
+                  </p>
+                </div>
               </div>
               
             </motion.div>
           )}
         </AnimatePresence>
 
-      </div>
-    </div>
+        </motion.div>
+      </motion.div>
+    </motion.div>
   );
 }
