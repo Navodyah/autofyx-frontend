@@ -15,6 +15,10 @@ import {
   LogOut,
   FlaskConical,
   ChevronRight,
+  Sun,
+  Moon,
+  CalendarDays,
+  Clock,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
@@ -58,9 +62,9 @@ function getInitials(name: string): string {
 }
 
 function roleBadge(role: string): { label: string; color: string; bg: string } {
-  if (role === 'researcher') return { label: 'Researcher', color: '#7C3AED', bg: '#EDE9FE' };
+  if (role === 'researcher') return { label: 'Researcher', color: '#155dfc', bg: '#EFF6FF' };
   if (role === 'admin') return { label: 'Admin', color: '#B45309', bg: '#FEF3C7' };
-  return { label: 'Member', color: '#059669', bg: '#D1FAE5' };
+  return { label: 'Member', color: '#155dfc', bg: '#DBEAFE' };
 }
 
 /** Read and merge user profile from localStorage (user_data + auth_token fallback) */
@@ -112,8 +116,8 @@ const navItems = [
 function UserAvatar({ name, size = 'md' }: { name: string; size?: 'sm' | 'md' }) {
   const dim = size === 'sm' ? 'w-8 h-8 text-xs' : 'w-10 h-10 text-sm';
   const colors = [
-    ['#6366F1', '#EEF2FF'], ['#8B5CF6', '#F5F3FF'], ['#EC4899', '#FDF2F8'],
-    ['#0EA5E9', '#F0F9FF'], ['#14B8A6', '#F0FDFA'], ['#F59E0B', '#FFFBEB'],
+    ['#155dfc', '#EFF6FF'], ['#1d4ed8', '#DBEAFE'], ['#2563eb', '#EFF6FF'],
+    ['#155dfc', '#DBEAFE'], ['#1e40af', '#EFF6FF'], ['#155dfc', '#EFF6FF'],
   ];
   const idx = (name.charCodeAt(0) || 0) % colors.length;
   const [fg, bg] = colors[idx];
@@ -139,12 +143,47 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [sessionUser, setSessionUser] = useState<SessionUser | null>(null);
   const [isUserLoaded, setIsUserLoaded] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [currentTime, setCurrentTime] = useState<Date | null>(null);
+
+  /* Start real-time clock */
+  useEffect(() => {
+    setCurrentTime(new Date());
+    const t = setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => clearInterval(t);
+  }, []);
+
+  const toggleTheme = () => {
+    setIsDarkMode(!isDarkMode);
+    window.dispatchEvent(new Event('themeToggle'));
+  };
 
   /* Load user from localStorage once on mount (client-only) */
   useEffect(() => {
     const user = readSessionUser();
     setSessionUser(user);
     setIsUserLoaded(true);
+
+    // Fetch profile image from API to ensure it shows if missing in localStorage
+    if (user?.email || user?.appwrite_id) {
+       const params = new URLSearchParams();
+       if (user.email) params.append('email', user.email);
+       if (user.appwrite_id) params.append('appwrite_id', user.appwrite_id);
+       fetch(`/api/user-preferences?${params.toString()}`)
+         .then(res => res.json())
+         .then(data => {
+            if (data?.profile?.profile_image_url) {
+               setSessionUser(prev => prev ? { ...prev, profile_image_url: data.profile.profile_image_url } : null);
+               try {
+                 const raw = localStorage.getItem('user_data');
+                 const parsed = raw ? JSON.parse(raw) : {};
+                 parsed.profile_image_url = data.profile.profile_image_url;
+                 localStorage.setItem('user_data', JSON.stringify(parsed));
+               } catch (e) {}
+            }
+         })
+         .catch(err => console.error('Failed to fetch live profile:', err));
+    }
 
     // Periodically sync user_data from LocalStorage to update avatar in layout real-time
     const interval = setInterval(() => {
@@ -192,7 +231,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
     : '';
 
   return (
-    <div suppressHydrationWarning className="flex h-screen bg-[#f4f6f9] text-slate-900 font-sans overflow-hidden relative">
+    <div suppressHydrationWarning className="flex h-screen bg-[#f0f4ff] text-slate-900 font-sans overflow-hidden relative">
 
       {/* ── Full-screen route-transition loader ── */}
       <AnimatePresence>
@@ -201,20 +240,20 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0, transition: { delay: 0.1, duration: 0.3 } }}
-            className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[#0a0a0c] w-full"
+            className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[#030304] w-full"
           >
-            <div className="absolute top-[-30%] left-1/2 -translate-x-1/2 w-[700px] h-[500px] bg-[#2a2a30]/20 blur-[150px] rounded-full pointer-events-none" />
+            <div className="absolute top-[-30%] left-1/2 -translate-x-1/2 w-[700px] h-[500px] bg-[#155dfc]/10 blur-[150px] rounded-full pointer-events-none" />
             <div className="relative z-10 flex flex-col items-center gap-6 px-6 w-full max-w-sm">
               <div className="flex items-center gap-3 mb-2">
-                <div className="w-11 h-11 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center">
-                  <Car className="w-5 h-5 text-zinc-200" />
+                <div className="w-11 h-11 rounded-lg bg-[#155dfc]/20 border border-[#155dfc]/30 flex items-center justify-center">
+                  <Car className="w-5 h-5 text-[#155dfc]" />
                 </div>
                 <span className="text-white font-bold text-2xl tracking-wide">AutoFyx</span>
               </div>
               <div className="flex flex-col items-center gap-5 mt-4">
                 <div className="relative w-14 h-14">
-                  <div className="absolute inset-0 rounded-full border-2 border-white/5" />
-                  <div className="absolute inset-0 rounded-full border-2 border-t-white/60 border-r-white/20 border-b-transparent border-l-transparent animate-spin" />
+                  <div className="absolute inset-0 rounded-full border-2 border-white/10" />
+                  <div className="absolute inset-0 rounded-full border-2 border-t-[#155dfc] border-r-[#155dfc]/40 border-b-transparent border-l-transparent animate-spin" />
                 </div>
                 <div className="text-center mt-2">
                   <p className="text-zinc-100 font-semibold text-[17px] tracking-wide">Loading View</p>
@@ -234,56 +273,34 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
       <UserPreferenceOnboardingModal />
 
       {/* ── Desktop Sidebar ── */}
-      <aside className="hidden lg:flex w-64 xl:w-72 flex-col bg-[#0a0a0c] z-20 flex-shrink-0">
+      <aside className="hidden lg:flex w-64 xl:w-72 flex-col bg-[#030304] z-20 flex-shrink-0">
 
         {/* Logo */}
-        <div className="h-[72px] flex items-center px-7 border-b border-white/5 flex-shrink-0">
+        <div className="h-[72px] flex items-center px-7 border-b border-[#155dfc]/20 flex-shrink-0">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-white/10 border border-white/10 flex items-center justify-center">
-              <Car className="w-4 h-4 text-white" />
+            <div className="w-8 h-8 rounded-lg bg-[#155dfc]/20 border border-[#155dfc]/30 flex items-center justify-center">
+              <Car className="w-4 h-4 text-[#155dfc]" />
             </div>
             <span className="text-lg font-bold tracking-tight text-white">AutoFyx</span>
           </div>
         </div>
 
-        {/* User card in sidebar */}
+        {/* Date Card in sidebar */}
         <div className="px-4 pt-5 pb-2">
-          <div className="flex items-center gap-3 px-3 py-3 rounded-2xl bg-white/5 border border-white/8">
-            {sessionUser?.profile_image_url ? (
-              <img src={sessionUser.profile_image_url} alt="Profile" className="w-10 h-10 rounded-full object-cover border-2 border-white/20 shadow-sm" />
-            ) : (
-              <UserAvatar name={finalDisplayName} />
-            )}
-            <div className="flex-1 min-w-0">
-              <p className={`text-sm font-bold text-white truncate leading-tight ${skeletonCls}`}>
-                {finalDisplayName}
-              </p>
-              <p className={`text-[11px] text-white/40 truncate mt-0.5 ${skeletonCls}`}>
-                {displayEmail || '…'}
+          <div className="flex flex-col gap-1.5 px-4 py-3.5 rounded-2xl bg-[#155dfc]/10 border border-[#155dfc]/20">
+            <div className="flex items-center gap-2">
+              <CalendarDays className="w-4 h-4 text-[#155dfc]" />
+              <p className="text-[11px] font-bold uppercase tracking-widest text-[#93c5fd]">
+                {currentTime ? currentTime.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) : '...'}
               </p>
             </div>
-            {/* Role badge dot */}
-            {userRole !== 'user' && (
-              <span
-                className="w-2 h-2 rounded-full flex-shrink-0"
-                style={{ background: badge.color }}
-                title={badge.label}
-              />
-            )}
+            <div className="flex items-center gap-2">
+              <Clock className="w-4 h-4 text-[#155dfc]" />
+              <p className="text-sm font-extrabold tracking-tight text-white">
+                {currentTime ? currentTime.toLocaleTimeString('en-US') : '...'}
+              </p>
+            </div>
           </div>
-
-          {/* Researcher shortcut */}
-          {isResearcher && (
-            <Link
-              href="/researcher"
-              className="mt-2 flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold transition-all"
-              style={{ background: 'rgba(124,58,237,0.12)', color: '#C4B5FD', border: '1px solid rgba(124,58,237,0.2)' }}
-            >
-              <FlaskConical className="w-3.5 h-3.5" />
-              Researcher Dashboard
-              <ChevronRight className="w-3 h-3 ml-auto opacity-60" />
-            </Link>
-          )}
         </div>
 
         {/* Nav */}
@@ -297,25 +314,63 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                   key={`${item.href}-${item.label}`}
                   href={item.href}
                   onClick={() => handleNavClick(item.href)}
-                  className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${isActive ? 'bg-white text-slate-900 shadow-md' : 'text-white/60 hover:bg-white/10 hover:text-white'
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${isActive ? 'bg-[#155dfc] text-white shadow-lg shadow-[#155dfc]/30' : 'text-white/60 hover:bg-[#155dfc]/10 hover:text-white'
                     }`}
                 >
-                  <item.icon className={`w-4 h-4 flex-shrink-0 ${isActive ? 'text-slate-700' : 'text-white/50'}`} />
+                  <item.icon className={`w-4 h-4 flex-shrink-0 ${isActive ? 'text-white' : 'text-white/50'}`} />
                   <span className="truncate">{item.label}</span>
-                  {isActive && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-slate-500 flex-shrink-0" />}
+                  {isActive && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-white/60 flex-shrink-0" />}
                 </Link>
               );
             })}
           </nav>
         </div>
 
-        {/* Footer – logout */}
-        <div className="px-4 py-5 border-t border-white/5 flex-shrink-0">
+        {/* Footer */}
+        <div className="px-4 py-5 border-t border-[#155dfc]/20 flex-shrink-0 flex flex-col gap-3">
+          
+          {/* User card in sidebar */}
+          <div className="flex items-center gap-3 px-3 py-3 rounded-2xl bg-[#155dfc]/10 border border-[#155dfc]/20">
+            {sessionUser?.profile_image_url ? (
+              <img src={sessionUser.profile_image_url} alt="Profile" className="w-10 h-10 rounded-full object-cover border-2 border-[#155dfc]/40 shadow-sm" />
+            ) : (
+              <UserAvatar name={finalDisplayName} />
+            )}
+            <div className="flex-1 min-w-0">
+              <p className={`text-sm font-bold text-white truncate leading-tight ${skeletonCls}`}>
+                {finalDisplayName}
+              </p>
+              <p className={`text-[11px] text-white/40 truncate mt-0.5 ${skeletonCls}`}>
+                {displayEmail || '…'}
+              </p>
+            </div>
+            {/* Theme Toggle Button */}
+            <button
+              onClick={toggleTheme}
+              className="w-8 h-8 rounded-full flex items-center justify-center bg-white/5 hover:bg-[#155dfc]/20 transition-all border border-[#155dfc]/30 text-white flex-shrink-0"
+            >
+               {isDarkMode ? <Sun className="w-4 h-4 text-[#93c5fd]" /> : <Moon className="w-4 h-4 text-[#155dfc]" />}
+            </button>
+          </div>
+
+          {/* Researcher shortcut */}
+          {isResearcher && (
+            <Link
+              href="/researcher"
+              className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold transition-all"
+              style={{ background: 'rgba(21,93,252,0.12)', color: '#93c5fd', border: '1px solid rgba(21,93,252,0.25)' }}
+            >
+              <FlaskConical className="w-3.5 h-3.5" />
+              Researcher Dashboard
+              <ChevronRight className="w-3 h-3 ml-auto opacity-60" />
+            </Link>
+          )}
+
           <button
             suppressHydrationWarning
             onClick={handleLogout}
             disabled={isLoggingOut}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-white/50 hover:text-white hover:bg-white/10 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-white/50 hover:text-white hover:bg-red-500/10 hover:text-red-400 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isLoggingOut ? (
               <>
@@ -342,7 +397,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
 
 
         {/* Page content */}
-        <main className="flex-1 overflow-y-auto" style={{ background: '#ffffffff' }}>
+        <main className="flex-1 overflow-y-auto" style={{ background: '#ffffff' }}>
           <motion.div
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
@@ -359,7 +414,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-[#f4f6f9]" />}>
+    <Suspense fallback={<div className="min-h-screen bg-[#f0f4ff]" />}>
       <DashboardLayoutContent>{children}</DashboardLayoutContent>
     </Suspense>
   );
