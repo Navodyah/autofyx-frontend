@@ -92,7 +92,7 @@ function getBudgetTrackStyle(minValue: number, maxValue: number) {
   const start = ((minValue - MIN_BUDGET) / (MAX_BUDGET - MIN_BUDGET)) * 100;
   const end = ((maxValue - MIN_BUDGET) / (MAX_BUDGET - MIN_BUDGET)) * 100;
   return {
-    background: `linear-gradient(to right, #e5e7eb 0%, #e5e7eb ${start}%, #6d28d9 ${start}%, #7c3aed ${end}%, #e5e7eb ${end}%, #e5e7eb 100%)`,
+    background: `linear-gradient(to right, #e5e7eb 0%, #e5e7eb ${start}%, #155dfc ${start}%, #1d4ed8 ${end}%, #e5e7eb ${end}%, #e5e7eb 100%)`,
   };
 }
 
@@ -170,11 +170,11 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-950">
+    <div className="min-h-screen bg-white text-slate-950">
       <div className="mx-auto max-w-7xl px-4 py-6 md:px-8 md:py-8">
-        <section className="overflow-hidden rounded-[2rem] bg-gradient-to-r from-black via-slate-950 to-violet-700 p-[1px] shadow-[0_24px_80px_rgba(15,23,42,0.18)]">
-          <div className="relative overflow-hidden rounded-[calc(2rem-1px)] bg-[linear-gradient(135deg,#0a0a0b_0%,#121216_56%,#4c1d95_100%)] px-6 py-8 md:px-10 md:py-10">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(168,85,247,0.22),transparent_35%),radial-gradient(circle_at_left,rgba(255,255,255,0.08),transparent_30%)]" />
+        <section className="overflow-hidden rounded-[2rem] bg-gradient-to-r from-[#030304] via-[#030304] to-[#155dfc] p-[1px] shadow-[0_24px_80px_rgba(15,23,42,0.18)]">
+          <div className="relative overflow-hidden rounded-[calc(2rem-1px)] bg-[linear-gradient(135deg,#030304_0%,#0a0f1e_56%,#155dfc_100%)] px-6 py-8 md:px-10 md:py-10">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(21,93,252,0.22),transparent_35%),radial-gradient(circle_at_left,rgba(255,255,255,0.08),transparent_30%)]" />
             <div className="relative flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
               <div className="flex flex-col gap-6 sm:flex-row sm:items-center">
                 <div className="relative h-28 w-28 shrink-0 rounded-full border-4 border-white bg-white/10 shadow-[0_0_0_6px_rgba(255,255,255,0.08)]">
@@ -194,7 +194,7 @@ export default function ProfilePage() {
                   <div>
                     <p className="text-sm font-medium uppercase tracking-[0.32em] text-violet-200/80">User Profile</p>
                     <h1 className="mt-2 text-3xl font-bold tracking-tight text-white md:text-5xl">Upeksha Dias</h1>
-                    <span className="mt-3 inline-flex rounded-full border border-violet-300/30 bg-violet-300/15 px-3 py-1 text-xs font-semibold tracking-[0.24em] text-violet-100">
+                    <span className="mt-3 inline-flex rounded-full border border-[#155dfc]/30 bg-[#155dfc]/15 px-3 py-1 text-xs font-semibold tracking-[0.24em] text-blue-100">
                       PREMIUM USER
                     </span>
                   </div>
@@ -225,7 +225,7 @@ export default function ProfilePage() {
                   className={[
                     "rounded-full px-4 py-2 text-sm font-medium transition-all",
                     isActive
-                      ? "bg-gradient-to-r from-blue-600 to-violet-600 text-white shadow-lg shadow-violet-200"
+                      ? "bg-[#155dfc] text-white shadow-lg shadow-[#155dfc]/25"
                       : "text-slate-500 hover:bg-slate-100 hover:text-slate-900",
                   ].join(" ")}
                 >
@@ -277,7 +277,7 @@ export default function ProfilePage() {
                                 className={[
                                   "group rounded-2xl border p-4 text-left transition-all duration-200",
                                   active
-                                    ? "border-violet-500 bg-white shadow-lg shadow-violet-100"
+                                    ? "border-[#155dfc] bg-white shadow-lg shadow-[#155dfc]/10"
                                     : "border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm",
                                 ].join(" ")}
                               >
@@ -285,7 +285,7 @@ export default function ProfilePage() {
                                   <div className="space-y-2">
                                     <div className={[
                                       "flex h-11 w-11 items-center justify-center rounded-xl transition-colors",
-                                      active ? "bg-violet-600 text-white" : "bg-slate-100 text-slate-700 group-hover:bg-slate-200",
+                                      active ? "bg-[#155dfc] text-white" : "bg-slate-100 text-slate-700 group-hover:bg-slate-200",
                                     ].join(" ")}>
                                       <Icon className="h-5 w-5" />
                                     </div>
@@ -297,7 +297,7 @@ export default function ProfilePage() {
 
                                   <div className={[
                                     "mt-1 h-5 w-5 rounded-full border-2 transition-all",
-                                    active ? "border-violet-600 bg-violet-600" : "border-slate-300 bg-white",
+                                    active ? "border-[#155dfc] bg-[#155dfc]" : "border-slate-300 bg-white",
                                   ].join(" ")} />
                                 </div>
                               </button>
@@ -448,7 +448,7 @@ export default function ProfilePage() {
                     <Button
                       type="button"
                       onClick={handleSave}
-                      className="gap-2 bg-gradient-to-r from-violet-600 to-blue-600 text-white shadow-lg shadow-violet-200 hover:from-violet-700 hover:to-blue-700"
+                      className="gap-2 bg-[#155dfc] text-white shadow-lg shadow-[#155dfc]/25 hover:bg-[#1d4ed8]"
                     >
                       <Save className="h-4 w-4" />
                       Save Changes
