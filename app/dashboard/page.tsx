@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import dynamic from "next/dynamic";
 import { motion, AnimatePresence } from "framer-motion";
@@ -18,32 +18,32 @@ import { createBrowserAuthToken, parseBrowserAuthToken } from "@/lib/auth-token"
 
 // Light Palette
 const L = {
-  bg: "#F7F7F8",
+  bg: "#F0F4FF",
   cardBg: "#FFFFFF",
-  primary: "#0A0A0B",
+  primary: "#155dfc",
   primaryText: "#FFFFFF",
-  text: "#18181B",
-  muted: "#71717A",
-  border: "#E4E4E7",
-  glow: "rgba(0,0,0,0.06)",
-  shadow: "0 4px 20px -2px rgba(0, 0, 0, 0.03), 0 0 3px rgba(0,0,0,0.02)",
-  hoverShadow: "0 12px 24px -4px rgba(0,0,0,0.06)",
-  iconBg: "#F4F4F5"
+  text: "#030304",
+  muted: "#6B7280",
+  border: "#DBEAFE",
+  glow: "rgba(21,93,252,0.15)",
+  shadow: "0 4px 20px -2px rgba(21, 93, 252, 0.06), 0 0 3px rgba(21,93,252,0.04)",
+  hoverShadow: "0 12px 24px -4px rgba(21,93,252,0.12)",
+  iconBg: "#EFF6FF"
 };
 
-// Dark Palette (Midnight Black, Monochrome Accents - NO BLUE)
+// Dark Palette (Deep Black + Blue Accent)
 const D = {
-  bg: "#0B0F19",
-  cardBg: "#161B22",
-  primary: "#FFFFFF",
-  primaryText: "#000000",
+  bg: "#030304",
+  cardBg: "#0F111A",
+  primary: "#155dfc",
+  primaryText: "#FFFFFF",
   text: "#FFFFFF",
   muted: "#8B949E",
-  border: "rgba(255, 255, 255, 0.08)",
-  glow: "rgba(255, 255, 255, 0.15)",
+  border: "rgba(21, 93, 252, 0.2)",
+  glow: "rgba(21, 93, 252, 0.25)",
   shadow: "0 4px 24px -4px rgba(0, 0, 0, 0.5)",
-  hoverShadow: "0 12px 30px -4px rgba(0,0,0,0.5), 0 0 25px rgba(255,255,255,0.05)",
-  iconBg: "rgba(255,255,255,0.03)"
+  hoverShadow: "0 12px 30px -4px rgba(0,0,0,0.5), 0 0 25px rgba(21,93,252,0.12)",
+  iconBg: "rgba(21,93,252,0.08)"
 };
 
 // Animation Variants
@@ -71,7 +71,7 @@ const floatAnimation = {
 
 function DashboardOverview() {
   const [hoveredModule, setHoveredModule] = useState<string | null>(null);
-  const [isDarkMode, setIsDarkMode] = useState(true);
+  const [isDarkMode, setIsDarkMode] = useState(false);
   const [userRole, setUserRole] = useState<'user' | 'researcher'>('user');
   const [userName, setUserName] = useState('');
   const [isApplying, setIsApplying] = useState(false);
@@ -90,6 +90,12 @@ function DashboardOverview() {
     } catch {
       // ignore
     }
+  }, []);
+
+  useEffect(() => {
+    const handler = () => setIsDarkMode(prev => !prev);
+    window.addEventListener('themeToggle', handler);
+    return () => window.removeEventListener('themeToggle', handler);
   }, []);
 
   // First name only for the greeting
@@ -140,7 +146,7 @@ function DashboardOverview() {
       style={{
         background: P.bg,
         borderRadius: "32px",
-        margin: "12px",
+        margin: "1px",
         minHeight: "calc(100vh - 100px)", // Ensures bottom curves are visible
       }}
     >
@@ -157,51 +163,30 @@ function DashboardOverview() {
               initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
               className="inline-flex items-center gap-2.5 px-3 py-1.5 rounded-full transition-colors duration-500"
-              style={{ background: isDarkMode ? "rgba(255,255,255,0.05)" : "#FFFFFF", borderWidth: "1px", borderStyle: "solid", borderColor: P.border }}
+              style={{ background: isDarkMode ? "rgba(21,93,252,0.08)" : "#FFFFFF", borderWidth: "1px", borderStyle: "solid", borderColor: P.border }}
             >
               <div className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
               </div>
-              <span className="text-[10px] font-bold uppercase tracking-widest transition-colors duration-500" style={{ color: isDarkMode ? "#E2E8F0" : "#059669" }}>
+              <span className="text-[10px] font-bold uppercase tracking-widest transition-colors duration-500" style={{ color: isDarkMode ? "#93c5fd" : "#155dfc" }}>
                 System Analysis Active
               </span>
             </motion.div>
 
             <h1 className="text-3xl xl:text-4xl font-extrabold tracking-tight transition-colors duration-500" style={{ color: P.text }}>
-              Welcome back, <span style={{ color: isDarkMode ? "#FFFFFF" : "#000000" }}>{firstName}</span>
+              Welcome back, <span style={{ color: isDarkMode ? "#93c5fd" : "#155dfc" }}>{firstName}</span>
             </h1>
             <p className="text-sm font-medium transition-colors duration-500" style={{ color: P.muted }}>Your curated market insights and vehicle intelligence hub.</p>
           </div>
 
           <div className="flex gap-3 shrink-0 flex-wrap items-center">
-            {/* Theme Toggle Button */}
-            <motion.button
-              onClick={() => setIsDarkMode(!isDarkMode)}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="flex items-center justify-center w-10 h-10 rounded-full transition-colors duration-500"
-              style={{ background: isDarkMode ? "rgba(255,255,255,0.05)" : "#FFFFFF", borderWidth: "1px", borderStyle: "solid", borderColor: P.border, color: P.text }}
-            >
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={isDarkMode ? 'moon' : 'sun'}
-                  initial={{ rotate: -90, opacity: 0 }}
-                  animate={{ rotate: 0, opacity: 1 }}
-                  exit={{ rotate: 90, opacity: 0 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  {isDarkMode ? <Sun className="w-4.5 h-4.5" /> : <Moon className="w-4.5 h-4.5" />}
-                </motion.div>
-              </AnimatePresence>
-            </motion.button>
-
             {/* Researcher Dashboard button â€” only for researchers */}
             {userRole === 'researcher' && (
               <Link
                 href="/researcher"
                 className="flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold transition-all hidden sm:flex"
-                style={{ background: isDarkMode ? "rgba(139,92,246,0.15)" : "#EDE9FE", borderWidth: "1px", borderStyle: "solid", borderColor: isDarkMode ? "rgba(139,92,246,0.3)" : "#C4B5FD", color: isDarkMode ? "#C4B5FD" : "#6D28D9" }}
+                style={{ background: isDarkMode ? "rgba(21,93,252,0.12)" : "#EFF6FF", borderWidth: "1px", borderStyle: "solid", borderColor: isDarkMode ? "rgba(21,93,252,0.3)" : "#BFDBFE", color: isDarkMode ? "#93c5fd" : "#1d4ed8" }}
               >
                 <FlaskConical className="w-4 h-4" />
                 Researcher Dashboard
@@ -250,7 +235,7 @@ function DashboardOverview() {
                 whileTap={{ scale: isApplying ? 1 : 0.98 }}
                 disabled={isApplying}
                 className="flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold transition-all hidden sm:flex"
-                style={{ background: isDarkMode ? "rgba(255,255,255,0.05)" : "#FFFFFF", borderWidth: "1px", borderStyle: "solid", borderColor: P.border, color: P.text, opacity: isApplying ? 0.6 : 1 }}
+                style={{ background: isDarkMode ? "rgba(21,93,252,0.05)" : "#FFFFFF", borderWidth: "1px", borderStyle: "solid", borderColor: P.border, color: P.text, opacity: isApplying ? 0.6 : 1 }}
               >
                 {isApplying ? <Loader2 className="w-4 h-4 animate-spin" /> : <FlaskConical className="w-4 h-4" />}
                 Apply for Researcher
@@ -258,7 +243,7 @@ function DashboardOverview() {
             )}
 
             <motion.button
-              whileHover={{ scale: 1.02, backgroundColor: isDarkMode ? "rgba(255,255,255,0.08)" : "#F4F4F5" }}
+              whileHover={{ scale: 1.02, backgroundColor: isDarkMode ? "rgba(21,93,252,0.12)" : "#EFF6FF" }}
               whileTap={{ scale: 0.98 }}
               className="flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold transition-colors duration-500 hidden sm:flex"
               style={{ background: isDarkMode ? "transparent" : "#FFFFFF", borderWidth: "1px", borderStyle: "solid", borderColor: P.border, color: P.text }}
@@ -286,10 +271,10 @@ function DashboardOverview() {
               exit={{ opacity: 0, y: -8 }}
               className="px-4 py-3 rounded-xl text-sm font-medium"
               style={{
-                background: applyMsg.startsWith('ðŸŽ‰') ? (isDarkMode ? "rgba(139,92,246,0.15)" : "#EDE9FE") : "rgba(239,68,68,0.1)",
+                background: applyMsg.startsWith('🎉') ? (isDarkMode ? "rgba(21,93,252,0.12)" : "#EFF6FF") : "rgba(239,68,68,0.1)",
                 borderWidth: "1px", borderStyle: "solid",
-                borderColor: applyMsg.startsWith('ðŸŽ‰') ? (isDarkMode ? "rgba(139,92,246,0.3)" : "#C4B5FD") : "rgba(239,68,68,0.3)",
-                color: applyMsg.startsWith('ðŸŽ‰') ? (isDarkMode ? "#C4B5FD" : "#6D28D9") : "rgb(239,68,68)"
+                borderColor: applyMsg.startsWith('🎉') ? (isDarkMode ? "rgba(21,93,252,0.3)" : "#BFDBFE") : "rgba(239,68,68,0.3)",
+                color: applyMsg.startsWith('🎉') ? (isDarkMode ? "#93c5fd" : "#155dfc") : "rgb(239,68,68)"
               }}
             >
               {applyMsg}
@@ -297,7 +282,7 @@ function DashboardOverview() {
           )}
         </AnimatePresence>
 
-        {/* â”€â”€ Quick Access Grid â”€â”€ */}
+        {/* ——— Quick Access Grid ——— */}
         <motion.div variants={itemVariants} className="space-y-4">
           <p className="text-xs font-bold uppercase tracking-widest ml-1 transition-colors duration-500" style={{ color: P.muted }}>Modules</p>
           <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
@@ -306,7 +291,7 @@ function DashboardOverview() {
                 key={mod.href}
                 onHoverStart={() => setHoveredModule(mod.href)}
                 onHoverEnd={() => setHoveredModule(null)}
-                whileHover={{ y: -4, boxShadow: P.hoverShadow, borderColor: isDarkMode ? "rgba(255,255,255,0.2)" : P.primary }}
+                whileHover={{ y: -4, boxShadow: P.hoverShadow, borderColor: isDarkMode ? "rgba(21,93,252,0.4)" : "#155dfc" }}
                 style={premiumCard}
                 className="overflow-hidden"
               >
@@ -316,7 +301,7 @@ function DashboardOverview() {
                 >
                   <div
                     className="w-12 h-12 flex items-center justify-center transition-transform group-hover:scale-110"
-                    style={{ ...premiumIcon, background: hoveredModule === mod.href ? (isDarkMode ? "rgba(255,255,255,0.1)" : "#F4F4F5") : premiumIcon.background }}
+                    style={{ ...premiumIcon, background: hoveredModule === mod.href ? (isDarkMode ? "rgba(21,93,252,0.15)" : "#F0F4FF") : premiumIcon.background }}
                   >
                     <mod.icon className="w-5 h-5 transition-colors" style={{ color: hoveredModule === mod.href ? P.text : P.muted }} />
                   </div>
@@ -326,7 +311,7 @@ function DashboardOverview() {
                   </div>
 
                   {/* Monochrome glowing hover accent at the top edge */}
-                  <div className={`absolute top-0 left-0 right-0 h-1 transition-all duration-500 ${hoveredModule === mod.href ? 'opacity-100' : 'opacity-0'}`} style={{ background: `linear-gradient(90deg, transparent, ${isDarkMode ? "rgba(255,255,255,0.4)" : "#000"}, transparent)` }} />
+                  <div className={`absolute top-0 left-0 right-0 h-1 transition-all duration-500 ${hoveredModule === mod.href ? 'opacity-100' : 'opacity-0'}`} style={{ background: `linear-gradient(90deg, transparent, ${isDarkMode ? "rgba(21,93,252,0.8)" : "#155dfc"}, transparent)` }} />
 
                   {/* Subtle right arrow appearing on hover */}
                   <div className="absolute top-5 right-5 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300">
@@ -338,7 +323,7 @@ function DashboardOverview() {
           </div>
         </motion.div>
 
-        {/* â”€â”€ Stat Cards â”€â”€ */}
+        {/* ——— Stat Cards ——— */}
         <div className="grid grid-cols-2 xl:grid-cols-4 gap-5">
           {stats.map((stat, i) => (
             <motion.div key={i} variants={itemVariants}>
@@ -348,7 +333,7 @@ function DashboardOverview() {
                 whileHover={{ boxShadow: P.hoverShadow, y: -4 }}
               >
                 {/* Subtle ambient glow on hover inside the card */}
-                {isDarkMode && <div className="absolute -inset-10 opacity-0 group-hover:opacity-[0.03] transition-opacity duration-700 blur-3xl pointer-events-none" style={{ background: P.primary }} />}
+                {isDarkMode && <div className="absolute inset-0" style={{ background: P.cardBg }} />}
 
                 <div className="flex items-start justify-between mb-6 relative z-10">
                   <div className="w-10 h-10 flex items-center justify-center transition-colors group-hover:bg-white group-hover:border-transparent group-hover:text-black" style={{ ...premiumIcon, color: P.text }}>
@@ -356,7 +341,7 @@ function DashboardOverview() {
                   </div>
                   <span
                     className="text-[11px] font-semibold px-2.5 py-1 rounded-full border transition-colors duration-500"
-                    style={{ background: isDarkMode ? "rgba(255,255,255,0.03)" : "#F4F4F5", color: P.text, borderColor: P.border }}
+                    style={{ background: isDarkMode ? "rgba(21,93,252,0.06)" : "#F4F4F5", color: P.text, borderColor: P.border }}
                   >
                     {stat.sub}
                   </span>
@@ -370,7 +355,7 @@ function DashboardOverview() {
           ))}
         </div>
 
-        {/* â”€â”€ Main Layout Content â”€â”€ */}
+        {/* ——— Main Layout Content ——— */}
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
 
           {/* Left Column */}
@@ -383,7 +368,7 @@ function DashboardOverview() {
                 style={premiumCard}
               >
                 {/* Image Section */}
-                <div className="lg:w-[45%] relative flex flex-col justify-between overflow-hidden p-6 min-h-[250px] transition-colors duration-500" style={{ background: isDarkMode ? "#080B12" : "#FDFDFD", borderRightWidth: "1px", borderRightStyle: "solid", borderRightColor: P.border }}>
+                <div className="lg:w-[45%] relative flex flex-col justify-between overflow-hidden p-6 min-h-[250px] transition-colors duration-500" style={{ background: isDarkMode ? "rgba(0,0,0,0.3)" : "#F8FBFF", borderRightWidth: "1px", borderRightStyle: "solid", borderRightColor: P.border }}>
                   <div className={`absolute inset-0 bg-gradient-to-t ${isDarkMode ? 'from-black/80' : 'from-black/5'} to-transparent z-10 pointer-events-none transition-colors duration-500`} />
 
                   <div className="relative z-20 flex justify-between items-start">
@@ -414,7 +399,7 @@ function DashboardOverview() {
 
                   <div className="flex items-center gap-2 mb-3">
                     <span className="text-xs font-bold uppercase tracking-widest transition-colors duration-500" style={{ color: P.muted }}>Premium EV</span>
-                    <span className="w-1 h-1 rounded-full transition-colors duration-500" style={{ background: P.muted }} />
+                    <span className="w-1 h-1 rounded-full transition-colors duration-500" style={{ color: P.muted }} />
                     <span className="text-xs font-bold uppercase tracking-widest transition-colors duration-500" style={{ color: P.muted }}>2024 Models</span>
                   </div>
 
@@ -436,7 +421,7 @@ function DashboardOverview() {
                       { icon: ShieldCheck, label: "Safety Rating", value: "5-Star" },
                       { icon: Activity, label: "Depreciation", value: "Low Risk" },
                     ].map((spec, i) => (
-                      <div key={i} className="flex items-center gap-3 p-3 rounded-2xl border transition-colors duration-500" style={{ borderColor: P.border, background: isDarkMode ? "rgba(255,255,255,0.02)" : "#F9F9F9" }}>
+                      <div key={i} className="flex items-center gap-3 p-3 rounded-2xl border transition-colors duration-500" style={{ borderColor: P.border, background: isDarkMode ? "rgba(21,93,252,0.04)" : "#F0F4FF" }}>
                         <div className="w-8 h-8 flex items-center justify-center shrink-0 transition-colors duration-500" style={premiumIcon}>
                           <spec.icon className="w-4 h-4 transition-colors duration-500" style={{ color: P.text }} />
                         </div>
@@ -480,7 +465,7 @@ function DashboardOverview() {
                     <p className="text-[11px] font-semibold mt-1 uppercase tracking-wide transition-colors duration-500" style={{ color: P.muted }}>Depreciation vs Ask</p>
                   </div>
                   <motion.button
-                    whileHover={{ backgroundColor: isDarkMode ? "rgba(255,255,255,0.08)" : "#F4F4F5" }}
+                    whileHover={{ backgroundColor: isDarkMode ? "rgba(21,93,252,0.1)" : "#EFF6FF" }}
                     className="p-2.5 rounded-full border transition-colors duration-500"
                     style={{ borderColor: P.border }}
                   >
@@ -496,7 +481,7 @@ function DashboardOverview() {
                         animate={{ height: `${h}%` }}
                         transition={{ duration: 1, delay: i * 0.1, type: "spring" as const }}
                         className="w-full rounded-t-sm transition-all duration-500 relative overflow-hidden"
-                        style={{ background: i === 6 ? P.primary : (isDarkMode ? "rgba(255,255,255,0.1)" : "#E4E4E7"), opacity: i === 6 ? 1 : 0.6 }}
+                        style={{ background: i === 6 ? P.primary : (isDarkMode ? "rgba(21,93,252,0.15)" : "#DBEAFE"), opacity: i === 6 ? 1 : 0.6 }}
                       >
                         <div className={`absolute top-0 left-0 right-0 h-full bg-gradient-to-b from-white/20 to-transparent opacity-0 group-hover/bar:opacity-100 transition-opacity`} />
 
@@ -530,7 +515,7 @@ function DashboardOverview() {
                   ].map((car, i) => (
                     <motion.div
                       key={i}
-                      whileHover={{ backgroundColor: isDarkMode ? "rgba(255,255,255,0.03)" : "#F4F4F5", borderColor: isDarkMode ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.05)" }}
+                      whileHover={{ backgroundColor: isDarkMode ? "rgba(21,93,252,0.08)" : "#F0F4FF", borderColor: isDarkMode ? "rgba(21,93,252,0.2)" : "rgba(21,93,252,0.1)" }}
                       className="flex items-center gap-3 p-2.5 rounded-xl cursor-pointer transition-colors border border-transparent"
                     >
                       <div className="w-[60px] h-[45px] rounded-lg overflow-hidden shrink-0 relative bg-black/50">
@@ -557,7 +542,7 @@ function DashboardOverview() {
                 </div>
 
                 <motion.button
-                  whileHover={{ backgroundColor: isDarkMode ? "rgba(255,255,255,0.05)" : "#F4F4F5" }}
+                  whileHover={{ backgroundColor: isDarkMode ? "rgba(21,93,252,0.08)" : "#EFF6FF" }}
                   whileTap={{ scale: 0.98 }}
                   className="w-full mt-4 py-2.5 rounded-xl text-xs font-bold transition-colors border"
                   style={{ background: "transparent", color: P.text, borderColor: P.border }}
