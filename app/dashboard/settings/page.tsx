@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -18,29 +18,29 @@ type AuthIdentity = {
 // --- Palettes ---
 
 const L = {
-  bg: "#F7F7F8",
+  bg: "#F0F4FF",
   cardBg: "#FFFFFF",
-  primary: "#0A0A0B",
+  primary: "#155dfc",
   primaryText: "#FFFFFF",
-  text: "#18181B",
-  muted: "#71717A",
-  border: "#E4E4E7",
-  glow: "rgba(0,0,0,0.06)",
-  shadow: "0 4px 20px -2px rgba(0, 0, 0, 0.03)",
-  iconBg: "#F4F4F5"
+  text: "#030304",
+  muted: "#6B7280",
+  border: "#DBEAFE",
+  glow: "rgba(21,93,252,0.15)",
+  shadow: "0 4px 20px -2px rgba(21, 93, 252, 0.06)",
+  iconBg: "#EFF6FF"
 };
 
 const D = {
-  bg: "#0B0F19",
-  cardBg: "#161B22",
-  primary: "#FFFFFF",
-  primaryText: "#000000",
+  bg: "#030304",
+  cardBg: "#0F111A",
+  primary: "#155dfc",
+  primaryText: "#FFFFFF",
   text: "#FFFFFF",
   muted: "#8B949E",
-  border: "rgba(255, 255, 255, 0.08)",
-  glow: "rgba(255, 255, 255, 0.15)",
+  border: "rgba(21, 93, 252, 0.2)",
+  glow: "rgba(21, 93, 252, 0.25)",
   shadow: "0 4px 24px -4px rgba(0, 0, 0, 0.5)",
-  iconBg: "rgba(255,255,255,0.03)"
+  iconBg: "rgba(21,93,252,0.08)"
 };
 
 const TABS = [
@@ -52,7 +52,7 @@ const TABS = [
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState('preferences');
-  const [isDarkMode, setIsDarkMode] = useState(true);
+  const [isDarkMode, setIsDarkMode] = useState(false);
   const P = isDarkMode ? D : L;
 
   // Form State for Vehicle Preferences
