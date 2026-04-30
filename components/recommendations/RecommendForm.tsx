@@ -1,8 +1,23 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { ChevronDown, SlidersHorizontal, ChevronUp, Cpu, DollarSign, Info, Sparkles, X } from "lucide-react";
 import { ClassPreview } from "./ClassPreview";
+
+// ── Palettes ───────────────────────────────────────────────────
+const L = {
+  bg: '#F0F4FF', cardBg: '#FFFFFF', primary: '#155dfc', primaryText: '#FFFFFF',
+  text: '#030304', muted: '#6B7280', border: '#DBEAFE',
+  shadow: '0 4px 20px -2px rgba(21,93,252,0.06), 0 0 3px rgba(21,93,252,0.04)',
+  hoverShadow: '0 12px 24px -4px rgba(21,93,252,0.12)', iconBg: '#EFF6FF',
+};
+const D = {
+  bg: '#030304', cardBg: '#0F111A', primary: '#155dfc', primaryText: '#FFFFFF',
+  text: '#FFFFFF', muted: '#8B949E', border: 'rgba(21,93,252,0.2)',
+  shadow: '0 4px 24px -4px rgba(0,0,0,0.5)',
+  hoverShadow: '0 12px 30px -4px rgba(0,0,0,0.5), 0 0 25px rgba(21,93,252,0.12)',
+  iconBg: 'rgba(21,93,252,0.08)',
+};
 
 export interface FormValues {
   salary: string;
@@ -84,17 +99,29 @@ const FUEL_PILLS = [
 const sel = "w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 focus:outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100 transition-all";
 const inp = "w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 focus:outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100 transition-all placeholder:text-slate-400";
 
-function FL({ text }: { text: string }) {
-  return <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500">{text}</p>;
+function FL({ text, P }: { text: string, P: any }) {
+  return <p className="mb-1.5 text-[10px] font-extrabold uppercase tracking-widest transition-colors duration-500" style={{ color: P.muted }}>{text}</p>;
 }
 
 export function RecommendForm({
   values, loading, groqParams, groqLoading, groqError,
   onChange, onSubmit, onGroqSearch, onClearGroq,
 }: RecommendFormProps) {
+  const [isDarkMode, setIsDarkMode] = useState(false);
   const [prompt, setPrompt] = useState("");
   const [filtersOpen, setFiltersOpen] = useState(false);
   const salary = parseFloat(values.salary) || 0;
+
+  useEffect(() => {
+    const handler = () => setIsDarkMode(prev => !prev);
+    window.addEventListener('themeToggle', handler);
+    return () => window.removeEventListener('themeToggle', handler);
+  }, []);
+
+  const P = isDarkMode ? D : L;
+
+  const sel = `w-full rounded-xl border px-4 py-3 text-sm focus:outline-none transition-all duration-300`;
+  const inp = `w-full rounded-xl border px-4 py-3 text-sm focus:outline-none transition-all duration-300 placeholder:opacity-50`;
 
   function handleSuggestion(s: string) {
     setPrompt(s);
@@ -115,27 +142,28 @@ export function RecommendForm({
 
       {/* ── Hero ── */}
       <div
-        className="relative overflow-hidden rounded-2xl mb-6 px-8 py-10 text-center"
-        style={{ background: "linear-gradient(135deg, #e0f2fe 0%, #f0f9ff 50%, #e0e7ff 100%)" }}
+        className="relative overflow-hidden rounded-3xl mb-8 px-8 py-12 text-center border shadow-sm transition-colors duration-500"
+        style={{ background: P.cardBg, borderColor: P.border, boxShadow: P.shadow }}
       >
-        <div className="pointer-events-none absolute -top-16 -left-16 h-64 w-64 rounded-full bg-cyan-300/20 blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-10 -right-10 h-48 w-48 rounded-full bg-indigo-300/20 blur-3xl" />
+        <div className="pointer-events-none absolute -top-16 -left-16 h-64 w-64 rounded-full mix-blend-multiply blur-3xl opacity-20 transition-colors duration-500" style={{ background: P.primary }} />
+        <div className="pointer-events-none absolute -bottom-10 -right-10 h-48 w-48 rounded-full mix-blend-multiply blur-3xl opacity-20 transition-colors duration-500" style={{ background: isDarkMode ? '#10b981' : '#3b82f6' }} />
         <div className="relative">
-          <span className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-cyan-200 bg-white/70 px-3 py-1 text-xs font-semibold text-cyan-700 backdrop-blur-sm">
-            <Cpu className="h-3 w-3" /> Next-Gen Automotive Intelligence
+          <span className="mb-4 inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[10px] font-black uppercase tracking-widest shadow-sm transition-colors duration-500"
+            style={{ background: isDarkMode ? 'rgba(21,93,252,0.1)' : '#EFF6FF', borderColor: P.border, color: P.primary }}>
+            <Cpu className="h-3.5 w-3.5" /> Next-Gen Automotive Intelligence
           </span>
-          <h1 className="mt-2 text-2xl font-bold tracking-tight text-slate-800 sm:text-3xl">
+          <h1 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl transition-colors duration-500" style={{ color: P.text }}>
             AI Vehicle Recommender
           </h1>
-          <p className="mt-2 text-sm text-slate-500 max-w-lg mx-auto">
+          <p className="mt-3 text-sm font-medium max-w-lg mx-auto leading-relaxed transition-colors duration-500" style={{ color: P.muted }}>
             Describe what you need — salary, purpose, fuel type, budget — and our AI will find your perfect match.
           </p>
         </div>
       </div>
 
       {/* ── Prompt Search Bar ── */}
-      <div className="mb-3 flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-2 shadow-sm">
-        <Sparkles className="ml-2 h-4 w-4 flex-shrink-0 text-cyan-500" />
+      <div className="mb-4 flex items-center gap-3 rounded-2xl border p-2 shadow-sm transition-colors duration-500" style={{ background: P.cardBg, borderColor: P.border }}>
+        <Sparkles className="ml-3 h-5 w-5 flex-shrink-0 transition-colors duration-500" style={{ color: P.primary }} />
         <input
           id="rec-prompt"
           type="text"
@@ -143,13 +171,15 @@ export function RecommendForm({
           onChange={(e) => setPrompt(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder='e.g. "Family SUV for city, diesel, salary 300k, 60 months loan"'
-          className="flex-1 bg-transparent text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none"
+          className="flex-1 bg-transparent text-sm font-medium focus:outline-none transition-colors duration-500 placeholder:opacity-50"
+          style={{ color: P.text }}
         />
         {prompt && (
           <button
             type="button"
             onClick={() => { setPrompt(""); onClearGroq(); }}
-            className="rounded-full p-1 text-slate-300 hover:text-slate-500 transition-colors"
+            className="rounded-full p-1 transition-colors duration-500"
+            style={{ color: P.muted }}
           >
             <X className="h-4 w-4" />
           </button>
@@ -159,8 +189,8 @@ export function RecommendForm({
           type="button"
           onClick={handleSearch}
           disabled={loading || groqLoading}
-          className="flex-shrink-0 flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-bold text-white shadow-md disabled:opacity-50 transition-all hover:scale-[1.02] active:scale-[0.98]"
-          style={{ background: "linear-gradient(135deg, #0891b2, #1d4ed8)" }}
+          className="flex-shrink-0 flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-black uppercase tracking-widest shadow-md disabled:opacity-50 transition-all hover:scale-[1.02] active:scale-[0.98]"
+          style={{ background: `linear-gradient(135deg, ${P.primary}, #1d4ed8)`, color: '#ffffff' }}
         >
           {(loading || groqLoading) ? (
             <span className="h-4 w-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
@@ -180,23 +210,24 @@ export function RecommendForm({
 
       {/* ── Groq extracted params pill row ── */}
       {groqParams && (
-        <div className="mb-3 flex flex-wrap items-center gap-2 rounded-xl border border-cyan-100 bg-cyan-50/80 px-4 py-2.5">
-          <span className="text-[10px] font-bold uppercase tracking-widest text-cyan-700 flex-shrink-0">AI extracted:</span>
+        <div className="mb-4 flex flex-wrap items-center gap-2 rounded-2xl border px-5 py-3 transition-colors duration-500 shadow-sm" style={{ background: isDarkMode ? 'rgba(21,93,252,0.1)' : '#EFF6FF', borderColor: P.border }}>
+          <span className="text-[10px] font-black uppercase tracking-widest flex-shrink-0 transition-colors duration-500" style={{ color: P.primary }}>AI extracted:</span>
           {groqParams.salary && (
-            <Pill label={`Salary LKR ${groqParams.salary.toLocaleString()}`} />
+            <Pill label={`Salary LKR ${groqParams.salary.toLocaleString()}`} P={P} isDarkMode={isDarkMode} />
           )}
-          {groqParams.purpose && <Pill label={`Purpose: ${groqParams.purpose.replace("_", " ")}`} />}
-          {groqParams.area && <Pill label={`Area: ${groqParams.area}`} />}
-          {groqParams.fuel && <Pill label={`Fuel: ${groqParams.fuel}`} />}
-          {groqParams.transmission && <Pill label={`Trans: ${groqParams.transmission}`} />}
-          {groqParams.max_comb_l_per_100 && <Pill label={`≤${groqParams.max_comb_l_per_100} L/100`} />}
-          {groqParams.vehicle_class && <Pill label={groqParams.vehicle_class} />}
-          {groqParams.rate_of_interest && <Pill label={`${groqParams.rate_of_interest}% int.`} />}
-          {groqParams.number_of_months && <Pill label={`${groqParams.number_of_months} mo`} />}
+          {groqParams.purpose && <Pill label={`Purpose: ${groqParams.purpose.replace("_", " ")}`} P={P} isDarkMode={isDarkMode} />}
+          {groqParams.area && <Pill label={`Area: ${groqParams.area}`} P={P} isDarkMode={isDarkMode} />}
+          {groqParams.fuel && <Pill label={`Fuel: ${groqParams.fuel}`} P={P} isDarkMode={isDarkMode} />}
+          {groqParams.transmission && <Pill label={`Trans: ${groqParams.transmission}`} P={P} isDarkMode={isDarkMode} />}
+          {groqParams.max_comb_l_per_100 && <Pill label={`≤${groqParams.max_comb_l_per_100} L/100`} P={P} isDarkMode={isDarkMode} />}
+          {groqParams.vehicle_class && <Pill label={groqParams.vehicle_class} P={P} isDarkMode={isDarkMode} />}
+          {groqParams.rate_of_interest && <Pill label={`${groqParams.rate_of_interest}% int.`} P={P} isDarkMode={isDarkMode} />}
+          {groqParams.number_of_months && <Pill label={`${groqParams.number_of_months} mo`} P={P} isDarkMode={isDarkMode} />}
           <button
             type="button"
             onClick={onClearGroq}
-            className="ml-auto text-[10px] font-semibold text-cyan-600 hover:text-cyan-800 underline"
+            className="ml-auto text-[10px] font-bold underline transition-colors duration-500"
+            style={{ color: P.muted }}
           >
             clear
           </button>
@@ -204,14 +235,15 @@ export function RecommendForm({
       )}
 
       {/* ── Quick suggestions ── */}
-      <div className="mb-5 flex flex-wrap items-center gap-2">
-        <span className="text-xs text-slate-400 font-medium">Try:</span>
+      <div className="mb-6 flex flex-wrap items-center gap-2">
+        <span className="text-[10px] font-black uppercase tracking-widest transition-colors duration-500" style={{ color: P.muted }}>Try:</span>
         {SUGGESTIONS.map((s) => (
           <button
             key={s}
             type="button"
             onClick={() => handleSuggestion(s)}
-            className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs text-slate-600 hover:border-cyan-300 hover:text-cyan-700 transition-colors"
+            className="rounded-full border px-3 py-1.5 text-xs font-semibold shadow-sm transition-all hover:-translate-y-0.5"
+            style={{ background: P.cardBg, borderColor: P.border, color: P.text }}
           >
             {s}
           </button>
@@ -222,46 +254,51 @@ export function RecommendForm({
       <button
         type="button"
         onClick={() => setFiltersOpen((o) => !o)}
-        className="mb-4 flex items-center gap-2 text-sm font-semibold text-cyan-700 hover:text-cyan-900 transition-colors"
+        className="mb-5 flex items-center gap-2 text-sm font-black uppercase tracking-widest transition-colors duration-500"
+        style={{ color: P.primary }}
       >
         <SlidersHorizontal className="h-4 w-4" />
         Advanced Filters
-        {filtersOpen ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
-        <span className="ml-1 text-[10px] font-normal text-slate-400">(manual selections override AI)</span>
+        {filtersOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+        <span className="ml-1 text-[10px] font-bold lowercase tracking-normal opacity-60">(manual selections override AI)</span>
       </button>
 
       {/* ── Filter Panels ── */}
       {filtersOpen && (
-        <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2">
+        <div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-2">
 
           {/* Vehicle Specifications */}
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <div className="mb-4 flex items-center gap-2">
-              <Cpu className="h-4 w-4 text-cyan-600" />
-              <span className="text-xs font-bold uppercase tracking-widest text-slate-500">Vehicle Specifications</span>
+          <div className="relative overflow-hidden rounded-3xl border p-6 shadow-sm transition-colors duration-500" style={{ background: P.cardBg, borderColor: P.border }}>
+            <div className="absolute inset-0 opacity-20 pointer-events-none transition-colors duration-500" style={{ background: `radial-gradient(circle at 0% 0%, ${P.primary}, transparent 70%)` }} />
+            <div className="relative z-10 mb-5 flex items-center gap-2.5">
+              <div className="flex items-center justify-center w-8 h-8 rounded-lg shadow-sm" style={{ background: isDarkMode ? 'rgba(21,93,252,0.1)' : '#EFF6FF' }}>
+                <Cpu className="h-4 w-4" style={{ color: P.primary }} />
+              </div>
+              <span className="text-sm font-black uppercase tracking-widest transition-colors duration-500" style={{ color: P.text }}>Vehicle Specifications</span>
             </div>
 
             {/* Salary manual override */}
-            <div className="mb-3">
-              <FL text="Monthly Salary (LKR)" />
+            <div className="relative z-10 mb-4">
+              <FL text="Monthly Salary (LKR)" P={P} />
               <input
                 id="rec-salary"
                 type="number"
                 min={1}
                 placeholder={groqParams?.salary ? `AI: ${groqParams.salary.toLocaleString()}` : "e.g. 250000"}
                 className={inp}
+                style={{ background: P.bg, borderColor: P.border, color: P.text }}
                 value={values.salary}
                 onChange={(e) => onChange("salary", e.target.value)}
               />
               {!values.salary && groqParams?.salary && (
-                <p className="mt-1 text-[10px] text-cyan-600">Using AI-extracted: LKR {groqParams.salary.toLocaleString()}</p>
+                <p className="mt-1.5 text-[10px] font-bold" style={{ color: P.primary }}>Using AI-extracted: LKR {groqParams.salary.toLocaleString()}</p>
               )}
             </div>
 
-            <div className="grid grid-cols-2 gap-3 mb-3">
+            <div className="relative z-10 grid grid-cols-2 gap-4 mb-4">
               <div>
-                <FL text="Purpose" />
-                <select id="rec-purpose" className={sel} value={values.purpose} onChange={(e) => onChange("purpose", e.target.value)}>
+                <FL text="Purpose" P={P} />
+                <select id="rec-purpose" className={sel} style={{ background: P.bg, borderColor: P.border, color: P.text }} value={values.purpose} onChange={(e) => onChange("purpose", e.target.value)}>
                   <option value="daily_commute">Commuting</option>
                   <option value="family">Family</option>
                   <option value="performance">Performance</option>
@@ -269,8 +306,8 @@ export function RecommendForm({
                 </select>
               </div>
               <div>
-                <FL text="Driving Area" />
-                <select id="rec-area" className={sel} value={values.area} onChange={(e) => onChange("area", e.target.value)}>
+                <FL text="Driving Area" P={P} />
+                <select id="rec-area" className={sel} style={{ background: P.bg, borderColor: P.border, color: P.text }} value={values.area} onChange={(e) => onChange("area", e.target.value)}>
                   <option value="city">Urban/City</option>
                   <option value="mixed">Mixed</option>
                   <option value="highway">Highway</option>
@@ -279,48 +316,49 @@ export function RecommendForm({
               </div>
             </div>
 
-            <div className="mb-3">
-              <FL text="Fuel Type" />
+            <div className="relative z-10 mb-4">
+              <FL text="Fuel Type" P={P} />
               <div className="flex flex-wrap gap-2">
                 {FUEL_PILLS.map((fp) => (
                   <button
                     key={fp.value}
                     type="button"
                     onClick={() => onChange("fuel", fp.value)}
-                    className={`rounded-lg px-3 py-1.5 text-xs font-semibold border transition-all ${values.fuel === fp.value
-                      ? "border-cyan-500 bg-cyan-500 text-white shadow-sm"
-                      : "border-slate-200 bg-slate-50 text-slate-600 hover:border-cyan-300"
+                    className={`rounded-xl px-4 py-2 text-xs font-bold border transition-all shadow-sm ${values.fuel === fp.value
+                      ? ""
+                      : "hover:-translate-y-0.5"
                       }`}
+                    style={values.fuel === fp.value ? { background: P.primary, borderColor: P.primary, color: '#fff' } : { background: P.bg, borderColor: P.border, color: P.text }}
                   >
                     {fp.label}
                   </button>
                 ))}
               </div>
               {values.fuel === "" && groqParams?.fuel && (
-                <p className="mt-1 text-[10px] text-cyan-600">AI suggested: {groqParams.fuel}</p>
+                <p className="mt-1.5 text-[10px] font-bold" style={{ color: P.primary }}>AI suggested: {groqParams.fuel}</p>
               )}
             </div>
 
-            <div className="grid grid-cols-2 gap-3 mb-3">
+            <div className="relative z-10 grid grid-cols-2 gap-4 mb-4">
               <div>
-                <FL text="Transmission" />
-                <select id="rec-trans" className={sel} value={values.transmission} onChange={(e) => onChange("transmission", e.target.value)}>
+                <FL text="Transmission" P={P} />
+                <select id="rec-trans" className={sel} style={{ background: P.bg, borderColor: P.border, color: P.text }} value={values.transmission} onChange={(e) => onChange("transmission", e.target.value)}>
                   <option value="">Any</option>
                   <option value="A">Automatic</option>
                   <option value="Manual">Manual</option>
                 </select>
               </div>
               <div>
-                <FL text="Max L/100km" />
+                <FL text="Max L/100km" P={P} />
                 <input id="rec-maxfuel" type="number" step={0.5} min={0}
                   placeholder={groqParams?.max_comb_l_per_100 ? String(groqParams.max_comb_l_per_100) : "e.g. 10"}
-                  className={inp} value={values.maxFuel} onChange={(e) => onChange("maxFuel", e.target.value)} />
+                  className={inp} style={{ background: P.bg, borderColor: P.border, color: P.text }} value={values.maxFuel} onChange={(e) => onChange("maxFuel", e.target.value)} />
               </div>
             </div>
 
-            <div className="mb-3">
-              <FL text="Maintainability" />
-              <select id="rec-maint" className={sel} value={values.maintainability} onChange={(e) => onChange("maintainability", e.target.value)}>
+            <div className="relative z-10 mb-4">
+              <FL text="Maintainability" P={P} />
+              <select id="rec-maint" className={sel} style={{ background: P.bg, borderColor: P.border, color: P.text }} value={values.maintainability} onChange={(e) => onChange("maintainability", e.target.value)}>
                 <option value="">Auto (by income tier)</option>
                 <option value="high">High – Japanese/Korean</option>
                 <option value="average">Average – Balanced</option>
@@ -328,56 +366,59 @@ export function RecommendForm({
               </select>
             </div>
 
-            <ClassPreview salary={salary || (groqParams?.salary ?? 0)} purpose={values.purpose} area={values.area} />
-
+            <div className="relative z-10">
+              <ClassPreview salary={salary || (groqParams?.salary ?? 0)} purpose={values.purpose} area={values.area} />
+            </div>
           </div>
 
           {/* Financial Parameters */}
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <div className="mb-4 flex items-center gap-2">
-              <DollarSign className="h-4 w-4 text-indigo-600" />
-              <span className="text-xs font-bold uppercase tracking-widest text-slate-500">Financial Parameters</span>
+          <div className="relative overflow-hidden rounded-3xl border p-6 shadow-sm transition-colors duration-500" style={{ background: P.cardBg, borderColor: P.border }}>
+            <div className="absolute inset-0 opacity-20 pointer-events-none transition-colors duration-500" style={{ background: `radial-gradient(circle at 100% 0%, ${P.primary}, transparent 70%)` }} />
+            <div className="relative z-10 mb-5 flex items-center gap-2.5">
+              <div className="flex items-center justify-center w-8 h-8 rounded-lg shadow-sm" style={{ background: isDarkMode ? 'rgba(21,93,252,0.1)' : '#EFF6FF' }}>
+                <DollarSign className="h-4 w-4" style={{ color: P.primary }} />
+              </div>
+              <span className="text-sm font-black uppercase tracking-widest transition-colors duration-500" style={{ color: P.text }}>Financial Parameters</span>
             </div>
 
-            <div className="grid grid-cols-2 gap-3 mb-3">
+            <div className="relative z-10 grid grid-cols-2 gap-4 mb-4">
               <div>
-                <FL text="Duration (Months)" />
+                <FL text="Duration (Months)" P={P} />
                 <input id="rec-months" type="number" min={1}
                   placeholder={groqParams?.number_of_months ? String(groqParams.number_of_months) : "60"}
-                  className={inp} value={values.months} onChange={(e) => onChange("months", e.target.value)} />
+                  className={inp} style={{ background: P.bg, borderColor: P.border, color: P.text }} value={values.months} onChange={(e) => onChange("months", e.target.value)} />
               </div>
               <div>
-                <FL text="Interest Rate (%)" />
+                <FL text="Interest Rate (%)" P={P} />
                 <input id="rec-rate" type="number" step={0.1} min={0}
                   placeholder={groqParams?.rate_of_interest ? String(groqParams.rate_of_interest) : "13"}
-                  className={inp} value={values.rate} onChange={(e) => onChange("rate", e.target.value)} />
+                  className={inp} style={{ background: P.bg, borderColor: P.border, color: P.text }} value={values.rate} onChange={(e) => onChange("rate", e.target.value)} />
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3 mb-3">
+            <div className="relative z-10 grid grid-cols-2 gap-4 mb-4">
               <div>
-                <FL text="Down Payment (LKR)" />
+                <FL text="Down Payment (LKR)" P={P} />
                 <input id="rec-dpa" type="number"
                   placeholder={groqParams?.down_payment_amount ? String(groqParams.down_payment_amount) : "Optional"}
-                  className={inp} value={values.dpa} onChange={(e) => onChange("dpa", e.target.value)} />
-              </div>
-
-            </div>
-
-            <div className="grid grid-cols-2 gap-3 mb-4">
-              <div>
-                <FL text="Top N Results" />
-                <input id="rec-topn" type="number" min={1} max={50} className={inp} value={values.topN} onChange={(e) => onChange("topN", e.target.value)} />
-              </div>
-              <div>
-                <FL text="Candidate Limit" />
-                <input id="rec-cand" type="number" min={100} max={20000} className={inp} value={values.candidateLimit} onChange={(e) => onChange("candidateLimit", e.target.value)} />
+                  className={inp} style={{ background: P.bg, borderColor: P.border, color: P.text }} value={values.dpa} onChange={(e) => onChange("dpa", e.target.value)} />
               </div>
             </div>
 
-            <div className="flex items-start gap-2 rounded-xl border border-blue-100 bg-blue-50 p-3 text-xs text-blue-700">
-              <Info className="h-3.5 w-3.5 flex-shrink-0 mt-0.5" />
-              <span>
+            <div className="relative z-10 grid grid-cols-2 gap-4 mb-5">
+              <div>
+                <FL text="Top N Results" P={P} />
+                <input id="rec-topn" type="number" min={1} max={50} className={inp} style={{ background: P.bg, borderColor: P.border, color: P.text }} value={values.topN} onChange={(e) => onChange("topN", e.target.value)} />
+              </div>
+              <div>
+                <FL text="Candidate Limit" P={P} />
+                <input id="rec-cand" type="number" min={100} max={20000} className={inp} style={{ background: P.bg, borderColor: P.border, color: P.text }} value={values.candidateLimit} onChange={(e) => onChange("candidateLimit", e.target.value)} />
+              </div>
+            </div>
+
+            <div className="relative z-10 flex items-start gap-3 rounded-2xl border p-4 shadow-sm transition-colors duration-500" style={{ background: isDarkMode ? 'rgba(21,93,252,0.1)' : '#EFF6FF', borderColor: P.border }}>
+              <Info className="h-4 w-4 flex-shrink-0 mt-0.5" style={{ color: P.primary }} />
+              <span className="text-xs font-semibold leading-relaxed" style={{ color: P.text }}>
                 Manual form selections always override AI-extracted values.
                 The AI fills in only what you haven&apos;t specified.
               </span>
@@ -389,9 +430,10 @@ export function RecommendForm({
   );
 }
 
-function Pill({ label }: { label: string }) {
+function Pill({ label, P, isDarkMode }: { label: string, P: any, isDarkMode: boolean }) {
   return (
-    <span className="rounded-full border border-cyan-200 bg-white px-2.5 py-0.5 text-[10px] font-semibold text-cyan-700 shadow-sm">
+    <span className="rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-widest shadow-sm transition-colors duration-500"
+      style={{ background: P.cardBg, borderColor: P.border, color: P.text }}>
       {label}
     </span>
   );

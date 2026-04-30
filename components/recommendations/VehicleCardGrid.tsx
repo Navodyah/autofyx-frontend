@@ -1,6 +1,22 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { Car, Fuel, Wrench, Info, CalendarDays, ExternalLink } from "lucide-react";
+
+// ── Palettes ───────────────────────────────────────────────────
+const L = {
+  bg: '#F0F4FF', cardBg: '#FFFFFF', primary: '#155dfc', primaryText: '#FFFFFF',
+  text: '#030304', muted: '#6B7280', border: '#DBEAFE',
+  shadow: '0 4px 20px -2px rgba(21,93,252,0.06), 0 0 3px rgba(21,93,252,0.04)',
+  hoverShadow: '0 12px 24px -4px rgba(21,93,252,0.12)', iconBg: '#EFF6FF',
+};
+const D = {
+  bg: '#030304', cardBg: '#0F111A', primary: '#155dfc', primaryText: '#FFFFFF',
+  text: '#FFFFFF', muted: '#8B949E', border: 'rgba(21,93,252,0.2)',
+  shadow: '0 4px 24px -4px rgba(0,0,0,0.5)',
+  hoverShadow: '0 12px 30px -4px rgba(0,0,0,0.5), 0 0 25px rgba(21,93,252,0.12)',
+  iconBg: 'rgba(21,93,252,0.08)',
+};
 
 function asNum(v: unknown): number | null {
   const n = Number(v);
@@ -24,17 +40,27 @@ interface VehicleCardGridProps {
 }
 
 export function VehicleCardGrid({ items }: VehicleCardGridProps) {
+  const [isDarkMode, setIsDarkMode] = useState(false);
+
+  useEffect(() => {
+    const handler = () => setIsDarkMode(prev => !prev);
+    window.addEventListener('themeToggle', handler);
+    return () => window.removeEventListener('themeToggle', handler);
+  }, []);
+
+  const P = isDarkMode ? D : L;
+
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       {/* ── Assumptions Banner ── */}
-      <div className="flex items-start gap-3 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3">
-        <Info className="h-4 w-4 text-blue-500 mt-0.5 shrink-0" />
-        <div className="text-xs text-blue-700 leading-relaxed">
+      <div className="flex items-start gap-3 rounded-2xl border px-5 py-4 shadow-sm transition-colors duration-500" style={{ background: isDarkMode ? 'rgba(59,130,246,0.1)' : '#eff6ff', borderColor: P.border }}>
+        <Info className="h-5 w-5 mt-0.5 shrink-0 transition-colors duration-500" style={{ color: P.primary }} />
+        <div className="text-[11px] font-medium leading-relaxed transition-colors duration-500" style={{ color: P.text }}>
           <span className="font-bold">Assumptions used in cost calculations:</span>
           {" "}Annual travel distance of{" "}
           <span className="font-bold">10,000 km/year</span>.
           Fuel costs are computed as:{" "}
-          <span className="font-mono font-semibold">Fuel Price (LKR/L) × Consumption (L/100 km) × 100</span>.
+          <span className="font-mono font-semibold" style={{ color: P.primary }}>Fuel Price (LKR/L) × Consumption (L/100 km) × 100</span>.
           Maintenance costs are fetched directly from the database per vehicle.
           All costs shown in{" "}
           <span className="font-bold">Sri Lankan Rupees (LKR)</span>.
@@ -42,14 +68,14 @@ export function VehicleCardGrid({ items }: VehicleCardGridProps) {
       </div>
 
       {/* ── Vehicle Cards Grid ── */}
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
-        {items.map((v, i) => <VehicleCard key={i} item={v} rank={i + 1} />)}
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
+        {items.map((v, i) => <VehicleCard key={i} item={v} rank={i + 1} P={P} isDarkMode={isDarkMode} />)}
       </div>
     </div>
   );
 }
 
-function VehicleCard({ item, rank }: { item: Record<string, unknown>; rank: number }) {
+function VehicleCard({ item, rank, P, isDarkMode }: { item: Record<string, unknown>; rank: number, P: any, isDarkMode: boolean }) {
   const score = Number(readValue(item, ["Compatibility_Score", "compatibility_score"]) || 0);
   const make = String(readValue(item, ["Make", "MAKE", "make"]) || "—");
   const model = String(readValue(item, ["Model", "MODEL", "model"]) || "—");
@@ -116,40 +142,44 @@ function VehicleCard({ item, rank }: { item: Record<string, unknown>; rank: numb
       origin === "korean" ? "🇰🇷 Korean" : "🌐 Other";
 
   const scoreColor =
-    score >= 85 ? "#0891b2" : score >= 70 ? "#d97706" : "#ef4444";
+    score >= 85 ? P.primary : score >= 70 ? "#f59e0b" : "#ef4444";
   const scoreBg =
-    score >= 85 ? "rgba(8,145,178,0.1)" : score >= 70 ? "rgba(217,119,6,0.1)" : "rgba(239,68,68,0.1)";
+    score >= 85 ? (isDarkMode ? "rgba(21,93,252,0.1)" : "rgba(21,93,252,0.1)") : score >= 70 ? "rgba(245,158,11,0.1)" : "rgba(239,68,68,0.1)";
 
   const originStyle =
     origin === "japanese"
-      ? { bg: "rgba(5,150,105,0.08)", color: "#059669" }
+      ? { bg: "rgba(16,185,129,0.1)", color: "#10b981" }
       : origin === "korean"
-        ? { bg: "rgba(79,70,229,0.08)", color: "#4f46e5" }
-        : { bg: "rgba(100,116,139,0.08)", color: "#64748b" };
+        ? { bg: "rgba(99,102,241,0.1)", color: "#6366f1" }
+        : { bg: "rgba(148,163,184,0.1)", color: "#94a3b8" };
 
   return (
-    <div className="group relative flex flex-col rounded-2xl border border-slate-200 bg-white shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-lg hover:border-cyan-300 overflow-hidden">
+    <div className="group relative flex flex-col rounded-3xl border overflow-hidden transition-all duration-500 hover:-translate-y-2 block" style={{ background: P.cardBg, borderColor: P.border, boxShadow: P.shadow }}>
+      
+      {/* Subtle ambient glow inside the card */}
+      <div className="absolute inset-0 opacity-20 pointer-events-none transition-colors duration-500 z-0" 
+           style={{ background: `radial-gradient(circle at 50% 0%, ${P.primary}, transparent 60%)` }} />
 
       {/* Top accent bar */}
       <div
-        className="h-1 w-full shrink-0"
-        style={{ background: `linear-gradient(90deg, #0891b2, #4f46e5)`, opacity: Math.max(score / 100, 0.3) }}
+        className="h-1.5 w-full shrink-0 z-10 relative"
+        style={{ background: `linear-gradient(90deg, ${P.primary}, #4f46e5)`, opacity: Math.max(score / 100, 0.4) }}
       />
 
       {/* ── Vehicle Image ── */}
-      <div className="relative h-48 bg-slate-900 overflow-hidden shrink-0">
+      <div className="relative h-[220px] bg-slate-900 overflow-hidden shrink-0 z-10">
         {/* Rank badge */}
         <span
-          className="absolute top-3 left-3 z-10 flex h-7 w-7 items-center justify-center rounded-full text-[11px] font-extrabold text-white shadow-md"
-          style={{ background: "linear-gradient(135deg, #0891b2, #4f46e5)" }}
+          className="absolute top-4 left-4 z-20 flex h-8 w-8 items-center justify-center rounded-full text-xs font-black text-white shadow-lg border border-white/20"
+          style={{ background: `linear-gradient(135deg, ${P.primary}, #4f46e5)` }}
         >
-          {rank}
+          #{rank}
         </span>
 
         {/* Origin badge */}
         <span
-          className="absolute top-3 right-3 z-10 rounded-full px-2.5 py-1 text-[10px] font-bold shadow-sm"
-          style={{ background: originStyle.bg, color: originStyle.color, backdropFilter: "blur(8px)", backgroundColor: "rgba(255,255,255,0.85)" }}
+          className="absolute top-4 right-4 z-20 rounded-full px-3 py-1.5 text-[10px] font-black uppercase tracking-widest shadow-lg border border-white/10"
+          style={{ background: originStyle.bg, color: originStyle.color, backdropFilter: "blur(12px)", backgroundColor: "rgba(255,255,255,0.85)" }}
         >
           {originLabel}{boosted ? " ↑" : ""}
         </span>
@@ -174,36 +204,35 @@ function VehicleCard({ item, rank }: { item: Record<string, unknown>; rank: numb
         ) : null}
         {/* Fallback placeholder — hidden when image loads successfully */}
         <div
-          className="img-fallback w-full h-full flex-col items-center justify-center gap-2"
-          style={{ display: imageUrl && typeof imageUrl === "string" ? "none" : "flex" }}
+          className="img-fallback w-full h-full flex-col items-center justify-center gap-2 transition-colors duration-500"
+          style={{ display: imageUrl && typeof imageUrl === "string" ? "none" : "flex", background: P.iconBg }}
         >
-          <Car className="h-14 w-14 text-slate-600 opacity-40" />
-          <p className="text-xs font-medium text-slate-500 opacity-60">No image available</p>
+          <Car className="h-16 w-16 opacity-10" />
         </div>
 
         {/* Gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-t via-transparent to-transparent opacity-90 pointer-events-none z-10 transition-colors duration-500" style={{ backgroundImage: `linear-gradient(to top, ${P.cardBg}, transparent)` }} />
 
         {/* Name overlay on image */}
-        <div className="absolute bottom-0 left-0 right-0 p-3 z-10">
-          <p className="text-base font-extrabold text-white drop-shadow-lg leading-tight line-clamp-1">{make} {model}</p>
-          <p className="text-xs text-white/70 font-medium">{year} · {cls}</p>
+        <div className="absolute bottom-0 left-0 right-0 p-5 z-20">
+          <p className="text-xl font-black transition-colors duration-500 drop-shadow-lg leading-tight line-clamp-1" style={{ color: P.text }}>{make} {model}</p>
+          <p className="text-[11px] font-bold uppercase tracking-widest transition-colors duration-500 drop-shadow-md mt-1" style={{ color: P.primary }}>{year} · {cls}</p>
         </div>
       </div>
 
       {/* ── Card Body ── */}
-      <div className="flex-1 p-4 space-y-3">
+      <div className="flex-1 p-5 space-y-4 relative z-10">
 
         {/* Specs grid */}
-        <div className="grid grid-cols-2 gap-2">
-          <Spec label="Min Price" value={fmtLKR(minP)} />
-          <Spec label="Max Price" value={fmtLKR(maxP)} />
-          <Spec label="Engine" value={engine ? `${engine}L${cyls ? ` ${cyls}cyl` : ""}` : "—"} />
-          <Spec label="Fuel Eff." value={comb != null ? `${comb.toFixed(1)} L/100km` : "—"} />
-          <Spec label="Transmission" value={trans} small />
-          <Spec label="Fuel Type" value={fuelName} />
+        <div className="grid grid-cols-2 gap-3">
+          <Spec label="Min Price" value={fmtLKR(minP)} P={P} isDarkMode={isDarkMode} />
+          <Spec label="Max Price" value={fmtLKR(maxP)} P={P} isDarkMode={isDarkMode} />
+          <Spec label="Engine" value={engine ? `${engine}L${cyls ? ` ${cyls}cyl` : ""}` : "—"} P={P} isDarkMode={isDarkMode} />
+          <Spec label="Fuel Eff." value={comb != null ? `${comb.toFixed(1)} L/100km` : "—"} P={P} isDarkMode={isDarkMode} />
+          <Spec label="Transmission" value={trans} small P={P} isDarkMode={isDarkMode} />
+          <Spec label="Fuel Type" value={fuelName} P={P} isDarkMode={isDarkMode} />
           {maint != null && (
-            <Spec label="Maintainability" value={`${(maint * 100).toFixed(1)}%`} accent="#059669" />
+            <Spec label="Maintainability" value={`${(maint * 100).toFixed(1)}%`} accent="#10b981" P={P} isDarkMode={isDarkMode} />
           )}
         </div>
 
@@ -312,73 +341,73 @@ function VehicleCard({ item, rank }: { item: Record<string, unknown>; rank: numb
 
         {/* Compatibility bar */}
         <div>
-          <div className="mb-1 flex items-center justify-between">
-            <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Compatibility</span>
+          <div className="mb-2 flex items-center justify-between">
+            <span className="text-[10px] font-black uppercase tracking-widest transition-colors duration-500" style={{ color: P.muted }}>Compatibility</span>
             <span
-              className="rounded-full px-2 py-0.5 text-[10px] font-bold"
+              className="rounded-md px-2.5 py-0.5 text-[10px] font-black tracking-widest shadow-sm"
               style={{ background: scoreBg, color: scoreColor }}
             >
               {score.toFixed(1)}%
             </span>
           </div>
-          <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+          <div className="h-1.5 w-full overflow-hidden rounded-full transition-colors duration-500 shadow-inner" style={{ background: isDarkMode ? 'rgba(255,255,255,0.05)' : '#e2e8f0' }}>
             <div
-              className="h-full rounded-full transition-all duration-700"
+              className="h-full rounded-full transition-all duration-700 shadow-sm"
               style={{
                 width: `${Math.min(score, 100)}%`,
-                background: "linear-gradient(90deg, #0891b2, #4f46e5)",
+                background: `linear-gradient(90deg, ${P.primary}, #4f46e5)`,
               }}
             />
           </div>
         </div>
       </div>
 
-      {/* ── EMI + Down Payment footer ── */}
-      {(emi != null || downPayment !== null) && (
-        <div className="border-t border-slate-100 bg-slate-50 px-4 py-3 space-y-2">
+        {/* ── EMI + Down Payment footer ── */}
+        {(emi != null || downPayment !== null) && (
+          <div className="rounded-2xl border px-4 py-4 space-y-3 transition-colors duration-500" style={{ background: isDarkMode ? 'rgba(21,93,252,0.05)' : '#F0F4FF', borderColor: P.border }}>
 
-          {/* Down Payment row */}
-          {downPayment !== null && (
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400">Down Payment</p>
-                <p className="text-sm font-bold text-slate-700">{fmtLKR(downPayment)}</p>
+            {/* Down Payment row */}
+            {downPayment !== null && (
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-widest transition-colors duration-500" style={{ color: P.muted }}>Down Payment</p>
+                  <p className="text-sm font-bold transition-colors duration-500" style={{ color: P.text }}>{fmtLKR(downPayment)}</p>
+                </div>
+                <div className="text-right">
+                  {downPaymentPct !== null && (
+                    <span
+                      className="inline-block rounded-md px-2.5 py-1 text-[10px] font-black uppercase tracking-wider shadow-sm transition-colors duration-500"
+                      style={{ background: "rgba(99,102,241,0.1)", color: "#6366f1" }}
+                    >
+                      {downPaymentPct.toFixed(1)}% of value
+                    </span>
+                  )}
+                  {loanPrincipal !== null && (
+                    <p className="text-[10px] font-bold mt-1 transition-colors duration-500" style={{ color: P.muted }}>Loan: {fmtLKR(loanPrincipal)}</p>
+                  )}
+                </div>
               </div>
-              <div className="text-right">
-                {downPaymentPct !== null && (
-                  <span
-                    className="inline-block rounded-full px-2.5 py-0.5 text-[11px] font-extrabold"
-                    style={{ background: "rgba(99,102,241,0.1)", color: "#4f46e5" }}
-                  >
-                    {downPaymentPct.toFixed(1)}% of vehicle price
-                  </span>
-                )}
-                {loanPrincipal !== null && (
-                  <p className="text-[10px] text-slate-400 mt-0.5">Loan: {fmtLKR(loanPrincipal)}</p>
-                )}
-              </div>
-            </div>
-          )}
+            )}
 
-          {/* EMI row */}
-          {emi != null && (
-            <div className="flex items-center justify-between border-t border-slate-200 pt-2">
-              <div>
-                <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400">Monthly EMI</p>
-                <p className="text-sm font-bold text-cyan-700">{fmtLKR(emi)}</p>
+            {/* EMI row */}
+            {emi != null && (
+              <div className="flex items-center justify-between border-t pt-3 transition-colors duration-500" style={{ borderColor: P.border }}>
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-widest transition-colors duration-500" style={{ color: P.muted }}>Monthly EMI</p>
+                  <p className="text-sm font-black transition-colors duration-500" style={{ color: P.primary }}>{fmtLKR(emi)}</p>
+                </div>
+                <div className="text-right">
+                  {emiPct != null && (
+                    <p className="text-[11px] font-bold transition-colors duration-500" style={{ color: P.text }}>{emiPct.toFixed(1)}% of salary</p>
+                  )}
+                  {total != null && (
+                    <p className="text-[10px] font-bold transition-colors duration-500" style={{ color: P.muted }}>Total: {fmtLKR(total)}</p>
+                  )}
+                </div>
               </div>
-              <div className="text-right">
-                {emiPct != null && (
-                  <p className="text-xs text-slate-500">{emiPct.toFixed(1)}% of salary</p>
-                )}
-                {total != null && (
-                  <p className="text-[10px] text-slate-400">Total: {fmtLKR(total)}</p>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
+            )}
+          </div>
+        )}
 
       {/* ── ikman.lk Search Link ── */}
       {ikmanQuery && (
@@ -403,13 +432,13 @@ function VehicleCard({ item, rank }: { item: Record<string, unknown>; rank: numb
   );
 }
 
-function Spec({ label, value, small, accent }: { label: string; value: string; small?: boolean; accent?: string }) {
+function Spec({ label, value, small, accent, P, isDarkMode }: { label: string; value: string; small?: boolean; accent?: string; P: any; isDarkMode: boolean }) {
   return (
-    <div className="rounded-lg bg-slate-50 px-2.5 py-2">
-      <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400 mb-0.5">{label}</p>
+    <div className="rounded-xl px-3 py-2 border shadow-sm transition-colors duration-500" style={{ background: P.iconBg, borderColor: P.border }}>
+      <p className="text-[9px] font-black uppercase tracking-widest mb-1 transition-colors duration-500" style={{ color: P.muted }}>{label}</p>
       <p
-        className={`font-semibold ${small ? "text-[10px]" : "text-xs"}`}
-        style={{ color: accent ?? "#334155" }}
+        className={`font-bold ${small ? "text-[11px]" : "text-xs"} transition-colors duration-500`}
+        style={{ color: accent ?? P.text }}
       >
         {value}
       </p>
