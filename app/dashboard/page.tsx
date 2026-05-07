@@ -93,9 +93,11 @@ function DashboardOverview() {
   }, []);
 
   useEffect(() => {
-    const handler = () => setIsDarkMode(prev => !prev);
-    window.addEventListener('themeToggle', handler);
-    return () => window.removeEventListener('themeToggle', handler);
+    const stored = localStorage.getItem('autofyx_theme') === 'dark';
+    if (stored) setIsDarkMode(true);
+    const handler = (e) => setIsDarkMode(e.detail);
+    window.addEventListener('themeSync', handler);
+    return () => window.removeEventListener('themeSync', handler);
   }, []);
 
   // First name only for the greeting
