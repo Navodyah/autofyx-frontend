@@ -19,6 +19,7 @@ import {
   Moon,
   CalendarDays,
   Clock,
+  Sparkles,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
@@ -104,6 +105,7 @@ function readSessionUser(): SessionUser | null {
 /* ─── Nav items ──────────────────────────────────────────────── */
 const navItems = [
   { label: 'Overview', href: '/dashboard', icon: LayoutDashboard },
+  { label: 'Assistant AI', href: '/dashboard/assistant', icon: Sparkles },
   { label: 'Recommendation', href: '/dashboard/recomendation', icon: LineChart },
   { label: 'Vehicle Search', href: '/dashboard/search', icon: SearchCheck },
   { label: 'Compare', href: '/dashboard/compare', icon: Scale },
@@ -153,9 +155,25 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
     return () => clearInterval(t);
   }, []);
 
+  /* Theme persistence */
+  useEffect(() => {
+    const stored = localStorage.getItem('autofyx_theme') === 'dark';
+    if (stored) setIsDarkMode(true);
+    
+    // Listen to themeSync so if layout re-mounts it can sync
+    const handler = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      setIsDarkMode(customEvent.detail);
+    };
+    window.addEventListener('themeSync', handler);
+    return () => window.removeEventListener('themeSync', handler);
+  }, []);
+
   const toggleTheme = () => {
-    setIsDarkMode(!isDarkMode);
-    window.dispatchEvent(new Event('themeToggle'));
+    const newTheme = !isDarkMode;
+    setIsDarkMode(newTheme);
+    localStorage.setItem('autofyx_theme', newTheme ? 'dark' : 'light');
+    window.dispatchEvent(new CustomEvent('themeSync', { detail: newTheme }));
   };
 
   /* Load user from localStorage once on mount (client-only) */
@@ -231,7 +249,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
     : '';
 
   return (
-    <div suppressHydrationWarning className="flex h-screen bg-[#f0f4ff] text-slate-900 font-sans overflow-hidden relative">
+    <div suppressHydrationWarning className="flex h-screen text-slate-900 font-sans overflow-hidden relative transition-colors duration-500" style={{ background: isDarkMode ? '#030304' : '#f0f4ff' }}>
 
       {/* ── Full-screen route-transition loader ── */}
       <AnimatePresence>
@@ -285,23 +303,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
           </div>
         </div>
 
-        {/* Date Card in sidebar */}
-        <div className="px-4 pt-5 pb-2">
-          <div className="flex flex-col gap-1.5 px-4 py-3.5 rounded-2xl bg-[#155dfc]/10 border border-[#155dfc]/20">
-            <div className="flex items-center gap-2">
-              <CalendarDays className="w-4 h-4 text-[#155dfc]" />
-              <p className="text-[11px] font-bold uppercase tracking-widest text-[#93c5fd]">
-                {currentTime ? currentTime.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) : '...'}
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <Clock className="w-4 h-4 text-[#155dfc]" />
-              <p className="text-sm font-extrabold tracking-tight text-white">
-                {currentTime ? currentTime.toLocaleTimeString('en-US') : '...'}
-              </p>
-            </div>
-          </div>
-        </div>
+
 
         {/* Nav */}
         <div className="flex-1 px-4 py-4 overflow-y-auto">
@@ -343,6 +345,10 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
               <p className={`text-[11px] text-white/40 truncate mt-0.5 ${skeletonCls}`}>
                 {displayEmail || '…'}
               </p>
+              <p className="text-[9px] font-bold uppercase tracking-widest text-[#93c5fd] mt-1.5 flex items-center gap-1">
+                <CalendarDays className="w-3 h-3" />
+                {currentTime ? currentTime.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '...'}
+              </p>
             </div>
             {/* Theme Toggle Button */}
             <button
@@ -370,7 +376,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
             suppressHydrationWarning
             onClick={handleLogout}
             disabled={isLoggingOut}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-white/50 hover:text-white hover:bg-red-500/10 hover:text-red-400 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 hover:text-red-300 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isLoggingOut ? (
               <>
@@ -397,7 +403,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
 
 
         {/* Page content */}
-        <main className="flex-1 overflow-y-auto" style={{ background: '#ffffff' }}>
+        <main className="flex-1 overflow-y-auto transition-colors duration-500" style={{ background: isDarkMode ? '#030304' : '#ffffff' }}>
           <motion.div
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
