@@ -126,9 +126,11 @@ export default function SearchPage() {
   }, [userId]);
 
   useEffect(() => {
-    const handler = () => setIsDarkMode(prev => !prev);
-    window.addEventListener('themeToggle', handler);
-    return () => window.removeEventListener('themeToggle', handler);
+    const stored = localStorage.getItem('autofyx_theme') === 'dark';
+    if (stored) setIsDarkMode(true);
+    const handler = (e) => setIsDarkMode(e.detail);
+    window.addEventListener('themeSync', handler);
+    return () => window.removeEventListener('themeSync', handler);
   }, []);
 
   const availableModels = useMemo(() => {
