@@ -13,6 +13,7 @@ import {
 import { createBrowserAuthToken, resolvePostLoginPath } from "@/lib/auth-token";
 import { motion } from "framer-motion";
 import { signInWithGoogle } from "@/lib/appwrite";
+import { LoadingScreen } from "@/components/LoadingScreen";
 
 export default function LoginPage() {
     const [showPassword, setShowPassword] = useState(false);
@@ -106,7 +107,9 @@ export default function LoginPage() {
     };
 
     return (
-        <div className="min-h-screen flex bg-[#0a0a0c] overflow-hidden">
+        <>
+            <LoadingScreen duration={1500} />
+            <div className="min-h-screen flex bg-[#0a0a0c] overflow-hidden">
 
             {/* ── Ambient background glow ── */}
             <div className="fixed inset-0 z-0 pointer-events-none">
@@ -334,5 +337,6 @@ export default function LoginPage() {
                 </motion.div>
             </div>
         </div>
+        </>
     );
 }
