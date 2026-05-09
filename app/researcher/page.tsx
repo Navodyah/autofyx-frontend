@@ -76,8 +76,8 @@ function KpiCard({ title, value, sub, icon: Icon, accent, P, delay }: {
         <p className="text-3xl font-black leading-none" style={{color:P.text}}>{value}</p>
         <p className="mt-2 text-[11px] font-medium" style={{color:P.muted}}>{sub}</p>
       </div>
-      <div className="rounded-2xl p-3 flex-shrink-0" style={{background:`${accent}18`}}>
-        <Icon className="w-5 h-5" style={{color:accent}}/>
+      <div className="rounded-2xl p-3 flex-shrink-0" style={{ background: `${accent}18`, color: accent }}>
+        <Icon className="w-5 h-5" />
       </div>
     </motion.div>
   );

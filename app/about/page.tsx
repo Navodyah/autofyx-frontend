@@ -16,9 +16,10 @@ export default function AboutPage() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  const slideUp = {
+  const slideUp: any = {
     hidden: { opacity: 0, y: 40 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease: "easeOut" } }
+    // use cubic-bezier array for 'ease' to satisfy framer-motion TypeScript types
+    visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease: [0.22, 1, 0.36, 1] } }
   };
 
   const staggerContainer = {

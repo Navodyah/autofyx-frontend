@@ -111,7 +111,7 @@ export default function ComparePage() {
   useEffect(() => {
     const stored = localStorage.getItem('autofyx_theme') === 'dark';
     if (stored) setIsDarkMode(true);
-    const handler = (e) => setIsDarkMode(e.detail);
+    const handler = (e: any) => setIsDarkMode(e.detail);
     window.addEventListener('themeSync', handler);
     return () => window.removeEventListener('themeSync', handler);
   }, []);

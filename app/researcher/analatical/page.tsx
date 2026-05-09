@@ -34,6 +34,7 @@ import {
   Settings2,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { API_BASE } from '@/lib/api';
