@@ -16,6 +16,8 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ClassPreview } from "@/components/recommendations/ClassPreview";
+import { ShineBorder } from "@/components/magicui/shine-border";
+import { BorderBeam } from "@/components/magicui/border-beam";
 
 /* ── Re-export types so page.tsx can import from one place ── */
 export type { FormValues, GroqExtracted } from "@/components/recommendations/RecommendForm";
@@ -102,52 +104,61 @@ export function PublicRecommendForm({
     <div className="w-full space-y-6">
 
       {/* ── AI Prompt Bar ── */}
-      <div className="relative">
-        <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-[#16161a]/80 p-2 shadow-2xl backdrop-blur-2xl overflow-hidden group">
-          {/* Subtle glare */}
-          <motion.div
-            animate={{ x: ["-100%", "200%"] }}
-            transition={{ duration: 4, repeat: Infinity, repeatDelay: 6, ease: "linear" }}
-            className="absolute top-0 bottom-0 w-[15%] bg-gradient-to-r from-transparent via-white/5 to-transparent skew-x-[-20deg] pointer-events-none"
-          />
-          <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-blue-600/10 border border-blue-500/20 flex-shrink-0 ml-1">
-            <Sparkles className="w-4 h-4 text-blue-400" />
-          </div>
-          <input
-            id="pub-rec-prompt"
-            type="text"
-            value={prompt}
-            onChange={(e) => setPrompt(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder='e.g. "Family SUV for city, diesel, salary 300k, 60 months loan"'
-            className="flex-1 bg-transparent text-sm font-medium text-zinc-100 placeholder:text-zinc-600 focus:outline-none"
-          />
-          {prompt && (
-            <button
-              type="button"
-              onClick={() => { setPrompt(""); onClearGroq(); }}
-              className="rounded-full p-1.5 text-zinc-600 hover:text-zinc-300 transition-colors flex-shrink-0"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          )}
-          <motion.button
-            id="pub-rec-submit"
-            type="button"
-            onClick={handleSearch}
-            disabled={loading || groqLoading}
-            whileHover={{ scale: 1.03 }}
-            whileTap={{ scale: 0.97 }}
-            className="flex-shrink-0 flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-bold tracking-wide bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-600/25 disabled:opacity-50 transition-all"
-          >
-            {(loading || groqLoading) ? (
-              <span className="h-4 w-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
-            ) : (
-              <Cpu className="h-4 w-4" />
+      <div className="relative w-full">
+        <ShineBorder
+          borderRadius={16}
+          borderWidth={1.5}
+          duration={8}
+          color={["#3b82f6", "#8b5cf6", "#ec4899"]}
+          className="w-full !p-0 !min-w-0 bg-transparent dark:bg-transparent border-0"
+        >
+          <div className="flex items-center gap-3 w-full rounded-2xl border border-white/10 bg-[#16161a]/80 p-2 shadow-2xl backdrop-blur-2xl overflow-hidden group">
+            {/* Subtle glare */}
+            <motion.div
+              animate={{ x: ["-100%", "200%"] }}
+              transition={{ duration: 4, repeat: Infinity, repeatDelay: 6, ease: "linear" }}
+              className="absolute top-0 bottom-0 w-[15%] bg-gradient-to-r from-transparent via-white/5 to-transparent skew-x-[-20deg] pointer-events-none"
+            />
+            <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-blue-600/10 border border-blue-500/20 flex-shrink-0 ml-1">
+              <Sparkles className="w-4 h-4 text-blue-400" />
+            </div>
+            <input
+              id="pub-rec-prompt"
+              type="text"
+              value={prompt}
+              onChange={(e) => setPrompt(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder='e.g. "Family SUV for city, diesel, salary 300k, 60 months loan"'
+              className="flex-1 bg-transparent text-sm font-medium text-zinc-100 placeholder:text-zinc-600 focus:outline-none"
+            />
+            {prompt && (
+              <button
+                type="button"
+                onClick={() => { setPrompt(""); onClearGroq(); }}
+                className="rounded-full p-1.5 text-zinc-600 hover:text-zinc-300 transition-colors flex-shrink-0 z-10"
+              >
+                <X className="h-4 w-4" />
+              </button>
             )}
-            {groqLoading ? "Parsing…" : loading ? "Searching…" : "AI Search"}
-          </motion.button>
-        </div>
+            <motion.button
+              id="pub-rec-submit"
+              type="button"
+              onClick={handleSearch}
+              disabled={loading || groqLoading}
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
+              className="relative overflow-hidden flex-shrink-0 flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-bold tracking-wide bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-600/25 disabled:opacity-50 transition-all z-10"
+            >
+              <BorderBeam size={60} duration={4} delay={0} className="opacity-80" />
+              {(loading || groqLoading) ? (
+                <span className="h-4 w-4 rounded-full border-2 border-white/30 border-t-white animate-spin relative z-20" />
+              ) : (
+                <Cpu className="h-4 w-4 relative z-20" />
+              )}
+              <span className="relative z-20">{groqLoading ? "Parsing…" : loading ? "Searching…" : "AI Search"}</span>
+            </motion.button>
+          </div>
+        </ShineBorder>
       </div>
 
       {/* ── Groq Error ── */}
@@ -318,11 +329,10 @@ export function PublicRecommendForm({
                           key={fp.value}
                           type="button"
                           onClick={() => onChange("fuel", fp.value)}
-                          className={`rounded-xl px-4 py-2 text-xs font-semibold border transition-all ${
-                            values.fuel === fp.value
+                          className={`rounded-xl px-4 py-2 text-xs font-semibold border transition-all ${values.fuel === fp.value
                               ? "bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-600/25"
                               : "border-white/10 bg-white/5 text-zinc-400 hover:text-zinc-100 hover:border-white/20"
-                          }`}
+                            }`}
                         >
                           {fp.label}
                         </button>
@@ -444,20 +454,6 @@ export function PublicRecommendForm({
                         className={darkInput}
                         value={values.dpa}
                         onChange={(e) => onChange("dpa", e.target.value)}
-                      />
-                    </div>
-                    <div>
-                      <FieldLabel text="Down Payment Ratio" />
-                      <input
-                        id="pub-rec-dpr"
-                        type="number"
-                        step={0.05}
-                        min={0}
-                        max={1}
-                        placeholder="e.g. 0.5"
-                        className={darkInput}
-                        value={values.dpr}
-                        onChange={(e) => onChange("dpr", e.target.value)}
                       />
                     </div>
                   </div>
