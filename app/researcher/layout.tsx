@@ -311,6 +311,7 @@ export default function ResearcherLayout({ children }: { children: React.ReactNo
     pathname,
     sessionUser,
     displayName,
+    currentTime,
     isLoggingOut,
     isDarkMode,
     isNavigating,
