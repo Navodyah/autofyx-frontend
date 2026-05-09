@@ -1,13 +1,13 @@
-﻿'use client';
+'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Camera, Save, User, Car, Shield, Activity, 
-  MessageSquare, Sun, Moon, Heart, ChevronDown, RefreshCw, Zap, Loader2,
+  MessageSquare, Sun, Moon, Settings2, RefreshCw, Zap, Loader2,
   Eye, EyeOff, AlertTriangle, Bell, BellOff,
 } from 'lucide-react';
-import { getRegistrationPreferences, saveRegistrationPreferences, UserPreferencesInput, getUserProfile, updateUserProfile } from '@/lib/appwrite';
+import { getUserProfile, updateUserProfile } from '@/lib/appwrite';
 import { parseBrowserAuthToken } from '@/lib/auth-token';
 import { SecurityTab } from '@/components/settings/SecurityTab';
 import { ToastContainer, useToast } from '@/components/ui/Toast';
@@ -47,31 +47,16 @@ const D = {
 };
 
 const TABS = [
-  { id: 'preferences', label: 'Vehicle Preferences', icon: Car },
   { id: 'personal', label: 'Personal Details', icon: User },
   { id: 'security', label: 'Security', icon: Shield },
   { id: 'activity', label: 'Activity Log', icon: Activity },
 ];
 
 export default function SettingsPage() {
-  const [activeTab, setActiveTab] = useState('preferences');
+  const [activeTab, setActiveTab] = useState('personal');
   const [isDarkMode, setIsDarkMode] = useState(false);
   const P = isDarkMode ? D : L;
   const toast = useToast();
-
-  // Form State for Vehicle Preferences
-  const [preferences, setPreferences] = useState<UserPreferencesInput>({
-    monthly_salary_range: '100,001 - 200,000',
-    daily_distance_km: 20,
-    usage_purpose: 'Office',
-    fuel_preference: 'Hybrid',
-    priority: 'Fuel Efficiency',
-    preferred_vehicle_types: ['SUV', 'Sedan'],
-    budget_min: 2500000,
-    budget_max: 8500000,
-  });
-  const [isLoadingPreferences, setIsLoadingPreferences] = useState(true);
-  const [isSavingPreferences, setIsSavingPreferences] = useState(false);
 
   const [profileImageUrl, setProfileImageUrl] = useState("https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?q=80&w=300&auto=format&fit=crop");
   const [isUploadingImage, setIsUploadingImage] = useState(false);
@@ -103,25 +88,8 @@ export default function SettingsPage() {
     let cancelled = false;
     const fetchPrefs = async () => {
       if (!identity.user_id && !identity.appwrite_id && !identity.email) {
-        setIsLoadingPreferences(false);
         return;
       }
-      try {
-        setIsLoadingPreferences(true);
-        const prefs = await getRegistrationPreferences(identity);
-        if (!cancelled && prefs) {
-          setPreferences(prev => ({
-            ...prev,
-            ...prefs,
-            budget_min: prefs.budget_min || prev.budget_min,
-            budget_max: prefs.budget_max || prev.budget_max,
-            preferred_vehicle_types: prefs.preferred_vehicle_types?.length ? prefs.preferred_vehicle_types : prev.preferred_vehicle_types,
-          }));
-        }
-      } catch (e) {
-        console.error('Failed to load preferences:', e);
-      }
-      
       try {
         const profile = await getUserProfile(identity.user_id as string);
         if (!cancelled && profile) {
@@ -139,8 +107,6 @@ export default function SettingsPage() {
         }
       } catch (e) {
         console.error('Failed to load user profile:', e);
-      } finally {
-        if (!cancelled) setIsLoadingPreferences(false);
       }
     };
 
@@ -156,6 +122,13 @@ export default function SettingsPage() {
     fetchPrefs();
     return () => { cancelled = true; };
   }, [identity]);
+
+  useEffect(() => {
+    setIsDarkMode(localStorage.getItem('autofyx_theme') === 'dark');
+    const handler = (e: Event) => setIsDarkMode((e as CustomEvent).detail);
+    window.addEventListener('themeSync', handler);
+    return () => window.removeEventListener('themeSync', handler);
+  }, []);
 
   const handleProfileImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -193,22 +166,6 @@ export default function SettingsPage() {
     }
   };
 
-  const handleSavePreferences = async () => {
-    try {
-      setIsSavingPreferences(true);
-      await saveRegistrationPreferences({
-        ...identity,
-        ...preferences,
-      });
-      toast.success('Preferences saved', 'Your vehicle preferences have been updated.');
-    } catch (e) {
-      console.error('Failed to save preferences:', e);
-      toast.error('Save failed', 'Could not save preferences. Please try again.');
-    } finally {
-      setIsSavingPreferences(false);
-    }
-  };
-
   const handleSavePersonalDetails = async () => {
     if (!identity.user_id) return;
     try {
@@ -227,18 +184,6 @@ export default function SettingsPage() {
       setIsSavingPersonalDetails(false);
     }
   };
-
-  const toggleType = (type: string) => {
-    setPreferences(prev => {
-      const current = prev.preferred_vehicle_types || [];
-      if (current.includes(type)) {
-        return { ...prev, preferred_vehicle_types: current.filter(t => t !== type) };
-      } else {
-        return { ...prev, preferred_vehicle_types: [...current, type] };
-      }
-    });
-  };
-
   // Base utility styles generated from palette
   const inputBaseClasses = `w-full rounded-2xl px-4 py-3.5 text-[14px] font-medium transition-all focus:outline-none focus:ring-1 focus:ring-offset-0`;
   const labelClasses = `block text-[12px] font-bold mb-2`;
@@ -262,18 +207,36 @@ export default function SettingsPage() {
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      className="min-h-full pb-12 pt-4 px-4 xl:px-6 transition-colors duration-500 rounded-[32px] m-3 min-h-[calc(100vh-100px)]"
-      style={{
-        background: P.bg,
-      }}
-    >
+    <div className="space-y-8 pb-10">
       
-      {/* ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ Settings Header & Sub Nav ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ */}
-      <div className="max-w-6xl mx-auto mb-8 rounded-[24px] p-2 flex flex-wrap items-center justify-between gap-4 transition-all duration-500" style={{ background: P.cardBg, border: `1px solid ${P.border}`, boxShadow: P.shadow }}>
+      {/* ── Researcher Dashboard Style Header ── */}
+      <motion.section 
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+        className="overflow-hidden rounded-[32px] p-8 xl:p-10 text-white shadow-2xl relative"
+        style={{ background: isDarkMode ? 'linear-gradient(135deg, #0F111A, #1a1e2e)' : 'linear-gradient(135deg, #155dfc, #3b82f6)' }}
+      >
+        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-white/5 blur-[100px] rounded-full pointer-events-none -translate-y-1/2 translate-x-1/3" />
         
+        <div className="relative z-10 flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
+          <div className="max-w-3xl space-y-4">
+            <div className="inline-flex items-center gap-2 rounded-full border px-4 py-2 text-[10px] font-bold uppercase tracking-widest backdrop-blur" style={{ background: 'rgba(255,255,255,0.1)', borderColor: 'rgba(255,255,255,0.2)', color: 'rgba(255,255,255,0.9)' }}>
+              <Settings2 className="h-3.5 w-3.5" />
+              Researcher Portal Configuration
+            </div>
+            <div>
+              <h1 className="text-4xl font-extrabold tracking-tight md:text-5xl lg:text-[54px] leading-tight">Settings</h1>
+              <p className="mt-4 max-w-2xl text-sm leading-relaxed font-medium md:text-[15px]" style={{ color: 'rgba(255,255,255,0.8)' }}>
+                Manage your account details, secure your credentials, and review recent login activity.
+              </p>
+            </div>
+          </div>
+        </div>
+      </motion.section>
+
+      {/* ── Sub Nav (Tabs) ── */}
+      <div className="max-w-6xl mx-auto rounded-[24px] p-2 flex flex-wrap items-center justify-between gap-4 transition-all duration-500" style={{ background: P.cardBg, border: `1px solid ${P.border}`, boxShadow: P.shadow }}>
         <div className="flex items-center gap-1 overflow-x-auto no-scrollbar px-2 flex-1">
           {TABS.map((tab) => {
             const isActive = activeTab === tab.id;
@@ -299,250 +262,12 @@ export default function SettingsPage() {
             );
           })}
         </div>
-
-        <div className="flex items-center gap-3 pr-2">
-          {/* Theme Toggle Button */}
-          <motion.button
-            onClick={() => setIsDarkMode(!isDarkMode)}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="flex items-center justify-center w-10 h-10 rounded-full transition-colors duration-500 shadow-sm"
-            style={{ background: isDarkMode ? "rgba(255,255,255,0.05)" : "#FFFFFF", border: `1px solid ${P.border}`, color: P.text }}
-          >
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={isDarkMode ? 'moon' : 'sun'}
-                initial={{ rotate: -90, opacity: 0 }}
-                animate={{ rotate: 0, opacity: 1 }}
-                exit={{ rotate: 90, opacity: 0 }}
-                transition={{ duration: 0.2 }}
-              >
-                {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-              </motion.div>
-            </AnimatePresence>
-          </motion.button>
-        </div>
       </div>
-
-      {/* ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ Main Content Area ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ */}
+      {/* ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ Main Content Area ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ */}
       <div className="max-w-6xl mx-auto">
         <AnimatePresence mode="wait">
           
-          {/* ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ VEHICLE PREFERENCES TAB ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ */}
-          {activeTab === 'preferences' && (
-            <motion.div
-              key="preferences"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.3 }}
-              className="rounded-[32px] p-6 xl:p-10 transition-colors duration-500"
-              style={{ background: P.cardBg, border: `1px solid ${P.border}`, boxShadow: P.shadow }}
-            >
-              
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-                
-                {/* Left Column: Preferred Types */}
-                <div>
-                  <div className="flex items-center gap-3 mb-6">
-                    <Heart className="w-5 h-5" style={{ color: isDarkMode ? "#E2E8F0" : "#18181B" }} />
-                    <h2 className="text-xl font-extrabold tracking-tight" style={{ color: P.text }}>Preferred Vehicle Types</h2>
-                  </div>
-                  <p className="text-sm font-medium mb-8" style={{ color: P.muted }}>
-                    Select one or more body styles that fit your lifestyle.
-                  </p>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {[
-                      { type: 'SUV', desc: 'Practical, spacious, confident', icon: Car },
-                      { type: 'Hatchback', desc: 'Compact and efficient', icon: Car },
-                      { type: 'Sedan', desc: 'Balanced, refined, comfortable', icon: Car },
-                      { type: 'Electric Vehicle', desc: 'Quiet, modern, low cost', icon: Zap },
-                    ].map((vehicle) => {
-                      const isSelected = (preferences.preferred_vehicle_types || []).includes(vehicle.type);
-                      return (
-                        <motion.div
-                          key={vehicle.type}
-                          whileHover={{ scale: 1.02 }}
-                          whileTap={{ scale: 0.98 }}
-                          onClick={() => toggleType(vehicle.type)}
-                          className="relative p-5 rounded-[20px] cursor-pointer border-2 transition-colors duration-300 flex flex-col items-start gap-4"
-                          style={isSelected ? activeCardStyle : inactiveCardStyle}
-                        >
-                          <div className="flex justify-between w-full items-start">
-                            <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-sm" style={{ background: isSelected ? (isDarkMode ? "rgba(0,0,0,0.2)" : "rgba(255,255,255,0.2)") : P.iconBg }}>
-                              <vehicle.icon className="w-5 h-5" style={{ color: isSelected ? P.primaryText : P.text }} />
-                            </div>
-                            <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors`} style={{ borderColor: isSelected ? P.primaryText : P.border }}>
-                              {isSelected && <div className="w-2 h-2 rounded-full" style={{ background: P.primaryText }} />}
-                            </div>
-                          </div>
-                          <div>
-                            <h3 className="text-[15px] font-bold" style={{ color: isSelected ? P.primaryText : P.text }}>{vehicle.type}</h3>
-                            <p className="text-[12px] font-medium leading-snug mt-1 opacity-80" style={{ color: isSelected ? P.primaryText : P.muted }}>{vehicle.desc}</p>
-                          </div>
-                        </motion.div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Right Column: Budgets & Filters */}
-                <div className="space-y-8">
-                  
-                  {/* Budget Options */}
-                  <div className="p-6 rounded-[24px] border transition-colors duration-500" style={{ borderColor: P.border, background: isDarkMode ? "rgba(255,255,255,0.02)" : "#FAFAFA" }}>
-                    <div className="flex items-center gap-3 mb-6">
-                      <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: P.iconBg }}>
-                        <Activity className="w-4 h-4" style={{ color: P.text }} />
-                      </div>
-                      <div>
-                        <h3 className="text-[15px] font-bold" style={{ color: P.text }}>Budget Range</h3>
-                        <p className="text-[12px] font-medium mt-0.5" style={{ color: P.muted }}>Set your minimal and maximal price limits.</p>
-                      </div>
-                    </div>
-
-                    {/* Faux Range Slider */}
-                    <div className="relative w-full h-2 rounded-full mb-8" style={{ background: P.border }}>
-                       <div className="absolute top-0 left-[20%] right-[30%] h-full rounded-full" style={{ background: P.primary }} />
-                       <div className="absolute top-1/2 -translate-y-1/2 left-[20%] w-4 h-4 rounded-full shadow-sm border-2" style={{ background: P.primaryText, borderColor: P.primary }} />
-                       <div className="absolute top-1/2 -translate-y-1/2 right-[30%] w-4 h-4 rounded-full shadow-sm border-2" style={{ background: P.primaryText, borderColor: P.primary }} />
-                    </div>
-
-                    <div className="flex gap-4">
-                      <div className="flex-1">
-                        <label className={labelClasses} style={{ color: P.muted }}>Minimum Price</label>
-                        <input 
-                          type="number" 
-                          value={preferences.budget_min} 
-                          onChange={(e) => setPreferences({ ...preferences, budget_min: Number(e.target.value) || 0 })}
-                          className={inputBaseClasses} 
-                          style={{...inputStyle, borderColor: "transparent", outline: `1px solid ${P.border}`}} 
-                        />
-                      </div>
-                      <div className="flex-1">
-                        <label className={labelClasses} style={{ color: P.muted }}>Maximum Price</label>
-                        <input 
-                          type="number" 
-                          value={preferences.budget_max} 
-                          onChange={(e) => setPreferences({ ...preferences, budget_max: Number(e.target.value) || 0 })}
-                          className={inputBaseClasses} 
-                          style={{...inputStyle, borderColor: "transparent", outline: `1px solid ${P.border}`}} 
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Set Your Preferences (MongoDB Setup) */}
-                  <div className="p-6 rounded-[24px] border transition-colors duration-500" style={{ borderColor: P.border, background: isDarkMode ? "rgba(255,255,255,0.02)" : "#FAFAFA" }}>
-                    <div className="flex items-center gap-3 mb-6">
-                      <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: P.iconBg }}>
-                        <Zap className="w-4 h-4" style={{ color: P.text }} />
-                      </div>
-                      <div>
-                        <h3 className="text-[15px] font-bold" style={{ color: P.text }}>Set Your Preferences</h3>
-                        <p className="text-[12px] font-medium mt-0.5" style={{ color: P.muted }}>Complete this once before using your dashboard.</p>
-                      </div>
-                    </div>
-
-                    <div className="space-y-5">
-                      <div>
-                        <label className={labelClasses} style={{ color: P.muted }}>Monthly salary range</label>
-                        <select 
-                          value={preferences.monthly_salary_range}
-                          onChange={(e) => setPreferences({ ...preferences, monthly_salary_range: e.target.value })}
-                          className={`${inputBaseClasses} appearance-none`} 
-                          style={{...inputStyle, borderColor: "transparent", outline: `1px solid ${P.border}`}}
-                        >
-                          <option value="0 - 100,000">0 - 100,000</option>
-                          <option value="100,001 - 200,000">100,001 - 200,000</option>
-                          <option value="200,001 - 350,000">200,001 - 350,000</option>
-                          <option value="350,001 - 500,000">350,001 - 500,000</option>
-                          <option value="500,001+">500,001+</option>
-                        </select>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <label className={labelClasses} style={{ color: P.muted }}>Daily distance (km)</label>
-                          <input 
-                            type="number" 
-                            value={preferences.daily_distance_km}
-                            onChange={(e) => setPreferences({ ...preferences, daily_distance_km: Number(e.target.value) || 0 })}
-                            className={inputBaseClasses} 
-                            style={{...inputStyle, borderColor: "transparent", outline: `1px solid ${P.border}`}} 
-                          />
-                        </div>
-                        <div>
-                          <label className={labelClasses} style={{ color: P.muted }}>Usage purpose</label>
-                           <select 
-                             value={preferences.usage_purpose}
-                             onChange={(e) => setPreferences({ ...preferences, usage_purpose: e.target.value as UserPreferencesInput['usage_purpose'] })}
-                             className={`${inputBaseClasses} appearance-none`} 
-                             style={{...inputStyle, borderColor: "transparent", outline: `1px solid ${P.border}`}}
-                           >
-                            <option value="Office">Office</option>
-                            <option value="Family">Family</option>
-                            <option value="Travel">Travel</option>
-                            <option value="Rent">Rent</option>
-                          </select>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <label className={labelClasses} style={{ color: P.muted }}>Fuel preference</label>
-                          <select 
-                            value={preferences.fuel_preference}
-                            onChange={(e) => setPreferences({ ...preferences, fuel_preference: e.target.value as UserPreferencesInput['fuel_preference'] })}
-                            className={`${inputBaseClasses} appearance-none`} 
-                            style={{...inputStyle, borderColor: "transparent", outline: `1px solid ${P.border}`}}
-                          >
-                            <option value="Hybrid">Hybrid</option>
-                            <option value="Electric">Electric</option>
-                            <option value="Petrol">Petrol</option>
-                            <option value="Diesel">Diesel</option>
-                          </select>
-                        </div>
-                        <div>
-                          <label className={labelClasses} style={{ color: P.muted }}>Priority</label>
-                           <select 
-                             value={preferences.priority}
-                             onChange={(e) => setPreferences({ ...preferences, priority: e.target.value as UserPreferencesInput['priority'] })}
-                             className={`${inputBaseClasses} appearance-none`} 
-                             style={{...inputStyle, borderColor: "transparent", outline: `1px solid ${P.border}`}}
-                           >
-                            <option value="Fuel Efficiency">Fuel Efficiency</option>
-                            <option value="Resale Value">Resale Value</option>
-                            <option value="Comfort">Comfort</option>
-                            <option value="Performance">Performance</option>
-                          </select>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                </div>
-              </div>
-
-               {/* Footer Actions */}
-              <div className="mt-10 flex justify-end gap-3 pt-6 border-t transition-colors duration-500" style={{ borderColor: P.border }}>
-                <button 
-                  onClick={handleSavePreferences}
-                  disabled={isSavingPreferences}
-                  className="flex items-center gap-2 px-8 py-3 rounded-2xl text-[14px] font-bold shadow-lg transition-all hover:-translate-y-0.5"
-                  style={{ background: P.primary, color: P.primaryText, opacity: isSavingPreferences ? 0.7 : 1 }}
-                >
-                  {isSavingPreferences ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-                  {isSavingPreferences ? 'Saving...' : 'Save Changes'}
-                </button>
-              </div>
-
-            </motion.div>
-          )}
-
-
-          {/* ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ PERSONAL DETAILS TAB (from previous step) ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ */}
+          {/* ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ PERSONAL DETAILS TAB (from previous step) ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ */}
           {activeTab === 'personal' && (
             <motion.div
               key="personal"
@@ -680,7 +405,7 @@ export default function SettingsPage() {
             </motion.div>
           )}
 
-          {/* â”€â”€â”€â”€â”€â”€ SECURITY TAB â”€â”€â”€â”€â”€â”€ */}
+          {/* Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ SECURITY TAB Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ */}
           {activeTab === 'security' && (
             <SecurityTab
               P={P}
@@ -695,7 +420,7 @@ export default function SettingsPage() {
             />
           )}
 
-          {/* â”€â”€â”€â”€â”€â”€ ACTIVITY LOG TAB â”€â”€â”€â”€â”€â”€ */}
+          {/* Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ ACTIVITY LOG TAB Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ */}
           {activeTab === 'activity' && (
             <ActivityLogTab P={P} isDarkMode={isDarkMode} />
           )}
@@ -706,13 +431,13 @@ export default function SettingsPage() {
       {/* Toast Notifications */}
       <ToastContainer toasts={toast.toasts} onRemove={toast.remove} />
 
-    </motion.div>
+    </div>
   );
 }
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+/* Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
    ACTIVITY LOG TAB
-â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â */
 function ActivityLogTab({ P, isDarkMode }: { P: Record<string, string>; isDarkMode: boolean }) {
   const [entries, setEntries] = useState<Array<{ time: string; type: string; detail: string }>>([]);
 
@@ -764,7 +489,7 @@ function ActivityLogTab({ P, isDarkMode }: { P: Record<string, string>; isDarkMo
       : diff < 604800 ? `${Math.floor(diff/86400)}d ago`
       : d.toLocaleDateString(undefined, { day:'numeric', month:'short', year:'numeric' });
     const abs = d.toLocaleString(undefined, { day:'numeric', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' });
-    return `${rel} Â· ${abs}`;
+    return `${rel} Ã‚Â· ${abs}`;
   };
 
   return (

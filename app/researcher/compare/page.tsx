@@ -187,26 +187,30 @@ export default function ComparePage() {
       <motion.div variants={containerVariants} initial="hidden" animate="visible" className="relative z-10 max-w-7xl mx-auto space-y-8">
         
         {/* HEADER */}
-        <motion.div variants={itemVariants} className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-          <div className="space-y-2">
-            <motion.div
-              initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}
-              className="inline-flex items-center gap-2.5 px-3 py-1.5 rounded-full transition-colors duration-500"
-              style={{ background: isDarkMode ? 'rgba(21,93,252,0.08)' : '#FFFFFF', borderWidth: '1px', borderStyle: 'solid', borderColor: P.border }}
-            >
-              <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: P.primary }}>
-                <Scale className="w-3.5 h-3.5" style={{ color: P.primaryText }} />
+        <motion.section 
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+          className="overflow-hidden rounded-[32px] p-8 xl:p-10 text-white shadow-2xl relative mb-8"
+          style={{ background: isDarkMode ? 'linear-gradient(135deg, #0F111A, #1a1e2e)' : 'linear-gradient(135deg, #155dfc, #3b82f6)' }}
+        >
+          <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-white/5 blur-[100px] rounded-full pointer-events-none -translate-y-1/2 translate-x-1/3" />
+          
+          <div className="relative z-10 flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
+            <div className="max-w-3xl space-y-4">
+              <div className="inline-flex items-center gap-2 rounded-full border px-4 py-2 text-[10px] font-bold uppercase tracking-widest backdrop-blur" style={{ background: 'rgba(255,255,255,0.1)', borderColor: 'rgba(255,255,255,0.2)', color: 'rgba(255,255,255,0.9)' }}>
+                <Scale className="h-3.5 w-3.5" />
+                Head-to-Head Comparison
               </div>
-              <span className="text-[10px] font-bold uppercase tracking-widest transition-colors duration-500" style={{ color: P.primary }}>Head-to-Head Comparison</span>
-            </motion.div>
-            <h1 className="text-3xl xl:text-4xl font-extrabold tracking-tight transition-colors duration-500" style={{ color: P.text }}>
-              Compare 3 Vehicles Side-by-Side
-            </h1>
-            <p className="text-sm font-medium transition-colors duration-500" style={{ color: P.muted }}>
-              Select the Make, Model, and Year for three vehicles. We'll analyze their specifications and recommend the best option tailored to your personal preferences.
-            </p>
+              <div>
+                <h1 className="text-4xl font-extrabold tracking-tight md:text-5xl lg:text-[54px] leading-tight">Vehicle Comparison</h1>
+                <p className="mt-4 max-w-2xl text-sm leading-relaxed font-medium md:text-[15px]" style={{ color: 'rgba(255,255,255,0.8)' }}>
+                  Select the Make, Model, and Year for three vehicles. We'll analyze their specifications and recommend the best option based on current market data.
+                </p>
+              </div>
+            </div>
           </div>
-        </motion.div>
+        </motion.section>
 
       {/* Vehicle Selection Section */}
       <motion.div variants={itemVariants} className="relative z-20">

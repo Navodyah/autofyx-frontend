@@ -1,6 +1,9 @@
 "use client";
 
-import { motion, useScroll, useTransform, easeOut } from "framer-motion";
+import { LoadingScreen } from "@/components/LoadingScreen";
+import { PublicNavbar } from "@/components/PublicNavbar";
+
+import { motion, useScroll, useTransform, easeOut, AnimatePresence } from "framer-motion";
 import {
   MapPin,
   Briefcase,
@@ -35,7 +38,10 @@ export default function LandingPage() {
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 50);
     window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+    };
   }, []);
 
   const slideUp = {
@@ -52,7 +58,9 @@ export default function LandingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0a0c] text-zinc-50 font-sans selection:bg-zinc-800 selection:text-white overflow-hidden">
+    <>
+      <LoadingScreen />
+      <div className="min-h-screen bg-[#0a0a0c] text-zinc-50 font-sans selection:bg-zinc-800 selection:text-white overflow-hidden">
 
       {/* Absolute Ambient Lighting with Slow Animation */}
       <div className="fixed inset-0 z-0 pointer-events-none flex justify-center overflow-hidden">
@@ -68,63 +76,7 @@ export default function LandingPage() {
       </div>
 
       {/* Navbar */}
-      <motion.nav
-        initial={{ y: -100, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.8, ease: "easeOut" }}
-        className={`fixed top-0 inset-x-0 z-50 transition-all duration-500 border-b ${scrolled ? "bg-black/70 backdrop-blur-xl border-zinc-800/50 py-4" : "bg-transparent border-transparent py-8"
-          }`}
-      >
-        <div className="max-w-[88rem] mx-auto px-6 md:px-12 flex items-center justify-between">
-          <motion.div whileHover={{ scale: 1.05 }} className="flex items-center gap-3 cursor-pointer">
-            <div className="w-8 h-8 md:w-10 md:h-10 border border-zinc-700 bg-gradient-to-br from-zinc-800 to-black text-white flex items-center justify-center rounded-sm">
-              <Car className="w-4 h-4 md:w-5 md:h-5" />
-            </div>
-            <span className="text-xl md:text-2xl font-semibold tracking-wide text-zinc-100">AutoFyx</span>
-          </motion.div>
-          <div className="hidden lg:flex items-center gap-10 text-sm font-medium text-zinc-400 tracking-wide">
-            <Link href="#how-it-works" className="hover:text-white transition-colors relative group">
-              Methodology
-              <span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-white transition-all duration-300 group-hover:w-full" />
-            </Link>
-            <Link href="#features" className="hover:text-white transition-colors relative group">
-              Intelligence
-              <span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-white transition-all duration-300 group-hover:w-full" />
-            </Link>
-            <Link href="#catalog" className="hover:text-white transition-colors relative group">
-              Inventory
-              <span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-white transition-all duration-300 group-hover:w-full" />
-            </Link>
-          </div>
-          <div className="flex items-center gap-6 text-sm font-medium">
-            <Link href="/login" className="text-zinc-400 hover:text-white transition-colors hidden sm:block">Sign In</Link>
-            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-              <Link href="/register" className="px-6 py-2.5 bg-blue-600 text-white hover:bg-blue-700 transition-colors rounded-sm tracking-wide">
-                Start Match
-              </Link>
-            </motion.div>
-          </div>
-        </div>
-
-        {/* Scroll Progress Car Animation */}
-        <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-transparent">
-          <motion.div
-            style={{ scaleX: scrollYProgress, transformOrigin: "left" }}
-            className="absolute inset-0 bg-white/20"
-          />
-          <motion.div
-            style={{ left: carXPos }}
-            className="absolute bottom-[-7px] ml-[-16px] flex items-center z-50 pointer-events-none"
-          >
-            <Car className="w-4 h-4 text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.8)]" />
-            <motion.div
-              animate={{ opacity: [0, 1, 0], scaleX: [0.5, 1.5, 0.5] }}
-              transition={{ repeat: Infinity, duration: 2, ease: "linear" }}
-              className="w-12 h-[1px] bg-gradient-to-l from-white/80 to-transparent ml-1 origin-left"
-            />
-          </motion.div>
-        </div>
-      </motion.nav>
+      <PublicNavbar />
 
       {/* Hero Section with Parallax */}
       <motion.section
@@ -246,20 +198,20 @@ export default function LandingPage() {
               </div>
             </motion.div>
 
-            <motion.button
-              variants={slideUp}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="w-full md:w-auto mt-2 md:mt-0 px-8 py-5 bg-blue-600 text-white hover:bg-blue-700 transition-all rounded-xl md:rounded-full font-semibold flex items-center justify-center gap-2 flex-shrink-0"
-            >
-              Analyze Options
-              <motion.div
-                animate={{ x: [0, 4, 0] }}
-                transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
+            <motion.div variants={slideUp} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="w-full md:w-auto mt-2 md:mt-0 flex-shrink-0">
+              <Link
+                href="/recommend"
+                className="w-full md:w-auto px-8 py-5 bg-blue-600 text-white hover:bg-blue-700 transition-all rounded-xl md:rounded-full font-semibold flex items-center justify-center gap-2"
               >
-                <ArrowRight className="w-5 h-5" />
-              </motion.div>
-            </motion.button>
+                Analyze Options
+                <motion.div
+                  animate={{ x: [0, 4, 0] }}
+                  transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
+                >
+                  <ArrowRight className="w-5 h-5" />
+                </motion.div>
+              </Link>
+            </motion.div>
           </motion.div>
         </div>
       </motion.section>
@@ -486,7 +438,7 @@ export default function LandingPage() {
       <footer className="relative z-10 bg-[#08080a] border-t border-white/5 pt-20 pb-10">
         <div className="max-w-[88rem] mx-auto px-6 md:px-12">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
-            
+
             {/* Brand Column */}
             <div className="lg:col-span-1">
               <div className="flex items-center gap-3 mb-6">
@@ -504,9 +456,9 @@ export default function LandingPage() {
             <div className="flex flex-col gap-4">
               <h4 className="text-white font-semibold uppercase tracking-widest text-xs mb-2">Quick Links</h4>
               <Link href="#how-it-works" className="text-zinc-500 hover:text-white transition-colors text-sm">About Platform</Link>
-              <Link href="#features" className="text-zinc-500 hover:text-white transition-colors text-sm">Features</Link>
+              <Link href="/about" className="text-zinc-500 hover:text-white transition-colors text-sm">About Us</Link>
+              <Link href="/contact" className="text-zinc-500 hover:text-white transition-colors text-sm">Contact</Link>
               <Link href="/dashboard" className="text-zinc-500 hover:text-white transition-colors text-sm">Dashboard</Link>
-              <Link href="#catalog" className="text-zinc-500 hover:text-white transition-colors text-sm">Inventory Map</Link>
             </div>
 
             {/* Empty column for spacing or future links */}
@@ -547,5 +499,6 @@ export default function LandingPage() {
         </div>
       </footer>
     </div>
+    </>
   );
 }

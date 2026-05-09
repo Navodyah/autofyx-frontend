@@ -1,8 +1,8 @@
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { 
-  LayoutDashboard, Database, Users, BrainCircuit, Car, ChevronDown 
+import {
+  LayoutDashboard, Database, Users, BrainCircuit, Car, ChevronDown, MessageSquare
 } from 'lucide-react';
 import { useState } from 'react';
 import { clsx } from 'clsx'; // Install this if needed: npm install clsx
@@ -14,8 +14,8 @@ const Sidebar = () => {
   // Helper for active styles
   const navItemClass = (path: string) => clsx(
     "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group relative overflow-hidden",
-    pathname === path 
-      ? "bg-blue-600 text-white shadow-lg shadow-blue-500/20" 
+    pathname === path
+      ? "bg-blue-600 text-white shadow-lg shadow-blue-500/20"
       : "text-slate-400 hover:bg-slate-800 hover:text-white"
   );
 
@@ -36,11 +36,11 @@ const Sidebar = () => {
       {/* Navigation */}
       <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto scrollbar-hide">
         <p className="px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Overview</p>
-        
-        <Link href="/admin_dashboard" className={navItemClass('/admin')}>
+
+        <Link href="/admin" className={navItemClass('/admin')}>
           <LayoutDashboard size={20} /> <span className="font-medium">Dashboard</span>
         </Link>
-        
+
         <Link href="/admin/ml-studio" className={navItemClass('/admin/ml-studio')}>
           <BrainCircuit size={20} /> <span className="font-medium">ML Studio</span>
         </Link>
@@ -50,11 +50,14 @@ const Sidebar = () => {
         <Link href="/admin/users" className={navItemClass('/admin/users')}>
           <Users size={20} /> <span className="font-medium">Users</span>
         </Link>
+        <Link href="/admin/feedback" className={navItemClass('/admin/feedback')}>
+          <MessageSquare size={20} /> <span className="font-medium">Feedback</span>
+        </Link>
 
         {/* Inventory Dropdown */}
         <div>
-          <Link href="/admin_dashboard/catalog">
-            <button 
+          <Link href="/admin/catalog">
+            <button
               onClick={() => setIsInventoryOpen(!isInventoryOpen)}
               className="flex items-center justify-between w-full px-4 py-3 text-slate-400 hover:text-white rounded-xl hover:bg-slate-800 transition-all"
             >
@@ -80,15 +83,15 @@ const Sidebar = () => {
           </div>
         </div>
       </nav>
-      
+
       {/* User Profile / Logout */}
       <div className="p-4 border-t border-slate-800">
         <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-900 border border-slate-800">
-           <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold">A</div>
-           <div>
-             <p className="text-sm font-medium text-white">Admin User</p>
-             <p className="text-xs text-slate-500">admin@autofyx.com</p>
-           </div>
+          <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold">A</div>
+          <div>
+            <p className="text-sm font-medium text-white">Admin User</p>
+            <p className="text-xs text-slate-500">admin@autofyx.com</p>
+          </div>
         </div>
       </div>
     </aside>

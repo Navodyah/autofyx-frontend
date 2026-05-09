@@ -1,8 +1,31 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Car, Sparkles } from "lucide-react";
+
+// ── Palettes (mirror dashboard/page.tsx) ────────────────────────────────
+const L = {
+  bg: '#F0F4FF', cardBg: '#FFFFFF', primary: '#155dfc', primaryText: '#FFFFFF',
+  text: '#030304', muted: '#6B7280', border: '#DBEAFE',
+  shadow: '0 4px 20px -2px rgba(21,93,252,0.06), 0 0 3px rgba(21,93,252,0.04)',
+  hoverShadow: '0 12px 24px -4px rgba(21,93,252,0.12)', iconBg: '#EFF6FF',
+};
+const D = {
+  bg: '#030304', cardBg: '#0F111A', primary: '#155dfc', primaryText: '#FFFFFF',
+  text: '#FFFFFF', muted: '#8B949E', border: 'rgba(21,93,252,0.2)',
+  shadow: '0 4px 24px -4px rgba(0,0,0,0.5)',
+  hoverShadow: '0 12px 30px -4px rgba(0,0,0,0.5), 0 0 25px rgba(21,93,252,0.12)',
+  iconBg: 'rgba(21,93,252,0.08)',
+};
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: { opacity: 1, transition: { staggerChildren: 0.05, delayChildren: 0.04 } },
+};
+const itemVariants = {
+  hidden: { opacity: 0, y: 15 },
+  visible: { opacity: 1, y: 0, transition: { type: 'spring' as const, stiffness: 100, damping: 15 } },
+};
 
 import {
   RecommendForm,
@@ -80,6 +103,7 @@ function mergeParams(form: FormValues, groq: GroqExtracted | null) {
 export default function RecommendationPage() {
   const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
 
+  const [isDarkMode, setIsDarkMode] = useState(false);
   const [values, setValues] = useState<FormValues>(DEFAULT_VALUES);
   const [groqParams, setGroqParams] = useState<GroqExtracted | null>(null);
   const [groqLoading, setGroqLoading] = useState(false);
@@ -87,6 +111,16 @@ export default function RecommendationPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [results, setResults] = useState<RecommendResponse | null>(null);
+
+  useEffect(() => {
+    const stored = localStorage.getItem('autofyx_theme') === 'dark';
+    if (stored) setIsDarkMode(true);
+    const handler = (e) => setIsDarkMode(e.detail);
+    window.addEventListener('themeSync', handler);
+    return () => window.removeEventListener('themeSync', handler);
+  }, []);
+
+  const P = isDarkMode ? D : L;
 
   const handleChange = useCallback((key: keyof FormValues, val: string) => {
     setValues((prev) => ({ ...prev, [key]: val }));
@@ -198,91 +232,102 @@ export default function RecommendationPage() {
   const hasItems = items.length > 0;
 
   return (
-    <div className="min-h-screen">
-      <RecommendForm
-        values={values}
-        loading={loading}
-        groqParams={groqParams}
-        groqLoading={groqLoading}
-        groqError={groqError}
-        onChange={handleChange}
-        onSubmit={handleSubmit}
-        onGroqSearch={handleGroqSearch}
-        onClearGroq={handleClearGroq}
-      />
+    <motion.div
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5 }}
+      className="min-h-full pb-12 pt-6 px-4 xl:px-6 relative overflow-hidden transition-colors duration-500 rounded-[32px] m-3 min-h-[calc(100vh-100px)]"
+      style={{ background: P.bg, margin: '1px' }}
+    >
+      <motion.div variants={containerVariants} initial="hidden" animate="visible" className="relative z-10 max-w-7xl mx-auto space-y-6">
+        <RecommendForm
+          values={values}
+          loading={loading}
+          groqParams={groqParams}
+          groqLoading={groqLoading}
+          groqError={groqError}
+          onChange={handleChange}
+          onSubmit={handleSubmit}
+          onGroqSearch={handleGroqSearch}
+          onClearGroq={handleClearGroq}
+        />
 
-      <AnimatePresence>
-        {error && (
-          <motion.div initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-            className="mb-5 rounded-2xl border p-4 text-sm"
-            style={{ background: "rgba(239,68,68,0.07)", borderColor: "rgba(239,68,68,0.25)", color: "#ef4444" }}
-          >
-            <strong>Error</strong>
-            <pre className="mt-1 whitespace-pre-wrap text-xs opacity-80">{error}</pre>
-          </motion.div>
-        )}
-      </AnimatePresence>
+        <AnimatePresence>
+          {error && (
+            <motion.div initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+              className="mb-5 rounded-3xl border p-6 text-sm flex items-start gap-4 shadow-sm backdrop-blur-md"
+              style={{ background: isDarkMode ? 'rgba(239,68,68,0.05)' : 'rgba(239,68,68,0.02)', borderColor: isDarkMode ? 'rgba(239,68,68,0.2)' : 'rgba(239,68,68,0.3)', color: "#ef4444" }}
+            >
+              <div className="flex-1">
+                <strong className="block text-base mb-1">Error</strong>
+                <pre className="whitespace-pre-wrap text-xs opacity-90 font-medium">{error}</pre>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-      {(loading || groqLoading) && (
-        <div className="flex flex-col items-center justify-center gap-4 py-20 text-slate-400">
-          <div className="relative h-12 w-12">
-            <div className="absolute inset-0 rounded-full border-[3px] border-slate-200" />
-            <div className="absolute inset-0 rounded-full border-[3px] border-t-cyan-500 border-r-indigo-500 border-b-transparent border-l-transparent animate-spin" />
-          </div>
-          <p className="text-sm font-medium text-slate-500">
-            {groqLoading ? "Parsing your request with AI…" : "Fetching recommendations…"}
-          </p>
-        </div>
-      )}
-
-      {!loading && !groqLoading && !results && !error && (
-        <div className="flex flex-col items-center justify-center py-16">
-          <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm max-w-sm mx-auto">
-            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl"
-              style={{ background: "linear-gradient(135deg, #e0f2fe, #e0e7ff)" }}>
-              <Car className="h-7 w-7 text-cyan-600" />
+        {(loading || groqLoading) && (
+          <div className="flex flex-col items-center justify-center gap-5 py-24 transition-colors duration-500">
+            <div className="relative h-14 w-14">
+              <div className="absolute inset-0 rounded-full border-4 transition-colors duration-500" style={{ borderColor: P.border }} />
+              <div className="absolute inset-0 rounded-full border-4 border-b-transparent border-l-transparent animate-spin" style={{ borderColor: P.primary }} />
             </div>
-            <p className="font-semibold text-slate-700">Describe what you&apos;re looking for</p>
-            <p className="mt-1 text-xs text-slate-400">
-              Type a prompt above — mention salary, purpose, fuel type — and hit <strong>AI Search</strong>.
+            <p className="text-sm font-bold tracking-widest uppercase transition-colors duration-500" style={{ color: P.muted }}>
+              {groqLoading ? "Parsing request with AI..." : "Fetching recommendations..."}
             </p>
           </div>
-        </div>
-      )}
+        )}
 
-      {!loading && !groqLoading && results && (
-        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }}>
-          <div className="mb-5 flex items-center justify-between">
-            <div>
-              <h2 className="text-lg font-bold text-slate-800">Recommendations</h2>
-              <p className="mt-0.5 text-xs text-slate-400">
-                {hasItems
-                  ? `${items.length} vehicle${items.length !== 1 ? "s" : ""} matched your profile`
-                  : results.message || "No results"}
+        {!loading && !groqLoading && !results && !error && (
+          <div className="flex flex-col items-center justify-center py-20">
+            <div className="relative overflow-hidden rounded-3xl border p-12 text-center shadow-sm max-w-md mx-auto transition-colors duration-500" style={{ background: P.cardBg, borderColor: P.border, boxShadow: P.shadow }}>
+              <div className="absolute inset-0 opacity-10 pointer-events-none transition-colors duration-500" style={{ background: `radial-gradient(circle at 50% 0%, ${P.primary}, transparent 50%)` }} />
+              
+              <div className="relative z-10 mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-3xl shadow-sm transition-colors duration-500"
+                style={{ background: isDarkMode ? 'rgba(21,93,252,0.1)' : '#EFF6FF' }}>
+                <Car className="h-10 w-10" style={{ color: P.primary }} />
+              </div>
+              <p className="text-2xl font-black transition-colors duration-500" style={{ color: P.text }}>Describe what you need</p>
+              <p className="mt-3 text-sm font-medium transition-colors duration-500 leading-relaxed max-w-[280px] mx-auto" style={{ color: P.muted }}>
+                Type a prompt above — mention salary, purpose, and fuel type — and hit <strong style={{ color: P.primary }}>AI Search</strong> to find your perfect vehicle.
               </p>
             </div>
-            {hasItems && (
-              <span className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold text-white shadow-sm"
-                style={{ background: "linear-gradient(135deg, #0891b2, #4f46e5)" }}>
-                <Sparkles className="h-3 w-3" /> AI Ranked
-              </span>
-            )}
           </div>
+        )}
 
-          <FinanceSummary finance={finance} salary={merged.salary} purpose={merged.purpose}
-            area={merged.area} vehicleClasses={finalCls} />
-
-          {hasItems ? (
-            <VehicleCardGrid items={items} />
-          ) : (
-            <div className="rounded-2xl border border-slate-200 bg-white p-12 text-center shadow-sm">
-              <Car className="mx-auto mb-4 h-12 w-12 text-slate-300" />
-              <p className="font-semibold text-slate-600">{results.message || "No vehicles found."}</p>
-              <p className="mt-1 text-sm text-slate-400">Try broadening your salary range or relaxing filters.</p>
+        {!loading && !groqLoading && results && (
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, ease: "easeOut" }}>
+            <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h2 className="text-3xl font-black tracking-tight transition-colors duration-500" style={{ color: P.text }}>Analysis Results</h2>
+                <p className="mt-1.5 text-sm font-medium transition-colors duration-500" style={{ color: P.muted }}>
+                  {hasItems
+                    ? `${items.length} top vehicle${items.length !== 1 ? "s" : ""} matched your exact profile.`
+                    : results.message || "No results found."}
+                </p>
+              </div>
+              {hasItems && (
+                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-[11px] font-black uppercase tracking-widest shadow-md transition-all duration-500"
+                  style={{ background: `linear-gradient(135deg, ${P.primary}, #1d4ed8)`, color: '#ffffff' }}>
+                  <Sparkles className="h-4 w-4" /> AI Optimized
+                </div>
+              )}
             </div>
-          )}
-        </motion.div>
-      )}
-    </div>
+
+            <FinanceSummary finance={finance} salary={merged.salary} purpose={merged.purpose}
+              area={merged.area} vehicleClasses={finalCls} />
+
+            {hasItems ? (
+              <VehicleCardGrid items={items} />
+            ) : (
+              <div className="relative overflow-hidden rounded-3xl border p-16 text-center shadow-sm mt-8 transition-colors duration-500" style={{ background: P.cardBg, borderColor: P.border }}>
+                <div className="absolute inset-0 opacity-10 pointer-events-none transition-colors duration-500" style={{ background: `radial-gradient(circle at 50% 0%, #f43f5e, transparent 50%)` }} />
+                <Car className="mx-auto mb-6 h-16 w-16 transition-colors duration-500" style={{ color: P.muted }} />
+                <p className="text-2xl font-black transition-colors duration-500" style={{ color: P.text }}>{results.message || "No vehicles found."}</p>
+                <p className="mt-2 text-sm font-medium transition-colors duration-500" style={{ color: P.muted }}>Try broadening your salary range or relaxing your specific filters to find more options.</p>
+              </div>
+            )}
+          </motion.div>
+        )}
+      </motion.div>
+    </motion.div>
   );
 }

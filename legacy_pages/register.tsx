@@ -20,6 +20,7 @@ import {
 import { createBrowserAuthToken, resolvePostLoginPath } from "@/lib/auth-token";
 
 import { motion, AnimatePresence } from "framer-motion";
+import { LoadingScreen } from "@/components/LoadingScreen";
 
 export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
@@ -152,7 +153,9 @@ export default function RegisterPage() {
   ];
 
   return (
-    <div className="min-h-screen flex bg-[#0a0a0c] overflow-hidden">
+    <>
+      <LoadingScreen duration={1500} />
+      <div className="min-h-screen flex bg-[#0a0a0c] overflow-hidden">
 
       <div className="fixed inset-0 z-0 pointer-events-none">
         <motion.div
@@ -554,6 +557,7 @@ export default function RegisterPage() {
         </motion.div>
       </div>
     </div>
+    </>
   );
 }
 
