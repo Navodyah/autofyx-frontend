@@ -36,7 +36,7 @@ export default function OilQualityForm({ initialData, isEdit = false }: OilQuali
 
         if (response.status === 200) {
           alert("Updated Successfully!");
-          router.push('/admin_dashboard/catalog/oil');
+          router.push('/admin/catalog/oil');
         }
       } else {
         // POST request with axios
@@ -44,7 +44,7 @@ export default function OilQualityForm({ initialData, isEdit = false }: OilQuali
 
         if (response.status === 200 || response.status === 201) {
           alert("Created Successfully!");
-          router.push('/admin_dashboard/catalog/oil');
+          router.push('/admin/catalog/oil');
         }
       }
     } catch (error: any) {

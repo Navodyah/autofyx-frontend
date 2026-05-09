@@ -46,7 +46,7 @@ export default function TransmissionForm({ initialData, isEdit = false }: Transm
 
         if (response.status === 200) {
           alert("Updated Successfully!");
-          router.push('/admin_dashboard/catalog/transmission');
+          router.push('/admin/catalog/transmission');
         }
       } else {
         // POST request with axios
@@ -54,7 +54,7 @@ export default function TransmissionForm({ initialData, isEdit = false }: Transm
 
         if (response.status === 200 || response.status === 201) {
           alert("Created Successfully!");
-          router.push('/admin_dashboard/catalog/transmission');
+          router.push('/admin/catalog/transmission');
         }
       }
     } catch (error: any) {
