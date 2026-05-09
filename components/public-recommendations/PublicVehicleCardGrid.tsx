@@ -33,7 +33,7 @@ interface PublicVehicleCardGridProps {
   items: Record<string, unknown>[];
 }
 
-const cardVariants = {
+const cardVariants: any = {
   hidden: { opacity: 0, y: 20 },
   visible: (i: number) => ({
     opacity: 1,
