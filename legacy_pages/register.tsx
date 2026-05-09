@@ -21,6 +21,7 @@ import { createBrowserAuthToken, resolvePostLoginPath } from "@/lib/auth-token";
 
 import { motion, AnimatePresence } from "framer-motion";
 import { LoadingScreen } from "@/components/LoadingScreen";
+import { ResearcherApplicationModal } from "@/components/ResearcherApplicationModal";
 
 export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
@@ -36,6 +37,8 @@ export default function RegisterPage() {
   const [step, setStep] = useState<"details" | "otp">("details");
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [oauthError, setOauthError] = useState<string | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [registeredUserData, setRegisteredUserData] = useState<{ userType: string; dashboardPath: string } | null>(null);
   const searchParams = useSearchParams();
 
   // Show OAuth failure message if Appwrite redirected back with ?error=
@@ -82,9 +85,11 @@ export default function RegisterPage() {
         await completeOtpRegistration(fullName, password);
 
         // ── Write role as Appwrite label (authoritative source of truth) ──
-        const normalizedRole = role.toLowerCase() as 'user' | 'researcher';
+        // Always set the initial role to 'user' even if they requested 'researcher'.
+        // Researchers must be approved by an admin before they receive the researcher role.
+        const actualRole = 'user';
         try {
-          await setUserRoleLabel(normalizedRole);
+          await setUserRoleLabel(actualRole);
         } catch (labelError) {
           console.warn('Failed to set Appwrite role label:', labelError);
         }
@@ -94,12 +99,12 @@ export default function RegisterPage() {
           username: fullName,
           email,
           password,
-          user_type: role.toLowerCase() as "user" | "admin" | "researcher",
+          user_type: actualRole,
           appwrite_id: otpUserId || undefined,
         });
 
         const mongoUser = regResult?.user ?? null;
-        const userType = (mongoUser?.user_type || normalizedRole);
+        const userType = (mongoUser?.user_type || actualRole);
         const userId = mongoUser?.user_id || "";
         const sessionId = session.$id;
 
@@ -124,11 +129,18 @@ export default function RegisterPage() {
           timestamp: new Date().toISOString(),
         }));
 
-        setStatusMessage("Registration complete! Redirecting to your dashboard…");
         const dashboardPath = resolvePostLoginPath(userType, null);
-        window.setTimeout(() => {
-          window.location.replace(dashboardPath);
-        }, 800);
+        
+        if (role.toLowerCase() === "researcher") {
+          setStatusMessage("Registration successful. Please complete your researcher application.");
+          setRegisteredUserData({ userType, dashboardPath });
+          setIsModalOpen(true);
+        } else {
+          setStatusMessage("Registration complete! Redirecting to your dashboard…");
+          window.setTimeout(() => {
+            window.location.replace(dashboardPath);
+          }, 800);
+        }
       }
 
     } catch (error) {
@@ -557,6 +569,48 @@ export default function RegisterPage() {
         </motion.div>
       </div>
     </div>
+
+    <ResearcherApplicationModal
+      isOpen={isModalOpen}
+      onClose={() => {
+        setIsModalOpen(false);
+        if (registeredUserData) {
+          window.location.replace(registeredUserData.dashboardPath);
+        }
+      }}
+      name={fullName}
+      email={email}
+      onSubmit={async (data) => {
+        const raw = localStorage.getItem('user_data');
+        const userData = raw ? JSON.parse(raw) : {};
+        const appwriteId = userData.appwrite_id || otpUserId || '';
+
+        const response = await fetch('http://localhost:8000/applications/apply', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: fullName,
+            email: email,
+            academic_role: data.academic_role,
+            comment: data.comment,
+            appwrite_id: appwriteId
+          })
+        });
+
+        const result = await response.json();
+        if (!response.ok) {
+          throw new Error(result.detail || result.message || 'Failed to submit application');
+        }
+
+        setIsModalOpen(false);
+        setStatusMessage('Application submitted successfully! Redirecting...');
+        if (registeredUserData) {
+          setTimeout(() => {
+            window.location.replace(registeredUserData.dashboardPath);
+          }, 1500);
+        }
+      }}
+    />
     </>
   );
 }
