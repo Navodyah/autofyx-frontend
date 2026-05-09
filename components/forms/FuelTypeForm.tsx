@@ -41,7 +41,7 @@ export default function FuelTypeForm({ initialData, isEdit = false }: FuelTypeFo
 
         if (response.status === 200) {
           alert("Updated Successfully!");
-          router.push('/admin_dashboard/catalog/FuelType');
+          router.push('/admin/catalog/FuelType');
         }
       } else {
         // POST request with axios
@@ -49,7 +49,7 @@ export default function FuelTypeForm({ initialData, isEdit = false }: FuelTypeFo
 
         if (response.status === 200 || response.status === 201) {
           alert("Created Successfully!");
-          router.push('/admin_dashboard/catalog/FuelType');
+          router.push('/admin/catalog/FuelType');
         }
       }
     } catch (error: any) {
