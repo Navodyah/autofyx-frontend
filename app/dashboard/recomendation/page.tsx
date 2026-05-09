@@ -103,6 +103,15 @@ function mergeParams(form: FormValues, groq: GroqExtracted | null) {
 export default function RecommendationPage() {
   const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
 
+  // Read the logged-in user's ID from session storage (set at login)
+  const getUserId = (): string => {
+    try {
+      const raw = typeof window !== 'undefined' ? localStorage.getItem('user_data') : null;
+      if (raw) return JSON.parse(raw).user_id || '';
+    } catch { /* ignore */ }
+    return '';
+  };
+
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [values, setValues] = useState<FormValues>(DEFAULT_VALUES);
   const [groqParams, setGroqParams] = useState<GroqExtracted | null>(null);
@@ -214,6 +223,29 @@ export default function RecommendationPage() {
 
       setResults({ ...data, items: enriched });
       if (!values.salary) setValues((p) => ({ ...p, salary: String(merged.salary) }));
+
+      // ── Fire-and-forget: persist history + update global scores ──
+      if (enriched.length > 0) {
+        const userId = getUserId();
+        const top15  = enriched.slice(0, 15);
+        const top3   = enriched.slice(0, 3);
+
+        // Save up to 15 vehicles in recommendation_history for this user
+        if (userId) {
+          fetch(`${API_BASE}/recommendations/save-history`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user_id: userId, vehicles: top15 }),
+          }).catch(() => { /* silent — non-critical */ });
+        }
+
+        // Increment recommendation_count for top-3 vehicles (analytics)
+        fetch(`${API_BASE}/recommendations/track-scores`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ vehicles: top3 }),
+        }).catch(() => { /* silent — non-critical */ });
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Network error");
     } finally {
