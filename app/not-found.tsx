@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
 import { Car, Map, ArrowLeft, TriangleAlert } from "lucide-react";
@@ -6,10 +6,10 @@ import { motion } from "framer-motion";
 
 export default function NotFound() {
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-[#0a0a0c] overflow-hidden relative">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-[#030304] overflow-hidden relative">
       {/* Ambient background glow */}
       <div className="fixed inset-0 z-0 pointer-events-none">
-        <div className="absolute top-[20%] left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-[#2a2a30]/30 blur-[150px] rounded-full" />
+        <div className="absolute top-[20%] left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-[#155dfc]/10 blur-[150px] rounded-full" />
         <div 
           className="absolute inset-0 opacity-[0.03]" 
           style={{
@@ -27,11 +27,11 @@ export default function NotFound() {
           transition={{ duration: 0.6, ease: "easeOut" as const }}
           className="mb-8 relative"
         >
-          <div className="absolute inset-0 bg-red-500/20 blur-2xl rounded-full" />
-          <div className="w-24 h-24 rounded-2xl bg-[#1c1c21] border border-red-500/20 flex flex-col items-center justify-center shadow-[0_0_40px_rgba(239,68,68,0.15)] relative overflow-hidden">
-            <TriangleAlert className="w-10 h-10 text-red-500 mb-1" />
+          <div className="absolute inset-0 bg-[#155dfc]/20 blur-2xl rounded-full" />
+          <div className="w-24 h-24 rounded-2xl bg-[#030304] border border-[#155dfc]/20 flex flex-col items-center justify-center shadow-[0_0_40px_rgba(21,93,252,0.15)] relative overflow-hidden">
+            <TriangleAlert className="w-10 h-10 text-[#155dfc] mb-1" />
             <span className="text-zinc-500 text-xs font-mono font-bold tracking-widest">404</span>
-            <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-red-600/0 via-red-500 to-red-600/0" />
+            <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-[#155dfc]/0 via-[#155dfc] to-[#155dfc]/0" />
           </div>
         </motion.div>
 
