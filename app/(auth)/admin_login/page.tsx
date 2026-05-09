@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
@@ -86,8 +86,8 @@ function AdminLoginContent() {
     };
 
     return (
-        <div className="min-h-screen flex bg-[#050505] overflow-hidden">
-            {/* â”€â”€ Ambient background glow â”€â”€ */}
+        <div className="min-h-screen flex bg-[#030304] overflow-hidden">
+            {/* ── Ambient background glow ── */}
             <div className="fixed inset-0 z-0 pointer-events-none">
                 <motion.div
                     animate={{ rotate: [0, 360], scale: [1, 1.1, 1] }}
@@ -112,28 +112,28 @@ function AdminLoginContent() {
                     className="absolute inset-0 bg-cover bg-center"
                     style={{ backgroundImage: "url('https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=2000&auto=format&fit=crop')" }}
                 />
-                <div className="absolute inset-0 bg-gradient-to-br from-[#050505]/90 via-[#050505]/60 to-[#050505]/80" />
+                <div className="absolute inset-0 bg-gradient-to-br from-[#030304]/90 via-[#030304]/60 to-[#030304]/80" />
                 <motion.div
                     animate={{ top: ["-10%", "110%"] }}
                     transition={{ duration: 6, repeat: Infinity, ease: "linear" as const }}
-                    className="absolute left-0 right-0 h-[1px] bg-red-500/30 shadow-[0_0_15px_rgba(239,68,68,0.6)] z-10"
+                    className="absolute left-0 right-0 h-[1px] bg-blue-500/30 shadow-[0_0_15px_rgba(59,130,246,0.6)] z-10"
                 />
                 <div className="relative z-10 flex flex-col justify-between p-12 w-full">
                     <div className="flex items-center gap-3 group w-fit cursor-default">
-                        <div className="w-10 h-10 rounded-sm bg-red-500/10 border border-red-500/20 backdrop-blur-sm flex items-center justify-center">
-                            <ShieldAlert className="w-5 h-5 text-red-500" />
+                        <div className="w-10 h-10 rounded-sm bg-blue-500/10 border border-blue-500/20 backdrop-blur-sm flex items-center justify-center">
+                            <ShieldAlert className="w-5 h-5 text-blue-500" />
                         </div>
-                        <span className="text-white font-semibold text-xl tracking-wide">AutoFyx <span className="text-red-500 font-bold">Admin</span></span>
+                        <span className="text-white font-semibold text-xl tracking-wide">AutoFyx <span className="text-blue-500 font-bold">Admin</span></span>
                     </div>
                     <div className="space-y-6 max-w-md">
                         <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2, duration: 0.9 }}>
-                            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-red-500/20 bg-red-500/5 text-red-400 text-xs font-medium tracking-widest uppercase mb-5 backdrop-blur-md">
-                                <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-blue-500/20 bg-blue-500/5 text-blue-400 text-xs font-medium tracking-widest uppercase mb-5 backdrop-blur-md">
+                                <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
                                 Restricted Portal
                             </div>
                             <h2 className="text-white text-4xl font-light leading-tight tracking-tight">
                                 System Administration <br />
-                                <span className="font-semibold text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-red-600">
+                                <span className="font-semibold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-blue-600">
                                     Access Control.
                                 </span>
                             </h2>
@@ -147,8 +147,8 @@ function AdminLoginContent() {
                                 { icon: Lock, label: "Secure Connection" },
                                 { icon: Activity, label: "Monitored Session" },
                             ].map(({ icon: Icon, label }) => (
-                                <div key={label} className="flex items-center gap-2 px-4 py-2 bg-red-500/5 border border-red-500/10 backdrop-blur-sm rounded-full text-zinc-300 text-xs font-medium">
-                                    <Icon className="w-3.5 h-3.5 text-red-400" />
+                                <div key={label} className="flex items-center gap-2 px-4 py-2 bg-blue-500/5 border border-blue-500/10 backdrop-blur-sm rounded-full text-zinc-300 text-xs font-medium">
+                                    <Icon className="w-3.5 h-3.5 text-blue-400" />
                                     {label}
                                 </div>
                             ))}
@@ -159,12 +159,12 @@ function AdminLoginContent() {
             </div>
 
             {/* â”€â”€ Right Form Panel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
-            <div className="w-full lg:w-[48%] flex flex-col justify-center px-6 sm:px-12 xl:px-20 py-12 relative z-10 bg-[#050505]">
+            <div className="w-full lg:w-[48%] flex flex-col justify-center px-6 sm:px-12 xl:px-20 py-12 relative z-10 bg-[#030304]">
                 <div className="lg:hidden flex items-center gap-2 mb-10">
-                    <div className="w-9 h-9 rounded-sm bg-red-500/10 border border-red-500/20 flex items-center justify-center">
-                        <ShieldAlert className="w-5 h-5 text-red-500" />
+                    <div className="w-9 h-9 rounded-sm bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
+                        <ShieldAlert className="w-5 h-5 text-blue-500" />
                     </div>
-                    <span className="font-semibold text-xl text-zinc-100 tracking-wide">AutoFyx <span className="text-red-500">Admin</span></span>
+                    <span className="font-semibold text-xl text-zinc-100 tracking-wide">AutoFyx <span className="text-blue-500">Admin</span></span>
                 </div>
 
                 <motion.div initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }} className="w-full max-w-md mx-auto">
@@ -192,7 +192,7 @@ function AdminLoginContent() {
                                 onChange={(e) => setEmail(e.target.value)}
                                 disabled={isLoading}
                                 required
-                                className="w-full bg-[#111111] border border-white/5 rounded-xl px-4 py-3.5 text-zinc-100 font-medium placeholder:text-zinc-700 focus:outline-none focus:border-red-500/30 focus:bg-[#161616] focus:ring-4 focus:ring-red-500/10 transition-all disabled:opacity-50 caret-red-500"
+                                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3.5 text-zinc-100 font-medium placeholder:text-zinc-700 focus:outline-none focus:border-[#155dfc]/50 focus:bg-white/10 focus:ring-4 focus:ring-[#155dfc]/20 transition-all disabled:opacity-50 caret-blue-500"
                             />
                         </div>
                         <div>
@@ -208,7 +208,7 @@ function AdminLoginContent() {
                                     onChange={(e) => setPassword(e.target.value)}
                                     disabled={isLoading}
                                     required
-                                    className="w-full bg-[#111111] border border-white/5 rounded-xl px-4 py-3.5 pr-12 text-zinc-100 font-medium placeholder:text-zinc-700 focus:outline-none focus:border-red-500/30 focus:bg-[#161616] focus:ring-4 focus:ring-red-500/10 transition-all disabled:opacity-50 caret-red-500"
+                                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3.5 pr-12 text-zinc-100 font-medium placeholder:text-zinc-700 focus:outline-none focus:border-[#155dfc]/50 focus:bg-white/10 focus:ring-4 focus:ring-[#155dfc]/20 transition-all disabled:opacity-50 caret-blue-500"
                                 />
                                 <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-600 hover:text-zinc-300 transition-colors" tabIndex={-1}>
                                     {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
@@ -221,7 +221,7 @@ function AdminLoginContent() {
                                 disabled={isLoading}
                                 whileHover={{ scale: isLoading ? 1 : 1.01 }}
                                 whileTap={{ scale: isLoading ? 1 : 0.98 }}
-                                className="w-full bg-red-600 hover:bg-red-500 disabled:bg-zinc-800 disabled:text-zinc-500 text-white rounded-xl py-4 font-semibold text-sm tracking-wide transition-all flex items-center justify-center gap-2 group cursor-pointer disabled:cursor-not-allowed shadow-[0_0_30px_rgba(239,68,68,0.15)] hover:shadow-[0_0_30px_rgba(239,68,68,0.25)]"
+                                className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-zinc-800 disabled:text-zinc-500 text-white rounded-xl py-4 font-semibold text-sm tracking-wide transition-all flex items-center justify-center gap-2 group cursor-pointer disabled:cursor-not-allowed shadow-[0_0_30px_rgba(59,130,246,0.15)] hover:shadow-[0_0_30px_rgba(59,130,246,0.25)]"
                             >
                                 {isLoading ? (
                                     <>
@@ -253,7 +253,7 @@ function AdminLoginContent() {
 
 export default function AdminLoginPage() {
     return (
-        <Suspense fallback={<div className="min-h-screen bg-[#050505]" />}>
+        <Suspense fallback={<div className="min-h-screen bg-[#030304]" />}>
             <AdminLoginContent />
         </Suspense>
     );

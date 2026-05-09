@@ -3,6 +3,8 @@
 import React, { useState, useEffect } from "react";
 import { ChevronDown, SlidersHorizontal, ChevronUp, Cpu, DollarSign, Info, Sparkles, X } from "lucide-react";
 import { ClassPreview } from "./ClassPreview";
+import { ShineBorder } from "@/components/magicui/shine-border";
+import { BorderBeam } from "@/components/magicui/border-beam";
 
 // ── Palettes ───────────────────────────────────────────────────
 const L = {
@@ -162,43 +164,54 @@ export function RecommendForm({
       </div>
 
       {/* ── Prompt Search Bar ── */}
-      <div className="mb-4 flex items-center gap-3 rounded-2xl border p-2 shadow-sm transition-colors duration-500" style={{ background: P.cardBg, borderColor: P.border }}>
-        <Sparkles className="ml-3 h-5 w-5 flex-shrink-0 transition-colors duration-500" style={{ color: P.primary }} />
-        <input
-          id="rec-prompt"
-          type="text"
-          value={prompt}
-          onChange={(e) => setPrompt(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder='e.g. "Family SUV for city, diesel, salary 300k, 60 months loan"'
-          className="flex-1 bg-transparent text-sm font-medium focus:outline-none transition-colors duration-500 placeholder:opacity-50"
-          style={{ color: P.text }}
-        />
-        {prompt && (
-          <button
-            type="button"
-            onClick={() => { setPrompt(""); onClearGroq(); }}
-            className="rounded-full p-1 transition-colors duration-500"
-            style={{ color: P.muted }}
-          >
-            <X className="h-4 w-4" />
-          </button>
-        )}
-        <button
-          id="rec-submit"
-          type="button"
-          onClick={handleSearch}
-          disabled={loading || groqLoading}
-          className="flex-shrink-0 flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-black uppercase tracking-widest shadow-md disabled:opacity-50 transition-all hover:scale-[1.02] active:scale-[0.98]"
-          style={{ background: `linear-gradient(135deg, ${P.primary}, #1d4ed8)`, color: '#ffffff' }}
+      <div className="mb-4 w-full">
+        <ShineBorder
+          borderRadius={16}
+          borderWidth={1.5}
+          duration={8}
+          color={isDarkMode ? ["#3b82f6", "#8b5cf6", "#ec4899"] : ["#155dfc", "#3b82f6", "#93c5fd"]}
+          className="w-full !p-0 !min-w-0 bg-transparent dark:bg-transparent border-0 shadow-sm transition-colors duration-500"
         >
-          {(loading || groqLoading) ? (
-            <span className="h-4 w-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
-          ) : (
-            <Cpu className="h-4 w-4" />
-          )}
-          {groqLoading ? "Parsing…" : loading ? "Searching…" : "AI Search"}
-        </button>
+          <div className="flex items-center gap-3 w-full rounded-2xl border p-2 transition-colors duration-500" style={{ background: P.cardBg, borderColor: P.border }}>
+            <Sparkles className="ml-3 h-5 w-5 flex-shrink-0 transition-colors duration-500" style={{ color: P.primary }} />
+            <input
+              id="rec-prompt"
+              type="text"
+              value={prompt}
+              onChange={(e) => setPrompt(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder='e.g. "Family SUV for city, diesel, salary 300k, 60 months loan"'
+              className="flex-1 bg-transparent text-sm font-medium focus:outline-none transition-colors duration-500 placeholder:opacity-50 z-10"
+              style={{ color: P.text }}
+            />
+            {prompt && (
+              <button
+                type="button"
+                onClick={() => { setPrompt(""); onClearGroq(); }}
+                className="rounded-full p-1 transition-colors duration-500 z-10"
+                style={{ color: P.muted }}
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+            <button
+              id="rec-submit"
+              type="button"
+              onClick={handleSearch}
+              disabled={loading || groqLoading}
+              className="relative overflow-hidden flex-shrink-0 flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-black uppercase tracking-widest shadow-md disabled:opacity-50 transition-all hover:scale-[1.02] active:scale-[0.98] z-10"
+              style={{ background: `linear-gradient(135deg, ${P.primary}, #1d4ed8)`, color: '#ffffff' }}
+            >
+              <BorderBeam size={60} duration={4} delay={0} className="opacity-80" />
+              {(loading || groqLoading) ? (
+                <span className="h-4 w-4 rounded-full border-2 border-white/30 border-t-white animate-spin relative z-20" />
+              ) : (
+                <Cpu className="h-4 w-4 relative z-20" />
+              )}
+              <span className="relative z-20">{groqLoading ? "Parsing…" : loading ? "Searching…" : "AI Search"}</span>
+            </button>
+          </div>
+        </ShineBorder>
       </div>
 
       {/* ── Groq parse error ── */}

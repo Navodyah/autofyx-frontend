@@ -87,6 +87,12 @@ export function AutoFyxAssistant() {
     localStorage.setItem("autofyx_chat_history", JSON.stringify(initMsg));
   };
 
+  // Only show the chatbot on the landing, recommend, about, and contact pages
+  const allowedPaths = ["/", "/recommend", "/about", "/contact"];
+  if (!allowedPaths.includes(pathname)) {
+    return null;
+  }
+
   return (
     <>
       <AnimatePresence>

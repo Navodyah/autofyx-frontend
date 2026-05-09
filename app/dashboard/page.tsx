@@ -7,12 +7,13 @@ import { useState, useEffect } from "react";
 import {
   ArrowUpRight, BatteryCharging, CarFront, Gauge, ShieldCheck,
   Sparkles, TrendingDown, TrendingUp, Trophy, Activity, History,
-  ChevronRight, LineChart, SearchCheck, Scale,
+  ChevronRight, LineChart, SearchCheck, Scale, DollarSign,
   Calculator, User, Heart, ArrowRight, Bell, Sun, Moon,
   FlaskConical, ExternalLink, Loader2
 } from "lucide-react";
 import { applyForResearcher, persistBrowserAuthSession } from "@/lib/appwrite";
 import { createBrowserAuthToken, parseBrowserAuthToken } from "@/lib/auth-token";
+import { ResearcherApplicationModal } from "@/components/ResearcherApplicationModal";
 
 // --- Palettes ---
 
@@ -74,8 +75,12 @@ function DashboardOverview() {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [userRole, setUserRole] = useState<'user' | 'researcher'>('user');
   const [userName, setUserName] = useState('');
+  const [userEmail, setUserEmail] = useState('');
   const [isApplying, setIsApplying] = useState(false);
   const [applyMsg, setApplyMsg] = useState<string | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [historyVehicles, setHistoryVehicles] = useState<any[]>([]);
+  const [fuelPrices, setFuelPrices] = useState<{ fuel_type_name: string; fuel_price: number }[]>([]);
   const P = isDarkMode ? D : L;
 
   // Load user data from localStorage on mount
@@ -85,8 +90,25 @@ function DashboardOverview() {
       if (raw) {
         const parsed = JSON.parse(raw);
         if (parsed.username) setUserName(parsed.username);
+        if (parsed.email) setUserEmail(parsed.email);
         if (parsed.user_type) setUserRole(parsed.user_type as 'user' | 'researcher');
+
+        // Fetch history
+        if (parsed.user_id) {
+          const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+          fetch(`${API_BASE}/recommendations/history/${parsed.user_id}`)
+            .then(r => r.json())
+            .then(data => setHistoryVehicles(data.vehicles || []))
+            .catch(() => { });
+        }
       }
+
+      // Fetch fuel prices (independent of user_id)
+      const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+      fetch(`${API_BASE}/fuel_types/`)
+        .then(r => r.json())
+        .then(data => Array.isArray(data) ? setFuelPrices(data) : [])
+        .catch(() => { });
     } catch {
       // ignore
     }
@@ -199,39 +221,9 @@ function DashboardOverview() {
             {/* Apply for Researcher button â€” only for plain users */}
             {userRole === 'user' && (
               <motion.button
-                onClick={async () => {
-                  setIsApplying(true);
+                onClick={() => {
+                  setIsModalOpen(true);
                   setApplyMsg(null);
-                  try {
-                    const raw = localStorage.getItem('user_data');
-                    const userData = raw ? JSON.parse(raw) : {};
-                    const appwriteId = userData.appwrite_id || '';
-                    const email = userData.email || '';
-                    await applyForResearcher(appwriteId, email);
-
-                    // Re-mint the auth token with researcher role
-                    const existingToken = localStorage.getItem('auth_token');
-                    const existing = parseBrowserAuthToken(existingToken);
-                    const newToken = createBrowserAuthToken({
-                      ...existing,
-                      user_type: 'researcher',
-                    });
-                    persistBrowserAuthSession(newToken);
-
-                    // Update localStorage user_data
-                    localStorage.setItem('user_data', JSON.stringify({
-                      ...userData,
-                      user_type: 'researcher',
-                    }));
-
-                    setUserRole('researcher');
-                    setApplyMsg('ðŸŽ‰ You are now a Researcher! Redirecting...');
-                    setTimeout(() => window.location.replace('/researcher'), 1500);
-                  } catch (err) {
-                    setApplyMsg(err instanceof Error ? err.message : 'Failed to apply. Please try again.');
-                  } finally {
-                    setIsApplying(false);
-                  }
                 }}
                 whileHover={{ scale: isApplying ? 1 : 1.02 }}
                 whileTap={{ scale: isApplying ? 1 : 0.98 }}
@@ -244,14 +236,16 @@ function DashboardOverview() {
               </motion.button>
             )}
 
-            <motion.button
-              whileHover={{ scale: 1.02, backgroundColor: isDarkMode ? "rgba(21,93,252,0.12)" : "#EFF6FF" }}
-              whileTap={{ scale: 0.98 }}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold transition-colors duration-500 hidden sm:flex"
-              style={{ background: isDarkMode ? "transparent" : "#FFFFFF", borderWidth: "1px", borderStyle: "solid", borderColor: P.border, color: P.text }}
-            >
-              <History className="w-4 h-4" /> History
-            </motion.button>
+            <Link href="/dashboard/historypage" className="hidden sm:flex">
+              <motion.button
+                whileHover={{ scale: 1.02, backgroundColor: isDarkMode ? "rgba(21,93,252,0.12)" : "#EFF6FF" }}
+                whileTap={{ scale: 0.98 }}
+                className="flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold transition-colors duration-500"
+                style={{ background: isDarkMode ? "transparent" : "#FFFFFF", borderWidth: "1px", borderStyle: "solid", borderColor: P.border, color: P.text }}
+              >
+                <History className="w-4 h-4" /> History
+              </motion.button>
+            </Link>
             <motion.button
               whileHover={{ scale: 1.02, boxShadow: `0 0 15px ${P.glow}` }}
               whileTap={{ scale: 0.98 }}
@@ -360,99 +354,191 @@ function DashboardOverview() {
         {/* ——— Main Layout Content ——— */}
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
 
-          {/* Left Column */}
-          <div className="xl:col-span-2 space-y-6 flex flex-col">
+          {/* Left Column — xl:col-span-2 */}
+          <div className="xl:col-span-2 space-y-6">
 
-            {/* Hero Interactive Card */}
-            <motion.div variants={itemVariants} className="flex-1">
+            {/* ── Best Recommended Vehicle Hero Card ── */}
+            <motion.div variants={itemVariants}>
               <div
-                className="flex flex-col lg:flex-row h-full overflow-hidden group transition-all duration-300"
+                className="flex flex-col lg:flex-row overflow-hidden group transition-all duration-300"
                 style={premiumCard}
               >
-                {/* Image Section */}
-                <div className="lg:w-[45%] relative flex flex-col justify-between overflow-hidden p-6 min-h-[250px] transition-colors duration-500" style={{ background: isDarkMode ? "rgba(0,0,0,0.3)" : "#F8FBFF", borderRightWidth: "1px", borderRightStyle: "solid", borderRightColor: P.border }}>
-                  <div className={`absolute inset-0 bg-gradient-to-t ${isDarkMode ? 'from-black/80' : 'from-black/5'} to-transparent z-10 pointer-events-none transition-colors duration-500`} />
-
+                {/* Image */}
+                <div
+                  className="lg:w-[42%] relative flex flex-col justify-between overflow-hidden p-6 min-h-[240px] transition-colors duration-500"
+                  style={{ background: isDarkMode ? "rgba(0,0,0,0.35)" : "#F8FBFF", borderRightWidth: "1px", borderRightStyle: "solid", borderRightColor: P.border }}
+                >
+                  <div className={`absolute inset-0 bg-gradient-to-t ${isDarkMode ? 'from-black/80' : 'from-black/10'} to-transparent z-10 pointer-events-none`} />
                   <div className="relative z-20 flex justify-between items-start">
                     <span className="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide border backdrop-blur-md transition-colors duration-500" style={{ background: isDarkMode ? "rgba(255,255,255,0.1)" : "#FFFFFF", color: P.text, borderColor: P.border }}>
-                      Top Algorithm Match
+                      {historyVehicles.length > 0 ? 'Your Best Match' : 'Top Algorithm Match'}
                     </span>
                     <motion.div
                       animate={floatAnimation}
                       className="px-2.5 py-1 rounded-full text-[10px] font-bold flex items-center gap-1 shadow-sm border"
                       style={{ background: P.primary, color: P.primaryText, borderColor: isDarkMode ? "transparent" : "rgba(0,0,0,0.1)" }}
                     >
-                      <Sparkles className="w-3.5 h-3.5" style={{ color: isDarkMode ? "#000" : "#FFF" }} /> 98.4%
+                      <Sparkles className="w-3.5 h-3.5" />
+                      {historyVehicles[0]?.score ? `${Number(historyVehicles[0].score).toFixed(1)}%` : 'AI Pick'}
                     </motion.div>
                   </div>
-
                   <motion.img
-                    whileHover={{ scale: 1.03 }}
+                    whileHover={{ scale: 1.04 }}
                     transition={{ type: "spring" as const, stiffness: 100 }}
-                    src={isDarkMode ? "https://images.unsplash.com/photo-1563720223185-11003d516935?q=80&w=1500&auto=format&fit=crop" : "https://images.unsplash.com/photo-1503376713356-2dbfdfaa52a1?q=80&w=1500&auto=format&fit=crop"}
-                    alt="Recommended Car"
-                    className={`relative z-0 w-[130%] max-w-none -translate-x-6 object-cover ${isDarkMode ? 'mt-4 opacity-90' : 'mt-8 drop-shadow-xl'} transition-opacity duration-1000`}
+                    src={isDarkMode
+                      ? "https://images.unsplash.com/photo-1563720223185-11003d516935?q=80&w=1500&auto=format&fit=crop"
+                      : "https://images.unsplash.com/photo-1503376713356-2dbfdfaa52a1?q=80&w=1500&auto=format&fit=crop"
+                    }
+                    alt="Best Recommended Vehicle"
+                    className={`relative z-0 w-[130%] max-w-none -translate-x-6 object-cover mt-6 transition-opacity duration-1000 ${isDarkMode ? 'opacity-90' : 'drop-shadow-xl'}`}
                     style={isDarkMode ? { mixBlendMode: "lighten" } : {}}
                   />
                 </div>
 
-                {/* Info Content */}
-                <div className="p-8 flex-1 flex flex-col justify-center relative bg-transparent z-20">
-
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className="text-xs font-bold uppercase tracking-widest transition-colors duration-500" style={{ color: P.muted }}>Premium EV</span>
-                    <span className="w-1 h-1 rounded-full transition-colors duration-500" style={{ color: P.muted }} />
-                    <span className="text-xs font-bold uppercase tracking-widest transition-colors duration-500" style={{ color: P.muted }}>2024 Models</span>
-                  </div>
-
-                  <h2 className="text-2xl xl:text-3xl font-extrabold mb-1 tracking-tight transition-colors duration-500" style={{ color: P.text }}>Porsche Macan EV</h2>
-
-                  <div className="flex items-baseline gap-3 mb-6 block">
-                    <span className="text-xl font-bold transition-colors duration-500" style={{ color: P.text }}>$78,800</span>
-                    <span className="text-sm font-medium line-through transition-colors duration-500" style={{ color: P.muted }}>$80,450 MSRP</span>
-                  </div>
-
-                  <p className="text-sm mb-8 leading-relaxed font-medium transition-colors duration-500" style={{ color: P.muted }}>
-                    Calculated optimal match based on your 40-mile structured commute and preference for high-end German engineering. Yields the highest TCO efficiency in its class.
-                  </p>
-
-                  <div className="grid grid-cols-2 gap-3 mb-8">
-                    {[
-                      { icon: BatteryCharging, label: "Range Estimate", value: "315 mi" },
-                      { icon: Gauge, label: "Acceleration", value: "4.9s 0-60" },
-                      { icon: ShieldCheck, label: "Safety Rating", value: "5-Star" },
-                      { icon: Activity, label: "Depreciation", value: "Low Risk" },
-                    ].map((spec, i) => (
-                      <div key={i} className="flex items-center gap-3 p-3 rounded-2xl border transition-colors duration-500" style={{ borderColor: P.border, background: isDarkMode ? "rgba(21,93,252,0.04)" : "#F0F4FF" }}>
-                        <div className="w-8 h-8 flex items-center justify-center shrink-0 transition-colors duration-500" style={premiumIcon}>
-                          <spec.icon className="w-4 h-4 transition-colors duration-500" style={{ color: P.text }} />
-                        </div>
-                        <div>
-                          <p className="text-[10px] font-bold uppercase leading-none mb-1 transition-colors duration-500" style={{ color: P.muted }}>{spec.label}</p>
-                          <p className="text-[13px] font-bold transition-colors duration-500" style={{ color: P.text }}>{spec.value}</p>
-                        </div>
+                {/* Info */}
+                <div className="p-7 flex-1 flex flex-col justify-center">
+                  {historyVehicles.length > 0 ? (
+                    <>
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-xs font-bold uppercase tracking-widest" style={{ color: P.muted }}>{historyVehicles[0].brand || '—'}</span>
+                        {historyVehicles[0].vehicle_class && <>
+                          <span className="w-1 h-1 rounded-full bg-current opacity-40" style={{ color: P.muted }} />
+                          <span className="text-xs font-bold uppercase tracking-widest" style={{ color: P.muted }}>{historyVehicles[0].vehicle_class}</span>
+                        </>}
                       </div>
-                    ))}
-                  </div>
-
-                  <motion.button
-                    whileHover={{ scale: 1.01, boxShadow: `0 0 15px ${P.glow}` }}
-                    whileTap={{ scale: 0.99 }}
-                    className="mt-auto flex items-center justify-center gap-2 w-full py-3.5 rounded-xl font-semibold text-sm shadow-md group/btn transition-all duration-500"
-                    style={{ background: P.primary, color: P.primaryText }}
-                  >
-                    Generate Full Report
-                    <ArrowUpRight className="w-4 h-4 group-hover/btn:translate-x-1 group-hover/btn:-translate-y-1 transition-transform" />
-                  </motion.button>
+                      <h2 className="text-2xl xl:text-3xl font-extrabold mb-1 tracking-tight" style={{ color: P.text }}>
+                        {historyVehicles[0].model || 'Your Top Pick'}
+                      </h2>
+                      {historyVehicles[0].year && (
+                        <p className="text-sm font-bold mb-4" style={{ color: P.muted }}>Model Year: {historyVehicles[0].year}</p>
+                      )}
+                      <div className="grid grid-cols-2 gap-3 mb-6">
+                        {[
+                          { icon: DollarSign, label: 'Min Price', value: historyVehicles[0].min_price ? `LKR ${Number(historyVehicles[0].min_price).toLocaleString()}` : 'N/A' },
+                          { icon: DollarSign, label: 'Max Price', value: historyVehicles[0].max_price ? `LKR ${Number(historyVehicles[0].max_price).toLocaleString()}` : 'N/A' },
+                          { icon: Gauge, label: 'Fuel Type', value: historyVehicles[0].fuel_type || 'N/A' },
+                          { icon: Activity, label: 'Recommended', value: new Date(historyVehicles[0].recommended_at).toLocaleDateString() },
+                        ].map((spec, i) => (
+                          <div key={i} className="flex items-center gap-3 p-3 rounded-2xl border" style={{ borderColor: P.border, background: isDarkMode ? "rgba(21,93,252,0.04)" : "#F0F4FF" }}>
+                            <div className="w-7 h-7 flex items-center justify-center shrink-0" style={premiumIcon}>
+                              <spec.icon className="w-3.5 h-3.5" style={{ color: P.muted }} />
+                            </div>
+                            <div>
+                              <p className="text-[9px] font-bold uppercase leading-none mb-0.5" style={{ color: P.muted }}>{spec.label}</p>
+                              <p className="text-[12px] font-bold" style={{ color: P.text }}>{spec.value}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      <Link href="/dashboard/historypage">
+                        <motion.button
+                          whileHover={{ scale: 1.01, boxShadow: `0 0 15px ${P.glow}` }}
+                          whileTap={{ scale: 0.99 }}
+                          className="flex items-center justify-center gap-2 w-full py-3.5 rounded-xl font-semibold text-sm shadow-md"
+                          style={{ background: P.primary, color: P.primaryText }}
+                        >
+                          View Full History <ArrowUpRight className="w-4 h-4" />
+                        </motion.button>
+                      </Link>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: P.muted }}>AI Recommendation</p>
+                      <h2 className="text-2xl xl:text-3xl font-extrabold mb-3 tracking-tight" style={{ color: P.text }}>No recommendations yet</h2>
+                      <p className="text-sm leading-relaxed font-medium mb-6" style={{ color: P.muted }}>
+                        Use the AI Recommendation module to get personalized vehicle picks based on your salary, usage, and preferences.
+                      </p>
+                      <Link href="/dashboard/recomendation">
+                        <motion.button
+                          whileHover={{ scale: 1.01, boxShadow: `0 0 15px ${P.glow}` }}
+                          whileTap={{ scale: 0.99 }}
+                          className="flex items-center justify-center gap-2 w-full py-3.5 rounded-xl font-semibold text-sm shadow-md"
+                          style={{ background: P.primary, color: P.primaryText }}
+                        >
+                          <Sparkles className="w-4 h-4" /> Get Recommendations
+                        </motion.button>
+                      </Link>
+                    </>
+                  )}
                 </div>
               </div>
             </motion.div>
+
+            {/* ── Fuel Prices Card ── */}
+            <motion.div variants={itemVariants}>
+              <motion.div
+                className="p-6 transition-all duration-300 group"
+                style={premiumCard}
+                whileHover={{ boxShadow: P.hoverShadow }}
+              >
+                <div className="flex items-start justify-between mb-5">
+                  <div>
+                    <h3 className="text-base font-bold" style={{ color: P.text }}>Current Fuel Prices</h3>
+                    <p className="text-[11px] font-medium mt-0.5" style={{ color: P.muted }}>
+                      According to the{' '}
+                      <a
+                        href="https://www.ceypetco.gov.lk"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-bold underline-offset-2 hover:underline"
+                        style={{ color: P.primary }}
+                      >
+                        Ceypetco website
+                      </a>
+                    </p>
+                  </div>
+                  <div
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-widest"
+                    style={{ background: isDarkMode ? "rgba(21,93,252,0.08)" : "#EFF6FF", color: P.primary }}
+                  >
+                    <Activity className="w-3 h-3" /> Live
+                  </div>
+                </div>
+
+                {fuelPrices.length === 0 ? (
+                  <div className="py-6 text-center text-sm" style={{ color: P.muted }}>Fuel price data unavailable.</div>
+                ) : (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                    {fuelPrices.map((f, i) => {
+                      const fuelColors = [
+                        { bg: isDarkMode ? 'rgba(21,93,252,0.08)' : '#EFF6FF', accent: '#155dfc' },
+                        { bg: isDarkMode ? 'rgba(16,185,129,0.08)' : '#ECFDF5', accent: '#10b981' },
+                        { bg: isDarkMode ? 'rgba(245,158,11,0.08)' : '#FFFBEB', accent: '#f59e0b' },
+                        { bg: isDarkMode ? 'rgba(139,92,246,0.08)' : '#F5F3FF', accent: '#8b5cf6' },
+                        { bg: isDarkMode ? 'rgba(239,68,68,0.08)' : '#FEF2F2', accent: '#ef4444' },
+                        { bg: isDarkMode ? 'rgba(20,184,166,0.08)' : '#F0FDFA', accent: '#14b8a6' },
+                      ];
+                      const c = fuelColors[i % fuelColors.length];
+                      return (
+                        <div
+                          key={f.fuel_type_name}
+                          className="flex flex-col gap-2 p-4 rounded-2xl border transition-colors duration-300"
+                          style={{ background: c.bg, borderColor: isDarkMode ? `${c.accent}30` : `${c.accent}20` }}
+                        >
+                          <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: `${c.accent}18` }}>
+                            <Gauge className="w-4 h-4" style={{ color: c.accent }} />
+                          </div>
+                          <p className="text-[10px] font-bold uppercase tracking-wider leading-tight" style={{ color: P.muted }}>
+                            {f.fuel_type_name}
+                          </p>
+                          <p className="text-xl font-extrabold leading-none" style={{ color: P.text }}>
+                            {Number(f.fuel_price).toLocaleString()}
+                            <span className="text-[11px] font-bold ml-1" style={{ color: P.muted }}>LKR/L</span>
+                          </p>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </motion.div>
+            </motion.div>
+
           </div>
 
           {/* Right Column */}
           <div className="space-y-6 flex flex-col">
 
-            {/* Animated Market Chart placeholder */}
+            {/* Activity Chart */}
             <motion.div variants={itemVariants} className="flex-none">
               <motion.div
                 className="p-6 relative overflow-hidden transition-all duration-300 group"
@@ -463,8 +549,8 @@ function DashboardOverview() {
 
                 <div className="flex items-start justify-between mb-6 relative z-10">
                   <div>
-                    <h3 className="text-base font-bold transition-colors duration-500" style={{ color: P.text }}>Market Trend</h3>
-                    <p className="text-[11px] font-semibold mt-1 uppercase tracking-wide transition-colors duration-500" style={{ color: P.muted }}>Depreciation vs Ask</p>
+                    <h3 className="text-base font-bold transition-colors duration-500" style={{ color: P.text }}>Activity</h3>
+                    <p className="text-[11px] font-semibold mt-1 uppercase tracking-wide transition-colors duration-500" style={{ color: P.muted }}>Recommendations Last 7 Days</p>
                   </div>
                   <motion.button
                     whileHover={{ backgroundColor: isDarkMode ? "rgba(21,93,252,0.1)" : "#EFF6FF" }}
@@ -476,28 +562,57 @@ function DashboardOverview() {
                 </div>
 
                 <div className="h-40 flex items-end gap-1.5 relative w-full mt-2 z-10">
-                  {[40, 60, 50, 80, 65, 95, 75].map((h, i) => (
-                    <div key={i} className="flex-1 flex flex-col justify-end h-full gap-2 group/bar cursor-pointer">
-                      <motion.div
-                        initial={{ height: 0 }}
-                        animate={{ height: `${h}%` }}
-                        transition={{ duration: 1, delay: i * 0.1, type: "spring" as const }}
-                        className="w-full rounded-t-sm transition-all duration-500 relative overflow-hidden"
-                        style={{ background: i === 6 ? P.primary : (isDarkMode ? "rgba(21,93,252,0.15)" : "#DBEAFE"), opacity: i === 6 ? 1 : 0.6 }}
-                      >
-                        <div className={`absolute top-0 left-0 right-0 h-full bg-gradient-to-b from-white/20 to-transparent opacity-0 group-hover/bar:opacity-100 transition-opacity`} />
+                  {(() => {
+                    const activity = Array(7).fill(0);
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
 
-                        {i === 6 && (
-                          <span className="absolute -top-6 left-1/2 -translate-x-1/2 text-[9px] font-bold px-1.5 py-0.5 rounded border shadow-sm transition-colors duration-500" style={{ background: P.cardBg, color: P.text, borderColor: P.border }}>Now</span>
-                        )}
-                      </motion.div>
-                    </div>
-                  ))}
+                    historyVehicles.forEach((v: any) => {
+                      if (!v.recommended_at) return;
+                      const recDate = new Date(v.recommended_at);
+                      recDate.setHours(0, 0, 0, 0);
+                      const diffTime = today.getTime() - recDate.getTime();
+                      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+                      if (diffDays >= 0 && diffDays < 7) {
+                        activity[6 - diffDays]++;
+                      }
+                    });
+
+                    const maxActivity = Math.max(...activity, 5); // fallback max scale to 5
+
+                    return activity.map((count, i) => {
+                      const h = (count / maxActivity) * 100;
+                      return (
+                        <div key={i} className="flex-1 flex flex-col justify-end h-full gap-2 group/bar cursor-pointer relative">
+                          <motion.div
+                            initial={{ height: 0 }}
+                            animate={{ height: `${Math.max(h, 4)}%` }} // At least 4% height so empty days still show a small pip
+                            transition={{ duration: 1, delay: i * 0.1, type: "spring" as const }}
+                            className="w-full rounded-t-sm transition-all duration-500 relative overflow-hidden"
+                            style={{ background: i === 6 ? P.primary : (isDarkMode ? "rgba(21,93,252,0.15)" : "#DBEAFE"), opacity: i === 6 ? 1 : 0.6 }}
+                          >
+                            <div className={`absolute top-0 left-0 right-0 h-full bg-gradient-to-b from-white/20 to-transparent opacity-0 group-hover/bar:opacity-100 transition-opacity`} />
+                          </motion.div>
+                          
+                          {/* Hover tooltip */}
+                          <div className="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover/bar:opacity-100 pointer-events-none transition-opacity duration-200 z-20">
+                            <span className="text-[10px] font-bold px-2 py-1 rounded shadow-lg whitespace-nowrap" style={{ background: P.text, color: P.bg }}>
+                              {count} picks
+                            </span>
+                          </div>
+
+                          {i === 6 && (
+                            <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-[9px] font-bold px-1.5 py-0.5 transition-colors duration-500" style={{ color: P.muted }}>Now</span>
+                          )}
+                        </div>
+                      );
+                    });
+                  })()}
                 </div>
               </motion.div>
             </motion.div>
 
-            {/* Alternatives Smart List */}
+            {/* Recent Recommendations */}
             <motion.div variants={itemVariants} className="flex-1">
               <motion.div
                 className="p-6 h-full flex flex-col transition-all duration-300 group"
@@ -505,16 +620,12 @@ function DashboardOverview() {
                 whileHover={{ boxShadow: P.hoverShadow }}
               >
                 <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-base font-bold tracking-tight transition-colors duration-500" style={{ color: P.text }}>Compatible Alternatives</h3>
+                  <h3 className="text-base font-bold tracking-tight transition-colors duration-500" style={{ color: P.text }}>Recent Recommendations</h3>
                 </div>
-                <p className="text-[11px] font-medium mb-5 transition-colors duration-500" style={{ color: P.muted }}>Secondary matches passing algorithm thresholds</p>
+                <p className="text-[11px] font-medium mb-5 transition-colors duration-500" style={{ color: P.muted }}>Your last requested algorithm matches</p>
 
                 <div className="space-y-2 flex-1">
-                  {[
-                    { name: "Audi Q8 e-tron", match: "94%", price: "$74,400", trend: "up", img: "https://images.unsplash.com/photo-1606664515524-ed2f786a0b16?q=80&w=800&auto=format&fit=crop" },
-                    { name: "BMW iX xDrive50", match: "91%", price: "$87,250", trend: "down", img: "https://images.unsplash.com/photo-1698246535496-c1edb0805c6d?q=80&w=800&auto=format&fit=crop" },
-                    { name: "Tesla Model X", match: "88%", price: "$79,990", trend: "down", img: "https://images.unsplash.com/photo-1617788138017-80ad40651399?q=80&w=800&auto=format&fit=crop" },
-                  ].map((car, i) => (
+                  {historyVehicles.length > 0 ? historyVehicles.slice(0, 3).map((car, i) => (
                     <motion.div
                       key={i}
                       whileHover={{ backgroundColor: isDarkMode ? "rgba(21,93,252,0.08)" : "#F0F4FF", borderColor: isDarkMode ? "rgba(21,93,252,0.2)" : "rgba(21,93,252,0.1)" }}
@@ -523,40 +634,85 @@ function DashboardOverview() {
                       <div className="w-[60px] h-[45px] rounded-lg overflow-hidden shrink-0 relative bg-black/50">
                         <motion.img
                           whileHover={{ scale: 1.1 }} transition={{ duration: 0.3 }}
-                          src={car.img} alt={car.name} className={`w-full h-full object-cover ${isDarkMode ? 'opacity-80' : 'opacity-100'}`}
+                          src={isDarkMode ? "https://images.unsplash.com/photo-1563720223185-11003d516935?q=80&w=800&auto=format&fit=crop" : "https://images.unsplash.com/photo-1503376713356-2dbfdfaa52a1?q=80&w=800&auto=format&fit=crop"}
+                          alt={car.model} className={`w-full h-full object-cover ${isDarkMode ? 'opacity-80' : 'opacity-100'}`}
                         />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h4 className="text-[13px] font-bold truncate tracking-tight transition-colors duration-500" style={{ color: P.text }}>{car.name}</h4>
+                        <h4 className="text-[13px] font-bold truncate tracking-tight transition-colors duration-500" style={{ color: P.text }}>{car.model || car.brand}</h4>
                         <div className="flex items-center gap-2 mt-0.5">
-                          <span className="text-[11px] font-bold transition-colors duration-500" style={{ color: P.muted }}>{car.price}</span>
-                          <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded flex items-center gap-0.5 transition-colors duration-500 ${car.trend === "up" ? (isDarkMode ? "bg-emerald-500/10 text-emerald-400" : "bg-emerald-50 text-emerald-700") : (isDarkMode ? "bg-white/5 text-gray-400" : "bg-zinc-100 text-zinc-600")}`}>
-                            {car.trend === "up" ? <TrendingDown className="w-3 h-3" /> : <TrendingUp className="w-3 h-3" />}
-                            {car.trend === "up" ? "Buy" : "Wait"}
+                          <span className="text-[11px] font-bold transition-colors duration-500" style={{ color: P.muted }}>
+                            {car.min_price ? `$${Number(car.min_price).toLocaleString()}` : 'N/A'}
+                          </span>
+                          <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded flex items-center gap-0.5 transition-colors duration-500 ${isDarkMode ? "bg-emerald-500/10 text-emerald-400" : "bg-emerald-50 text-emerald-700"}`}>
+                            <TrendingUp className="w-3 h-3" />
+                            Match
                           </span>
                         </div>
                       </div>
                       <span className="text-[10px] font-bold px-2 py-1 rounded-md shadow-[0_0_10px_rgba(255,255,255,0.1)] transition-colors duration-500" style={{ background: P.primary, color: P.primaryText }}>
-                        {car.match}
+                        {car.score ? `${Number(car.score).toFixed(1)}%` : 'Top'}
                       </span>
                     </motion.div>
-                  ))}
+                  )) : (
+                    <div className="h-full flex flex-col items-center justify-center py-6">
+                      <History className="w-10 h-10 mb-3 opacity-30" style={{ color: P.muted }} />
+                      <p className="text-xs text-center font-medium" style={{ color: P.muted }}>No recent history found.</p>
+                      <Link href="/dashboard/recomendation" className="mt-3 text-xs font-bold hover:underline" style={{ color: P.primary }}>Try Recommendation Module</Link>
+                    </div>
+                  )}
                 </div>
 
-                <motion.button
-                  whileHover={{ backgroundColor: isDarkMode ? "rgba(21,93,252,0.08)" : "#EFF6FF" }}
-                  whileTap={{ scale: 0.98 }}
-                  className="w-full mt-4 py-2.5 rounded-xl text-xs font-bold transition-colors border"
-                  style={{ background: "transparent", color: P.text, borderColor: P.border }}
-                >
-                  Explore All Alternatives
-                </motion.button>
+                {historyVehicles.length > 0 && (
+                  <Link href="/dashboard/historypage">
+                    <motion.button
+                      whileHover={{ backgroundColor: isDarkMode ? "rgba(21,93,252,0.08)" : "#EFF6FF" }}
+                      whileTap={{ scale: 0.98 }}
+                      className="w-full mt-4 py-2.5 rounded-xl text-xs font-bold transition-colors border"
+                      style={{ background: "transparent", color: P.text, borderColor: P.border }}
+                    >
+                      View Full History
+                    </motion.button>
+                  </Link>
+                )}
               </motion.div>
             </motion.div>
 
           </div>
         </div>
       </motion.div>
+
+      <ResearcherApplicationModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        name={userName}
+        email={userEmail}
+        onSubmit={async (data) => {
+          const raw = localStorage.getItem('user_data');
+          const userData = raw ? JSON.parse(raw) : {};
+          const appwriteId = userData.appwrite_id || '';
+
+          const response = await fetch('http://localhost:8000/applications/apply', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              name: userName,
+              email: userEmail,
+              academic_role: data.academic_role,
+              comment: data.comment,
+              appwrite_id: appwriteId
+            })
+          });
+
+          const result = await response.json();
+          if (!response.ok) {
+            throw new Error(result.detail || result.message || 'Failed to submit application');
+          }
+
+          setIsModalOpen(false);
+          setApplyMsg('🎉 Application submitted successfully! Please wait for admin approval.');
+        }}
+      />
     </motion.div>
   );
 }

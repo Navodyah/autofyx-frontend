@@ -110,8 +110,8 @@ function MiniChartCard({ title, sub, children, P, delay, badge }: {
 export default function ResearcherOverview() {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const P = isDarkMode ? D : L;
-  const [state, setState] = useState<{data:AnalyticsResponse|null; loading:boolean; error:string|null; ts:string}>({
-    data:null, loading:true, error:null, ts:'',
+  const [state, setState] = useState<{data:AnalyticsResponse|null; leaderboard: any[]; loading:boolean; error:string|null; ts:string}>({
+    data:null, leaderboard: [], loading:true, error:null, ts:'',
   });
 
   useEffect(() => {
@@ -129,7 +129,17 @@ export default function ResearcherOverview() {
         const res = await fetch(`${API_BASE}/researcher/analytics`);
         const json = await res.json();
         if (!res.ok) throw new Error(json.detail || json.message || 'Failed');
-        if (!cancelled) setState({data:json, loading:false, error:null, ts:new Date().toLocaleString()});
+        
+        let leaderboard = [];
+        try {
+          const lRes = await fetch(`${API_BASE}/recommendations/leaderboard?limit=10`);
+          if (lRes.ok) {
+            const lData = await lRes.json();
+            leaderboard = lData.leaderboard || [];
+          }
+        } catch (e) { /* ignore */ }
+
+        if (!cancelled) setState({data:json, leaderboard, loading:false, error:null, ts:new Date().toLocaleString()});
       } catch (e) {
         if (!cancelled) setState(s => ({...s, loading:false, error:(e as Error).message}));
       }
@@ -316,8 +326,9 @@ export default function ResearcherOverview() {
         </MiniChartCard>
       </div>
 
+
       {/* ── Quick insights footer ────────────────────── */}
-      <motion.div initial={{opacity:0,y:10}} animate={{opacity:1,y:0}} transition={{duration:0.4,delay:0.35}}
+      <motion.div initial={{opacity:0,y:10}} animate={{opacity:1,y:0}} transition={{duration:0.4,delay:0.45}}
         className="rounded-[28px] p-6" style={{background:P.cardBg,border:`1px solid ${P.border}`,boxShadow:P.shadow}}>
         <div className="flex items-center justify-between mb-5">
           <div>

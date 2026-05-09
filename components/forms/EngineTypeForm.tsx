@@ -22,11 +22,11 @@ export default function EngineTypeForm({ initialData, isEdit = false }: EngineFo
     const payload = {
       engine_type_name: name,
       cylinders: parseInt(cylinders),
-      engine_size: parseFloat(size), 
+      engine_size: parseFloat(size),
     };
 
     try {
-      
+
       const url = isEdit
         ? `http://127.0.0.1:8000/engine_types/${initialData.engine_type_id}`
         : 'http://127.0.0.1:8000/engine_types/';
@@ -54,7 +54,7 @@ export default function EngineTypeForm({ initialData, isEdit = false }: EngineFo
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 bg-white p-6 rounded-lg shadow border border-gray-200 max-w-lg">
-      
+
       {/* Engine Name */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">Engine Type Name</label>
@@ -86,7 +86,7 @@ export default function EngineTypeForm({ initialData, isEdit = false }: EngineFo
           <label className="block text-sm font-medium text-gray-700 mb-1">Engine Size (L)</label>
           <input
             type="number"
-            step="0.1" 
+            step="0.1"
             value={size}
             onChange={(e) => setSize(e.target.value)}
             required

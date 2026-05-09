@@ -125,24 +125,25 @@ function SidebarContent({
   currentTime: Date | null;
   isLoggingOut: boolean;
   isDarkMode: boolean;
+  isNavigating: boolean;
   toggleTheme: () => void;
   handleLogout: () => void;
-  onNavClick?: () => void;
+  onNavClick: (href: string) => void;
 }) {
   return (
     <div className="flex flex-col h-full bg-[#030304]">
       {/* Logo */}
-      <div className="h-[72px] flex items-center px-7 border-b border-[#155dfc]/20 flex-shrink-0">
+      <Link href="/" onClick={() => onNavClick('/')} className="h-[72px] flex items-center px-7 border-b border-[#155dfc]/20 flex-shrink-0 hover:bg-[#155dfc]/5 transition-colors group">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-[#155dfc]/20 border border-[#155dfc]/30 flex items-center justify-center">
+          <div className="w-8 h-8 rounded-lg bg-[#155dfc]/20 border border-[#155dfc]/30 flex items-center justify-center group-hover:scale-105 transition-transform">
             <FlaskConical className="w-4 h-4 text-[#155dfc]" />
           </div>
           <div>
-            <span className="text-base font-bold tracking-tight text-white">AutoFyx</span>
+            <span className="text-base font-bold tracking-tight text-white group-hover:text-[#93c5fd] transition-colors">AutoFyx</span>
             <p className="text-[10px] text-white/40 font-medium tracking-widest uppercase">Research Portal</p>
           </div>
         </div>
-      </div>
+      </Link>
 
       {/* Nav */}
       <div className="flex-1 px-4 py-5 overflow-y-auto">
@@ -156,7 +157,7 @@ function SidebarContent({
               <Link
                 key={item.href}
                 href={item.href}
-                onClick={onNavClick}
+                onClick={() => onNavClick(item.href)}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${isActive
                     ? 'bg-[#155dfc] text-white shadow-lg shadow-[#155dfc]/30'
                     : 'text-white/60 hover:bg-[#155dfc]/10 hover:text-white'
@@ -175,6 +176,7 @@ function SidebarContent({
           <p className="text-[10px] font-bold text-white/30 uppercase tracking-widest px-3 mb-3">Quick Access</p>
           <Link
             href="/dashboard"
+            onClick={() => onNavClick('/dashboard')}
             className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold transition-all"
             style={{ background: 'rgba(21,93,252,0.12)', color: '#93c5fd', border: '1px solid rgba(21,93,252,0.25)' }}
           >
@@ -248,6 +250,7 @@ export default function ResearcherLayout({ children }: { children: React.ReactNo
   const [sessionUser, setSessionUser] = useState<SessionUser | null>(null);
   const [currentTime, setCurrentTime] = useState<Date | null>(null);
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isNavigating, setIsNavigating] = useState(false);
 
   /* Clock */
   useEffect(() => {
@@ -270,6 +273,18 @@ export default function ResearcherLayout({ children }: { children: React.ReactNo
     window.addEventListener('themeSync', handler);
     return () => window.removeEventListener('themeSync', handler);
   }, []);
+
+  /* Navigation loader logic */
+  useEffect(() => {
+    setIsNavigating(false);
+  }, [pathname]);
+
+  const handleNavClick = (href: string) => {
+    if (pathname !== href) {
+      setIsNavigating(true);
+      setMobileOpen(false);
+    }
+  };
 
   const toggleTheme = () => {
     const next = !isDarkMode;
@@ -296,11 +311,12 @@ export default function ResearcherLayout({ children }: { children: React.ReactNo
     pathname,
     sessionUser,
     displayName,
-    currentTime,
     isLoggingOut,
     isDarkMode,
+    isNavigating,
     toggleTheme,
     handleLogout,
+    onNavClick: handleNavClick,
   };
 
   return (
@@ -354,19 +370,55 @@ export default function ResearcherLayout({ children }: { children: React.ReactNo
             <button onClick={() => setMobileOpen(true)} className="text-white/70 hover:text-white">
               <Menu className="w-5 h-5" />
             </button>
-            <div className="flex items-center gap-2">
+            <Link href="/" onClick={() => handleNavClick('/')} className="flex items-center gap-2 hover:opacity-80 transition-opacity">
               <div className="w-6 h-6 rounded-md bg-[#155dfc]/20 border border-[#155dfc]/30 flex items-center justify-center">
                 <FlaskConical className="w-3.5 h-3.5 text-[#155dfc]" />
               </div>
               <span className="text-sm font-bold text-white">AutoFyx Research</span>
-            </div>
+            </Link>
             <div className="w-5" />
           </header>
 
           <main
-            className="flex-1 overflow-y-auto transition-colors duration-500"
+            className="flex-1 overflow-y-auto transition-colors duration-500 relative"
             style={{ background: isDarkMode ? '#030304' : '#ffffff' }}
           >
+            {/* ── Content-area route-transition loader ── */}
+            <AnimatePresence>
+              {isNavigating && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0, transition: { delay: 0.1, duration: 0.3 } }}
+                  className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-[#030304] w-full"
+                >
+                  <div className="absolute top-[-30%] left-1/2 -translate-x-1/2 w-[700px] h-[500px] bg-[#155dfc]/10 blur-[150px] rounded-full pointer-events-none" />
+                  <div className="relative z-10 flex flex-col items-center gap-6 px-6 w-full max-w-sm">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="w-11 h-11 rounded-lg bg-[#155dfc]/20 border border-[#155dfc]/30 flex items-center justify-center">
+                        <FlaskConical className="w-5 h-5 text-[#155dfc]" />
+                      </div>
+                      <span className="text-white font-bold text-2xl tracking-wide">AutoFyx</span>
+                    </div>
+                    <div className="flex flex-col items-center gap-5 mt-4">
+                      <div className="relative w-14 h-14">
+                        <div className="absolute inset-0 rounded-full border-2 border-white/10" />
+                        <div className="absolute inset-0 rounded-full border-2 border-t-[#155dfc] border-r-[#155dfc]/40 border-b-transparent border-l-transparent animate-spin" />
+                      </div>
+                      <div className="text-center mt-2">
+                        <p className="text-zinc-100 font-semibold text-[17px] tracking-wide">Research View</p>
+                        <p className="text-zinc-500 text-sm mt-1.5 font-medium">Loading research analytics...</p>
+                      </div>
+                      <div className="flex gap-2 mt-4">
+                        {[0, 1, 2].map((i) => (
+                          <div key={i} className="w-1.5 h-1.5 rounded-full bg-white/30 animate-pulse" style={{ animationDelay: `${i * 0.2}s` }} />
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
             <motion.div
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}

@@ -251,57 +251,20 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   return (
     <div suppressHydrationWarning className="flex h-screen text-slate-900 font-sans overflow-hidden relative transition-colors duration-500" style={{ background: isDarkMode ? '#030304' : '#f0f4ff' }}>
 
-      {/* ── Full-screen route-transition loader ── */}
-      <AnimatePresence>
-        {isNavigating && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0, transition: { delay: 0.1, duration: 0.3 } }}
-            className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[#030304] w-full"
-          >
-            <div className="absolute top-[-30%] left-1/2 -translate-x-1/2 w-[700px] h-[500px] bg-[#155dfc]/10 blur-[150px] rounded-full pointer-events-none" />
-            <div className="relative z-10 flex flex-col items-center gap-6 px-6 w-full max-w-sm">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="w-11 h-11 rounded-lg bg-[#155dfc]/20 border border-[#155dfc]/30 flex items-center justify-center">
-                  <Car className="w-5 h-5 text-[#155dfc]" />
-                </div>
-                <span className="text-white font-bold text-2xl tracking-wide">AutoFyx</span>
-              </div>
-              <div className="flex flex-col items-center gap-5 mt-4">
-                <div className="relative w-14 h-14">
-                  <div className="absolute inset-0 rounded-full border-2 border-white/10" />
-                  <div className="absolute inset-0 rounded-full border-2 border-t-[#155dfc] border-r-[#155dfc]/40 border-b-transparent border-l-transparent animate-spin" />
-                </div>
-                <div className="text-center mt-2">
-                  <p className="text-zinc-100 font-semibold text-[17px] tracking-wide">Loading View</p>
-                  <p className="text-zinc-500 text-sm mt-1.5 font-medium">Preparing your dashboard data...</p>
-                </div>
-                <div className="flex gap-2 mt-4">
-                  {[0, 1, 2].map((i) => (
-                    <div key={i} className="w-1.5 h-1.5 rounded-full bg-white/30 animate-pulse" style={{ animationDelay: `${i * 0.2}s` }} />
-                  ))}
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       <UserPreferenceOnboardingModal />
 
       {/* ── Desktop Sidebar ── */}
       <aside className="hidden lg:flex w-64 xl:w-72 flex-col bg-[#030304] z-20 flex-shrink-0">
 
         {/* Logo */}
-        <div className="h-[72px] flex items-center px-7 border-b border-[#155dfc]/20 flex-shrink-0">
+        <Link href="/" className="h-[72px] flex items-center px-7 border-b border-[#155dfc]/20 flex-shrink-0 hover:bg-[#155dfc]/5 transition-colors group">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-[#155dfc]/20 border border-[#155dfc]/30 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg bg-[#155dfc]/20 border border-[#155dfc]/30 flex items-center justify-center group-hover:scale-105 transition-transform">
               <Car className="w-4 h-4 text-[#155dfc]" />
             </div>
-            <span className="text-lg font-bold tracking-tight text-white">AutoFyx</span>
+            <span className="text-lg font-bold tracking-tight text-white group-hover:text-[#93c5fd] transition-colors">AutoFyx</span>
           </div>
-        </div>
+        </Link>
 
 
 
@@ -363,6 +326,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
           {isResearcher && (
             <Link
               href="/researcher"
+              onClick={() => handleNavClick('/researcher')}
               className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold transition-all"
               style={{ background: 'rgba(21,93,252,0.12)', color: '#93c5fd', border: '1px solid rgba(21,93,252,0.25)' }}
             >
@@ -397,7 +361,44 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
       </aside>
 
       {/* ── Main content area ── */}
-      <div className="flex-1 flex flex-col h-screen overflow-hidden min-w-0">
+      <div className="flex-1 flex flex-col h-screen overflow-hidden min-w-0 relative">
+        
+        {/* ── Content-area route-transition loader ── */}
+        <AnimatePresence>
+          {isNavigating && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0, transition: { delay: 0.1, duration: 0.3 } }}
+              className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-[#030304] w-full"
+            >
+              <div className="absolute top-[-30%] left-1/2 -translate-x-1/2 w-[700px] h-[500px] bg-[#155dfc]/10 blur-[150px] rounded-full pointer-events-none" />
+              <div className="relative z-10 flex flex-col items-center gap-6 px-6 w-full max-w-sm">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-11 h-11 rounded-lg bg-[#155dfc]/20 border border-[#155dfc]/30 flex items-center justify-center">
+                    <Car className="w-5 h-5 text-[#155dfc]" />
+                  </div>
+                  <span className="text-white font-bold text-2xl tracking-wide">AutoFyx</span>
+                </div>
+                <div className="flex flex-col items-center gap-5 mt-4">
+                  <div className="relative w-14 h-14">
+                    <div className="absolute inset-0 rounded-full border-2 border-white/10" />
+                    <div className="absolute inset-0 rounded-full border-2 border-t-[#155dfc] border-r-[#155dfc]/40 border-b-transparent border-l-transparent animate-spin" />
+                  </div>
+                  <div className="text-center mt-2">
+                    <p className="text-zinc-100 font-semibold text-[17px] tracking-wide">Loading View</p>
+                    <p className="text-zinc-500 text-sm mt-1.5 font-medium">Preparing your dashboard data...</p>
+                  </div>
+                  <div className="flex gap-2 mt-4">
+                    {[0, 1, 2].map((i) => (
+                      <div key={i} className="w-1.5 h-1.5 rounded-full bg-white/30 animate-pulse" style={{ animationDelay: `${i * 0.2}s` }} />
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Top floating glass header */}
 
