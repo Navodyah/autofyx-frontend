@@ -31,7 +31,7 @@ export default function VehicleClassForm({ initialData, isEdit = false }: Vehicl
 
         if (response.status === 200) {
           alert("Updated Successfully!");
-          router.push('/admin_dashboard/catalog/vehicles_class');
+          router.push('/admin/catalog/vehicles_class');
         }
       } else {
         // POST request with axios
@@ -39,7 +39,7 @@ export default function VehicleClassForm({ initialData, isEdit = false }: Vehicl
 
         if (response.status === 200 || response.status === 201) {
           alert("Created Successfully!");
-          router.push('/admin_dashboard/catalog/vehicles_class');
+          router.push('/admin/catalog/vehicles_class');
         }
       }
     } catch (error: any) {

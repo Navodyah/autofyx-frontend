@@ -13,7 +13,7 @@ interface VehicleFormProps {
 export default function VehicleForm({ initialData, isEdit = false }: VehicleFormProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
-  
+
   // Form state
   const [formData, setFormData] = useState({
     model_id: initialData?.model_id || '',
@@ -87,7 +87,7 @@ export default function VehicleForm({ initialData, isEdit = false }: VehicleForm
 
         if (response.status === 200) {
           alert("Vehicle Updated Successfully!");
-          router.push('/admin_dashboard/catalog/vehicles');
+          router.push('/admin/catalog/vehicles');
         }
       } else {
         // POST request with axios
@@ -95,7 +95,7 @@ export default function VehicleForm({ initialData, isEdit = false }: VehicleForm
 
         if (response.status === 200 || response.status === 201) {
           alert("Vehicle Registered Successfully!");
-          router.push('/admin_dashboard/catalog/vehicles');
+          router.push('/admin/catalog/vehicles');
         }
       }
     } catch (error: any) {
