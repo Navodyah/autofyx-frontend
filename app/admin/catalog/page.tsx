@@ -1,23 +1,23 @@
 'use client';
 
 import Link from 'next/link';
-import { 
-  Car, Tag, Layers, Fuel, Settings, Droplet, Gauge, ArrowRight, Sparkles 
+import {
+  Car, Tag, Layers, Fuel, Settings, Droplet, Gauge, ArrowRight, Sparkles
 } from 'lucide-react';
 
 const catalogItems = [
   // Main Tables
-  { title: 'Vehicles', count: '1,240', icon: Car, color: 'from-blue-600 to-blue-700', href: '/admin_dashboard/catalog/vehicles', description: 'Manage vehicle inventory' },
-  { title: 'Brands', count: '15', icon: Tag, color: 'from-indigo-600 to-indigo-700', href: '/admin_dashboard/catalog/brands', description: 'Vehicle manufacturers' },
-  { title: 'Models', count: '86', icon: Layers, color: 'from-violet-600 to-violet-700', href: '/admin_dashboard/catalog/models', description: 'Vehicle model variants' },
-  
+  { title: 'Vehicles', count: '1,240', icon: Car, color: 'from-blue-600 to-blue-700', href: '/admin/catalog/vehicles', description: 'Manage vehicle inventory' },
+  { title: 'Brands', count: '15', icon: Tag, color: 'from-indigo-600 to-indigo-700', href: '/admin/catalog/brands', description: 'Vehicle manufacturers' },
+  { title: 'Models', count: '86', icon: Layers, color: 'from-violet-600 to-violet-700', href: '/admin/catalog/models', description: 'Vehicle model variants' },
+
   // Specifications
-  { title: 'Engine Types', count: '12', icon: Settings, color: 'from-slate-600 to-slate-700', href: '/admin_dashboard/catalog/engine-types', description: 'Engine configurations' },
-  { title: 'Fuel Types', count: '5', icon: Fuel, color: 'from-orange-600 to-orange-700', href: '/admin_dashboard/catalog/FuelType', description: 'Available fuel options' },
-  { title: 'Transmissions', count: '4', icon: Gauge, color: 'from-emerald-600 to-emerald-700', href: '/admin_dashboard/catalog/transmission', description: 'Transmission systems' },
-  { title: 'Vehicle Classes', count: '8', icon: Car, color: 'from-cyan-600 to-cyan-700', href: '/admin_dashboard/catalog/vehicles_class', description: 'Vehicle categories' },
-  { title: 'Oil Quality', count: '6', icon: Droplet, color: 'from-yellow-600 to-yellow-700', href: '/admin_dashboard/catalog/oil', description: 'Oil specifications' },
-  { title: 'Maintenance Costs', count: '320', icon: Settings, color: 'from-pink-600 to-pink-700', href: '/admin_dashboard/catalog/maintenance', description: 'Vehicle maintenance records' },
+  { title: 'Engine Types', count: '12', icon: Settings, color: 'from-slate-600 to-slate-700', href: '/admin/catalog/engine-types', description: 'Engine configurations' },
+  { title: 'Fuel Types', count: '5', icon: Fuel, color: 'from-orange-600 to-orange-700', href: '/admin/catalog/FuelType', description: 'Available fuel options' },
+  { title: 'Transmissions', count: '4', icon: Gauge, color: 'from-emerald-600 to-emerald-700', href: '/admin/catalog/transmission', description: 'Transmission systems' },
+  { title: 'Vehicle Classes', count: '8', icon: Car, color: 'from-cyan-600 to-cyan-700', href: '/admin/catalog/vehicles_class', description: 'Vehicle categories' },
+  { title: 'Oil Quality', count: '6', icon: Droplet, color: 'from-yellow-600 to-yellow-700', href: '/admin/catalog/oil', description: 'Oil specifications' },
+  { title: 'Maintenance Costs', count: '320', icon: Settings, color: 'from-pink-600 to-pink-700', href: '/admin/catalog/maintenance', description: 'Vehicle maintenance records' },
 ];
 
 export default function CatalogHubPage() {
@@ -59,18 +59,18 @@ export default function CatalogHubPage() {
       {/* Main Catalog Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {catalogItems.map((item, index) => (
-          <Link 
-            key={item.title} 
+          <Link
+            key={item.title}
             href={item.href}
             className="group relative bg-white/90 backdrop-blur-sm p-6 rounded-3xl border border-slate-200/50 hover:border-transparent hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-500 overflow-hidden"
             style={{ animationDelay: `${index * 50}ms` }}
           >
             {/* Gradient Background on Hover */}
             <div className={`absolute inset-0 bg-gradient-to-br ${item.color} opacity-0 group-hover:opacity-5 transition-opacity duration-500`} />
-            
+
             {/* Glow Effect */}
             <div className={`absolute -top-24 -right-24 w-48 h-48 bg-gradient-to-br ${item.color} rounded-full blur-3xl opacity-0 group-hover:opacity-20 transition-opacity duration-700`} />
-            
+
             {/* Content */}
             <div className="relative z-10">
               {/* Icon */}
@@ -96,7 +96,7 @@ export default function CatalogHubPage() {
                   </span>
                   <span className="text-xs text-slate-400 font-medium">records</span>
                 </div>
-                
+
                 <div className="w-10 h-10 bg-slate-100 group-hover:bg-gradient-to-br group-hover:from-blue-600 group-hover:to-indigo-600 rounded-xl flex items-center justify-center transition-all duration-300 group-hover:scale-110">
                   <ArrowRight className="text-slate-400 group-hover:text-white transition-colors duration-300" size={20} />
                 </div>
