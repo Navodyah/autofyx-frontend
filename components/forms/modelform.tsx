@@ -25,7 +25,7 @@ export default function ModelForm({ initialData, isEdit }: ModelFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [brands, setBrands] = useState<Brand[]>([]);
   const [loadingBrands, setLoadingBrands] = useState(true);
-  
+
   const [formData, setFormData] = useState({
     model_name: initialData?.model_name || '',
     start_year: initialData?.start_year || '',
@@ -73,7 +73,7 @@ export default function ModelForm({ initialData, isEdit }: ModelFormProps) {
 
         if (response.status === 200) {
           alert('Model updated successfully!');
-          router.push('/admin_dashboard/catalog/models');
+          router.push('/admin/catalog/models');
         }
       } else {
         // POST request with axios - Create new model
@@ -89,12 +89,12 @@ export default function ModelForm({ initialData, isEdit }: ModelFormProps) {
 
         if (response.status === 201) {
           alert('Model added successfully!');
-          router.push('/admin_dashboard/catalog/models');
+          router.push('/admin/catalog/models');
         }
       }
     } catch (error: any) {
       console.error('Error saving model:', error);
-      
+
       if (error.response) {
         // Server responded with error
         const errorMessage = error.response.data.detail || 'Error saving model';
@@ -236,7 +236,7 @@ export default function ModelForm({ initialData, isEdit }: ModelFormProps) {
         </button>
         <button
           type="button"
-          onClick={() => router.push('/admin_dashboard/catalog/models')}
+          onClick={() => router.push('/admin/catalog/models')}
           className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 px-6 py-3 rounded-xl flex items-center justify-center gap-2 transition-all duration-300"
         >
           Cancel

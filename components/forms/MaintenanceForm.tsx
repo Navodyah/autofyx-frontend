@@ -78,7 +78,7 @@ export default function MaintenanceForm({ initialData, isEdit = false }: Mainten
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 bg-white p-6 rounded-lg shadow border border-gray-200 max-w-lg">
-      
+
       {/* Vehicle Selection */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">Select Vehicle</label>
