@@ -23,7 +23,7 @@ export default function AddBrandPage() {
 
       if (response.status === 200 || response.status === 201) {
         alert("Brand Added Successfully!");
-        router.push('/admin_dashboard/catalog/brands');
+        router.push('/admin/catalog/brands');
       }
     } catch (error) {
       console.error('Error adding brand:', error);
@@ -37,7 +37,7 @@ export default function AddBrandPage() {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-8">
       <div className="max-w-2xl mx-auto">
         {/* Back Button */}
-        <Link href="/admin_dashboard/catalog/brands">
+        <Link href="/admin/catalog/brands">
           <button className="mb-6 flex items-center gap-2 text-gray-600 hover:text-blue-600 transition-colors">
             <ArrowLeft className="w-5 h-5" />
             Back to Brands
@@ -111,7 +111,7 @@ export default function AddBrandPage() {
                   </>
                 )}
               </button>
-              <Link href="/admin_dashboard/catalog/brands" className="flex-1">
+              <Link href="/admin/catalog/brands" className="flex-1">
                 <button
                   type="button"
                   className="w-full bg-gray-200 hover:bg-gray-300 text-gray-700 px-6 py-3 rounded-xl flex items-center justify-center gap-2 transition-all duration-300"
