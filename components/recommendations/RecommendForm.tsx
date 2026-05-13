@@ -115,9 +115,13 @@ export function RecommendForm({
   const salary = parseFloat(values.salary) || 0;
 
   useEffect(() => {
-    const handler = () => setIsDarkMode(prev => !prev);
-    window.addEventListener('themeToggle', handler);
-    return () => window.removeEventListener('themeToggle', handler);
+    // Read initial theme from localStorage
+    const stored = localStorage.getItem('autofyx_theme') === 'dark';
+    setIsDarkMode(stored);
+    // Listen for theme changes dispatched by the sidebar
+    const handler = (e: any) => setIsDarkMode(e.detail);
+    window.addEventListener('themeSync', handler);
+    return () => window.removeEventListener('themeSync', handler);
   }, []);
 
   const P = isDarkMode ? D : L;
