@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -11,6 +11,8 @@ import { getRegistrationPreferences, saveRegistrationPreferences, UserPreference
 import { parseBrowserAuthToken } from '@/lib/auth-token';
 import { SecurityTab } from '@/components/settings/SecurityTab';
 import { ToastContainer, useToast } from '@/components/ui/Toast';
+
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
 
 type AuthIdentity = {
   user_id?: string;
@@ -58,6 +60,15 @@ export default function SettingsPage() {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const P = isDarkMode ? D : L;
   const toast = useToast();
+
+  // Theme Sync
+  useEffect(() => {
+    const stored = localStorage.getItem('autofyx_theme') === 'dark';
+    if (stored) setIsDarkMode(true);
+    const handler = (e: any) => setIsDarkMode(e.detail);
+    window.addEventListener('themeSync', handler);
+    return () => window.removeEventListener('themeSync', handler);
+  }, []);
 
   // Form State for Vehicle Preferences
   const [preferences, setPreferences] = useState<UserPreferencesInput>({
@@ -301,26 +312,7 @@ export default function SettingsPage() {
         </div>
 
         <div className="flex items-center gap-3 pr-2">
-          {/* Theme Toggle Button */}
-          <motion.button
-            onClick={() => setIsDarkMode(!isDarkMode)}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="flex items-center justify-center w-10 h-10 rounded-full transition-colors duration-500 shadow-sm"
-            style={{ background: isDarkMode ? "rgba(255,255,255,0.05)" : "#FFFFFF", border: `1px solid ${P.border}`, color: P.text }}
-          >
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={isDarkMode ? 'moon' : 'sun'}
-                initial={{ rotate: -90, opacity: 0 }}
-                animate={{ rotate: 0, opacity: 1 }}
-                exit={{ rotate: 90, opacity: 0 }}
-                transition={{ duration: 0.2 }}
-              >
-                {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-              </motion.div>
-            </AnimatePresence>
-          </motion.button>
+          {/* Theme Toggle removed as per request - now matches global theme */}
         </div>
       </div>
 
@@ -462,7 +454,7 @@ export default function SettingsPage() {
                         </select>
                       </div>
 
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                           <label className={labelClasses} style={{ color: P.muted }}>Daily distance (km)</label>
                           <input 
@@ -489,7 +481,7 @@ export default function SettingsPage() {
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                           <label className={labelClasses} style={{ color: P.muted }}>Fuel preference</label>
                           <select 
@@ -697,7 +689,7 @@ export default function SettingsPage() {
 
           {/* â”€â”€â”€â”€â”€â”€ ACTIVITY LOG TAB â”€â”€â”€â”€â”€â”€ */}
           {activeTab === 'activity' && (
-            <ActivityLogTab P={P} isDarkMode={isDarkMode} />
+            <ActivityLogTab P={P} isDarkMode={isDarkMode} userId={identity.user_id as string} />
           )}
 
         </AnimatePresence>
@@ -710,61 +702,128 @@ export default function SettingsPage() {
   );
 }
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+/* â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• 
    ACTIVITY LOG TAB
-â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
-function ActivityLogTab({ P, isDarkMode }: { P: Record<string, string>; isDarkMode: boolean }) {
-  const [entries, setEntries] = useState<Array<{ time: string; type: string; detail: string }>>([]);
+â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â•  */
+function ActivityLogTab({ P, isDarkMode, userId }: { P: Record<string, string>; isDarkMode: boolean; userId: string }) {
+  const [entries, setEntries] = useState<Array<{ time: string; type: string; detail: string; isActive?: boolean }>>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const items: Array<{ time: string; type: string; detail: string }> = [];
-    const ud = localStorage.getItem('user_data');
-    const session = localStorage.getItem('auth_session');
-
-    if (ud) {
-      try {
-        const u = JSON.parse(ud);
-        if (u.last_login) {
-          items.push({ time: u.last_login, type: 'login', detail: `Signed in as ${u.username || u.email}` });
-        }
-        if (u.last_password_change) {
-          items.push({ time: u.last_password_change, type: 'password', detail: 'Password changed successfully' });
-        }
-        if (u.created_at) {
-          items.push({ time: u.created_at, type: 'account', detail: 'Account created' });
-        }
-      } catch {}
+    if (!userId) {
+      setLoading(false);
+      return;
     }
-    if (session) {
-      try {
-        const s = JSON.parse(session);
-        if (s.timestamp && !items.find(i => i.type === 'login')) {
-          items.push({ time: s.timestamp, type: 'login', detail: 'Signed in to AutoFyx' });
-        }
-      } catch {}
-    }
-    // Sort newest first
-    items.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
-    setEntries(items);
-  }, []);
 
-  const typeConfig = {
-    login:    { label: 'Sign In',          color: '#60a5fa', bg: 'rgba(96,165,250,0.1)',   border: 'rgba(96,165,250,0.2)',   dot: '#3b82f6' },
-    password: { label: 'Password Change',  color: '#a78bfa', bg: 'rgba(167,139,250,0.1)', border: 'rgba(167,139,250,0.2)', dot: '#8b5cf6' },
-    account:  { label: 'Account Created',  color: '#34d399', bg: 'rgba(52,211,153,0.1)',  border: 'rgba(52,211,153,0.2)',  dot: '#10b981' },
-  } as const;
+    const fetchLogs = async () => {
+      try {
+        setLoading(true);
+        const [activityRes, historyRes] = await Promise.all([
+          fetch(`${API_BASE}/users/activity/${userId}`),
+          fetch(`${API_BASE}/recommendations/history/${userId}`)
+        ]);
+
+        const activityData = await activityRes.json();
+        const historyData = await historyRes.json();
+
+        const items: Array<{ time: string; type: string; detail: string; isActive?: boolean }> = [];
+
+        // --- CURRENT SESSION: shown at the very top with a live indicator ---
+        const ud = localStorage.getItem('user_data');
+        const sessionRaw = localStorage.getItem('auth_session');
+        let currentSessionTime: string | null = null;
+        if (sessionRaw) {
+          try { const s = JSON.parse(sessionRaw); currentSessionTime = s.timestamp || s.created_at || null; } catch { /* ignore */ }
+        }
+        if (!currentSessionTime && ud) {
+          try { currentSessionTime = JSON.parse(ud).last_login || null; } catch { /* ignore */ }
+        }
+        if (currentSessionTime) {
+          items.push({ time: currentSessionTime, type: 'active_login', detail: 'Current session — signed in to AutoFyx', isActive: true });
+        }
+
+        // --- All past logins from backend DB ---
+        if (activityData.logins) {
+          activityData.logins.forEach((l: any) => {
+            items.push({ time: l.timestamp, type: 'login', detail: 'Signed in to AutoFyx' });
+          });
+        }
+
+        // --- Searches ---
+        if (activityData.searches) {
+          activityData.searches.forEach((s: any) => {
+            items.push({ time: s.timestamp, type: 'search', detail: `Searched for ${s.query || 'vehicles'}` });
+          });
+        }
+
+        // --- Comparisons ---
+        if (activityData.comparisons) {
+          activityData.comparisons.forEach((c: any) => {
+            items.push({ time: c.created_at, type: 'comparison', detail: `Compared ${c.vehicle_ids?.length || 0} vehicles` });
+          });
+        }
+
+        // --- Recommendation history ---
+        if (historyData.vehicles) {
+          historyData.vehicles.forEach((v: any) => {
+            items.push({ time: v.recommended_at, type: 'recommendation', detail: `AI recommended: ${v.model || 'a vehicle'}` });
+          });
+        }
+
+        // --- Account creation ---
+        if (ud) {
+          try {
+            const u = JSON.parse(ud);
+            if (u.created_at) items.push({ time: u.created_at, type: 'account', detail: 'Account created' });
+          } catch { /* ignore */ }
+        }
+
+        // Sort newest first
+        items.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
+
+        // Deduplicate — always keep the active session entry
+        const seen = new Set<string>();
+        const uniqueItems = items.filter((item) => {
+          if (item.isActive) return true;
+          const key = `${item.type}-${item.time}`;
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
+
+        setEntries(uniqueItems.slice(0, 50));
+      } catch (e) {
+        console.error('Failed to fetch activity logs:', e);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchLogs();
+  }, [userId]);
+
+  const typeConfig: Record<string, { label: string; color: string; bg: string; dot: string; icon: any; border: string }> = {
+    active_login:   { label: 'Active Session',  color: '#22c55e', bg: 'rgba(34,197,94,0.12)',   dot: '#16a34a', icon: User,     border: 'rgba(34,197,94,0.25)' },
+    login:          { label: 'Sign In',          color: '#60a5fa', bg: 'rgba(96,165,250,0.1)',   dot: '#3b82f6', icon: User,     border: 'rgba(96,165,250,0.2)' },
+    search:         { label: 'Vehicle Search',   color: '#fbbf24', bg: 'rgba(251,191,36,0.1)',   dot: '#f59e0b', icon: Car,      border: 'rgba(251,191,36,0.2)' },
+    comparison:     { label: 'Comparison',       color: '#a78bfa', bg: 'rgba(167,139,250,0.1)',  dot: '#8b5cf6', icon: Activity, border: 'rgba(167,139,250,0.2)' },
+    recommendation: { label: 'Recommendation',   color: '#34d399', bg: 'rgba(52,211,153,0.1)',   dot: '#10b981', icon: Zap,      border: 'rgba(52,211,153,0.2)' },
+    account:        { label: 'Account Created',  color: '#94a3b8', bg: 'rgba(148,163,184,0.1)',  dot: '#64748b', icon: Shield,   border: 'rgba(148,163,184,0.2)' },
+  };
 
   const fmt = (iso: string) => {
     const d = new Date(iso);
     if (isNaN(d.getTime())) return 'Unknown';
     const diff = Math.floor((Date.now() - d.getTime()) / 1000);
-    const rel = diff < 60 ? 'Just now'
-      : diff < 3600   ? `${Math.floor(diff/60)}m ago`
-      : diff < 86400  ? `${Math.floor(diff/3600)}h ago`
-      : diff < 604800 ? `${Math.floor(diff/86400)}d ago`
-      : d.toLocaleDateString(undefined, { day:'numeric', month:'short', year:'numeric' });
-    const abs = d.toLocaleString(undefined, { day:'numeric', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' });
-    return `${rel} Â· ${abs}`;
+    const rel =
+      diff < 60       ? 'Just now'
+      : diff < 3600   ? `${Math.floor(diff / 60)}m ago`
+      : diff < 86400  ? `${Math.floor(diff / 3600)}h ago`
+      : diff < 604800 ? `${Math.floor(diff / 86400)}d ago`
+      : d.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+    const abs = d.toLocaleString(undefined, { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+    // Use unicode \u00b7 (middle dot) to avoid UTF-8 encoding corruption
+    return `${rel} \u00b7 ${abs}`;
   };
 
   return (
@@ -777,54 +836,110 @@ function ActivityLogTab({ P, isDarkMode }: { P: Record<string, string>; isDarkMo
       className="rounded-[32px] p-8 xl:p-10 transition-colors duration-500"
       style={{ background: P.cardBg, border: `1px solid ${P.border}`, boxShadow: P.shadow }}
     >
-      <div className="mb-8">
-        <h2 className="text-xl font-extrabold tracking-tight" style={{ color: P.text }}>Activity Log</h2>
-        <p className="text-sm font-medium mt-1.5" style={{ color: P.muted }}>
-          A record of recent account activity and security events.
-        </p>
+      {/* Header */}
+      <div className="flex items-start justify-between mb-8">
+        <div>
+          <h2 className="text-xl font-extrabold tracking-tight" style={{ color: P.text }}>Activity Log</h2>
+          <p className="text-sm font-medium mt-1.5" style={{ color: P.muted }}>
+            Full record of all logins, searches, comparisons and recommendations.
+          </p>
+        </div>
+        <span
+          className="text-[11px] font-bold px-3 py-1.5 rounded-full shrink-0 ml-4"
+          style={{ background: isDarkMode ? 'rgba(255,255,255,0.05)' : '#EFF6FF', color: P.muted }}
+        >
+          {entries.length} event{entries.length !== 1 ? 's' : ''}
+        </span>
       </div>
 
-      {entries.length === 0 ? (
+      {loading ? (
+        <div className="flex justify-center py-20">
+          <Loader2 className="w-8 h-8 animate-spin" style={{ color: P.primary }} />
+        </div>
+      ) : entries.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 gap-4">
           <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ background: P.iconBg }}>
             <Activity className="w-7 h-7" style={{ color: P.muted }} />
           </div>
           <p className="text-sm font-medium" style={{ color: P.muted }}>No activity recorded yet.</p>
+          <p className="text-xs" style={{ color: P.muted }}>Activity is recorded after your first login and search.</p>
         </div>
       ) : (
         <div className="relative">
-          {/* Timeline line */}
-          <div className="absolute left-[22px] top-4 bottom-4 w-[2px] rounded-full" style={{ background: isDarkMode ? 'rgba(255,255,255,0.05)' : '#e5e7eb' }} />
+          {/* Vertical timeline spine */}
+          <div
+            className="absolute left-[22px] top-5 bottom-5 w-[2px] rounded-full"
+            style={{ background: isDarkMode ? 'rgba(255,255,255,0.05)' : '#e5e7eb' }}
+          />
 
-          <div className="space-y-4">
+          <div className="space-y-5">
             {entries.map((entry, i) => {
-              const cfg = typeConfig[entry.type as keyof typeof typeConfig] || typeConfig.login;
+              const cfg = typeConfig[entry.type] || typeConfig.account;
               return (
                 <motion.div
-                  key={i}
-                  initial={{ opacity: 0, x: -12 }}
+                  key={`${entry.type}-${entry.time}-${i}`}
+                  initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: i * 0.08, duration: 0.35 }}
-                  className="flex items-start gap-4"
+                  transition={{ delay: Math.min(i * 0.04, 0.6), duration: 0.3 }}
+                  className="relative flex gap-5 items-start group"
                 >
-                  {/* Timeline dot */}
-                  <div className="relative z-10 mt-3 shrink-0">
-                    <div className="w-11 h-11 rounded-full flex items-center justify-center border" style={{ background: cfg.bg, borderColor: cfg.border }}>
-                      <div className="w-2.5 h-2.5 rounded-full" style={{ background: cfg.dot }} />
-                    </div>
+                  {/* Icon badge */}
+                  <div
+                    className="relative z-10 shrink-0 w-[46px] h-[46px] rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110"
+                    style={{
+                      background: cfg.bg,
+                      border: `1.5px solid ${cfg.border}`,
+                      boxShadow: entry.isActive ? `0 0 0 3px ${cfg.dot}33` : 'none',
+                    }}
+                  >
+                    <cfg.icon className="w-5 h-5" style={{ color: cfg.color }} />
+                    {/* Pulsing green dot for current active session */}
+                    {entry.isActive && (
+                      <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                        <span
+                          className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75"
+                          style={{ background: cfg.dot }}
+                        />
+                        <span
+                          className="relative inline-flex rounded-full h-3 w-3"
+                          style={{ background: cfg.dot }}
+                        />
+                      </span>
+                    )}
                   </div>
 
-                  {/* Card */}
-                  <div className="flex-1 rounded-2xl px-5 py-4 border transition-all" style={{ background: isDarkMode ? 'rgba(255,255,255,0.02)' : '#FAFAFA', borderColor: P.border }}>
-                    <div className="flex flex-wrap items-center justify-between gap-2">
+                  {/* Content card */}
+                  <div
+                    className="flex-1 rounded-2xl px-5 py-4 border transition-all"
+                    style={{
+                      background: entry.isActive
+                        ? (isDarkMode ? 'rgba(34,197,94,0.06)' : 'rgba(34,197,94,0.04)')
+                        : (isDarkMode ? 'rgba(255,255,255,0.02)' : '#FAFAFA'),
+                      borderColor: entry.isActive ? cfg.border : P.border,
+                    }}
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-2 mb-1.5">
                       <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full" style={{ background: cfg.bg, color: cfg.color, border: `1px solid ${cfg.border}` }}>
+                        <span
+                          className="text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full"
+                          style={{ background: cfg.bg, color: cfg.color, border: `1px solid ${cfg.border}` }}
+                        >
                           {cfg.label}
                         </span>
+                        {entry.isActive && (
+                          <span
+                            className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                            style={{ background: 'rgba(34,197,94,0.15)', color: '#16a34a' }}
+                          >
+                            NOW
+                          </span>
+                        )}
                       </div>
-                      <span className="text-[11px] font-medium" style={{ color: P.muted }}>{fmt(entry.time)}</span>
+                      <span className="text-[11px] font-medium tabular-nums" style={{ color: P.muted }}>
+                        {fmt(entry.time)}
+                      </span>
                     </div>
-                    <p className="text-[13px] font-semibold mt-2" style={{ color: P.text }}>{entry.detail}</p>
+                    <p className="text-[13px] font-semibold" style={{ color: P.text }}>{entry.detail}</p>
                   </div>
                 </motion.div>
               );
@@ -835,3 +950,5 @@ function ActivityLogTab({ P, isDarkMode }: { P: Record<string, string>; isDarkMo
     </motion.div>
   );
 }
+
+

@@ -166,7 +166,7 @@ function DashboardOverview() {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
-      className="min-h-full pb-12 pt-6 px-4 xl:px-6 relative overflow-hidden transition-colors duration-500"
+      className="min-h-full pb-12 pt-4 sm:pt-6 px-3 sm:px-4 xl:px-6 relative overflow-hidden transition-colors duration-500"
       style={{
         background: P.bg,
         borderRadius: "32px",
@@ -198,7 +198,7 @@ function DashboardOverview() {
               </span>
             </motion.div>
 
-            <h1 className="text-3xl xl:text-4xl font-extrabold tracking-tight transition-colors duration-500" style={{ color: P.text }}>
+            <h1 className="text-2xl sm:text-3xl xl:text-4xl font-extrabold tracking-tight transition-colors duration-500" style={{ color: P.text }}>
               Welcome back, <span style={{ color: isDarkMode ? "#93c5fd" : "#155dfc" }}>{firstName}</span>
             </h1>
             <p className="text-sm font-medium transition-colors duration-500" style={{ color: P.muted }}>Your curated market insights and vehicle intelligence hub.</p>
@@ -320,11 +320,11 @@ function DashboardOverview() {
         </motion.div>
 
         {/* ——— Stat Cards ——— */}
-        <div className="grid grid-cols-2 xl:grid-cols-4 gap-5">
+        <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-5">
           {stats.map((stat, i) => (
             <motion.div key={i} variants={itemVariants}>
               <motion.div
-                className="relative p-6 group transition-all duration-300 overflow-hidden"
+                className="relative p-4 sm:p-6 group transition-all duration-300 overflow-hidden"
                 style={premiumCard}
                 whileHover={{ boxShadow: P.hoverShadow, y: -4 }}
               >
@@ -342,7 +342,7 @@ function DashboardOverview() {
                     {stat.sub}
                   </span>
                 </div>
-                <h3 className="text-3xl font-extrabold tracking-tight transition-colors duration-500 relative z-10" style={{ color: P.text }}>
+                <h3 className="text-2xl sm:text-3xl font-extrabold tracking-tight transition-colors duration-500 relative z-10" style={{ color: P.text }}>
                   {stat.value}
                 </h3>
                 <p className="text-xs font-semibold mt-1 uppercase tracking-wider transition-colors duration-500 relative z-10" style={{ color: P.muted }}>{stat.label}</p>
@@ -365,7 +365,7 @@ function DashboardOverview() {
               >
                 {/* Image */}
                 <div
-                  className="lg:w-[42%] relative flex flex-col justify-between overflow-hidden p-6 min-h-[240px] transition-colors duration-500"
+                  className="lg:w-[42%] relative flex flex-col justify-between overflow-hidden p-4 sm:p-6 min-h-[160px] sm:min-h-[240px] transition-colors duration-500"
                   style={{ background: isDarkMode ? "rgba(0,0,0,0.35)" : "#F8FBFF", borderRightWidth: "1px", borderRightStyle: "solid", borderRightColor: P.border }}
                 >
                   <div className={`absolute inset-0 bg-gradient-to-t ${isDarkMode ? 'from-black/80' : 'from-black/10'} to-transparent z-10 pointer-events-none`} />
