@@ -201,12 +201,12 @@ export default function LoginPage() {
                 <div className="absolute inset-0 pointer-events-none overflow-hidden">
                     <div className="absolute bottom-[-20%] right-[-10%] w-[30rem] h-[30rem] bg-white/[0.02] rounded-full blur-[100px]" />
                 </div>
-                <div className="lg:hidden flex items-center gap-2 mb-10">
-                    <div className="w-9 h-9 rounded-sm bg-white/5 border border-white/10 flex items-center justify-center">
+                <Link href="/" className="lg:hidden flex items-center gap-2 mb-10 w-fit group">
+                    <div className="w-9 h-9 rounded-sm bg-white/5 border border-white/10 flex items-center justify-center group-hover:bg-white/10 transition-colors">
                         <Car className="w-5 h-5 text-white" />
                     </div>
-                    <span className="font-semibold text-xl text-zinc-100 tracking-wide">AutoFyx</span>
-                </div>
+                    <span className="font-semibold text-xl text-zinc-100 tracking-wide group-hover:text-white transition-colors">AutoFyx</span>
+                </Link>
 
                 <motion.div initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }} className="w-full max-w-md mx-auto">
                     <div className="mb-10">
