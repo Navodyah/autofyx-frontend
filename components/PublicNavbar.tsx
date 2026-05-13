@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
-import { Car, LogOut, LayoutDashboard, ChevronDown, User as UserIcon } from "lucide-react";
+import { Car, LogOut, LayoutDashboard, ChevronDown, User as UserIcon, Menu, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
@@ -47,6 +47,7 @@ export function PublicNavbar() {
   const [scrolled, setScrolled] = useState(false);
   const [user, setUser] = useState<LocalUser | null>(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -292,8 +293,69 @@ export function PublicNavbar() {
               </motion.div>
             </>
           )}
+
+          {/* ── Mobile Menu Toggle ── */}
+          <button
+            onClick={() => setMobileMenuOpen((prev) => !prev)}
+            className="lg:hidden ml-2 p-2 rounded-lg text-zinc-400 hover:text-white hover:bg-white/5 transition-colors focus:outline-none"
+            aria-label="Toggle mobile menu"
+          >
+            {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+          </button>
         </div>
       </div>
+
+      {/* ── Mobile Navigation Drawer ── */}
+      <AnimatePresence>
+        {mobileMenuOpen && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.3, ease: "easeInOut" }}
+            className="lg:hidden overflow-hidden bg-[#0a0a0c]/95 backdrop-blur-xl border-t border-white/5"
+          >
+            <div className="px-6 py-4 flex flex-col gap-4">
+              {navLinks.map((link) => {
+                const isActive =
+                  pathname === link.href ||
+                  (link.href !== "/" && pathname.startsWith(link.href));
+                return (
+                  <Link
+                    key={link.name}
+                    href={link.href}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className={`block py-2 text-base font-medium ${
+                      isActive ? "text-white" : "text-zinc-400 hover:text-white"
+                    } transition-colors`}
+                  >
+                    {link.name}
+                  </Link>
+                );
+              })}
+              
+              {!user && (
+                <div className="pt-4 border-t border-white/5 flex flex-col gap-3 sm:hidden">
+                  <Link
+                    href="/login"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="w-full text-center py-2.5 text-zinc-300 font-medium hover:text-white transition-colors"
+                  >
+                    Sign In
+                  </Link>
+                  <Link
+                    href="/register"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="w-full text-center py-2.5 bg-blue-600 text-white rounded-sm font-medium hover:bg-blue-700 transition-colors tracking-wide"
+                  >
+                    Start Match
+                  </Link>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* ── Scroll Progress Bar + Car ── */}
       <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-transparent">
