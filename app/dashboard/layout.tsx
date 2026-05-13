@@ -104,14 +104,15 @@ function readSessionUser(): SessionUser | null {
 
 /* ─── Nav items ──────────────────────────────────────────────── */
 const navItems = [
-  { label: 'Overview', href: '/dashboard', icon: LayoutDashboard },
-  { label: 'Assistant AI', href: '/dashboard/assistant', icon: Sparkles },
-  { label: 'Recommendation', href: '/dashboard/recomendation', icon: LineChart },
-  { label: 'Vehicle Search', href: '/dashboard/search', icon: SearchCheck },
-  { label: 'Compare', href: '/dashboard/compare', icon: Scale },
-  { label: 'Cost Calculation', href: '/dashboard/cost-calculation', icon: Calculator },
-  { label: 'My Garage', href: '/dashboard/garage', icon: Heart },
-  { label: 'Settings', href: '/dashboard/settings', icon: Settings },
+  { label: 'Overview',          href: '/dashboard',                  icon: LayoutDashboard },
+  { label: 'Assistant AI',      href: '/dashboard/assistant',        icon: Sparkles },
+  { label: 'Recommendation',    href: '/dashboard/recomendation',    icon: LineChart },
+  { label: 'Vehicle Search',    href: '/dashboard/search',           icon: SearchCheck },
+  { label: 'Compare',           href: '/dashboard/compare',          icon: Scale },
+  { label: 'Cost Calculation',  href: '/dashboard/cost-calculation', icon: Calculator },
+  { label: 'My Garage',         href: '/dashboard/garage',           icon: Heart },
+  { label: 'History',           href: '/dashboard/historypage',      icon: CalendarDays },
+  { label: 'Settings',          href: '/dashboard/settings',         icon: Settings },
 ];
 
 /* ─── Avatar component ───────────────────────────────────────── */
@@ -132,6 +133,164 @@ function UserAvatar({ name, size = 'md' }: { name: string; size?: 'sm' | 'md' })
     >
       {getInitials(name)}
     </div>
+  );
+}
+
+/* ─── Mobile Header (shown below lg) ─────────────────────────── */
+interface MobileHeaderProps {
+  displayName: string;
+  sessionUser: SessionUser | null;
+  pathname: string;
+  isDarkMode: boolean;
+  isLoggingOut: boolean;
+  isResearcher: boolean;
+  currentTime: Date | null;
+  skeletonCls: string;
+  onNavClick: (href: string) => void;
+  onLogout: () => void;
+  onToggleTheme: () => void;
+}
+
+function MobileHeader({
+  displayName, sessionUser, pathname, isDarkMode, isLoggingOut,
+  isResearcher, currentTime, skeletonCls, onNavClick, onLogout, onToggleTheme,
+}: MobileHeaderProps) {
+  const [open, setOpen] = useState(false);
+
+  const handleLink = (href: string) => {
+    setOpen(false);
+    onNavClick(href);
+  };
+
+  return (
+    <>
+      {/* Fixed top bar */}
+      <header className="lg:hidden fixed top-0 left-0 right-0 z-40 h-14 flex items-center justify-between px-4 bg-[#030304] border-b border-[#155dfc]/20">
+        <Link href="/" className="flex items-center gap-2">
+          <div className="w-7 h-7 rounded-lg bg-[#155dfc]/20 border border-[#155dfc]/30 flex items-center justify-center">
+            <Car className="w-3.5 h-3.5 text-[#155dfc]" />
+          </div>
+          <span className="text-base font-bold tracking-tight text-white">AutoFyx</span>
+        </Link>
+        <button
+          onClick={() => setOpen(true)}
+          className="w-9 h-9 flex items-center justify-center rounded-xl bg-[#155dfc]/10 border border-[#155dfc]/20 text-white"
+          aria-label="Open menu"
+        >
+          <Menu className="w-5 h-5" />
+        </button>
+      </header>
+
+      {/* Overlay */}
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            key="overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="lg:hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
+            onClick={() => setOpen(false)}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Slide-in drawer */}
+      <AnimatePresence>
+        {open && (
+          <motion.aside
+            key="drawer"
+            initial={{ x: '-100%' }}
+            animate={{ x: 0 }}
+            exit={{ x: '-100%' }}
+            transition={{ type: 'spring', damping: 28, stiffness: 260 }}
+            className="lg:hidden fixed top-0 left-0 bottom-0 z-50 w-72 flex flex-col bg-[#030304]"
+          >
+            {/* Drawer header */}
+            <div className="h-14 flex items-center justify-between px-5 border-b border-[#155dfc]/20">
+              <Link href="/" className="flex items-center gap-2.5" onClick={() => setOpen(false)}>
+                <div className="w-7 h-7 rounded-lg bg-[#155dfc]/20 border border-[#155dfc]/30 flex items-center justify-center">
+                  <Car className="w-3.5 h-3.5 text-[#155dfc]" />
+                </div>
+                <span className="text-base font-bold text-white">AutoFyx</span>
+              </Link>
+              <button onClick={() => setOpen(false)} className="w-8 h-8 flex items-center justify-center rounded-xl text-white/50 hover:text-white hover:bg-white/10 transition-colors">
+                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+              </button>
+            </div>
+
+            {/* Nav links */}
+            <div className="flex-1 px-4 py-4 overflow-y-auto">
+              <p className="text-[10px] font-bold text-white/30 uppercase tracking-widest px-3 mb-3">Main Menu</p>
+              <nav className="flex flex-col gap-1">
+                {navItems.map((item) => {
+                  const isActive = pathname === item.href;
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      onClick={() => handleLink(item.href)}
+                      className={`flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-all ${isActive ? 'bg-[#155dfc] text-white shadow-lg shadow-[#155dfc]/30' : 'text-white/60 hover:bg-[#155dfc]/10 hover:text-white'}`}
+                    >
+                      <item.icon className={`w-4 h-4 flex-shrink-0 ${isActive ? 'text-white' : 'text-white/50'}`} />
+                      <span>{item.label}</span>
+                      {isActive && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-white/60" />}
+                    </Link>
+                  );
+                })}
+              </nav>
+            </div>
+
+            {/* Drawer footer */}
+            <div className="px-4 py-5 border-t border-[#155dfc]/20 flex flex-col gap-3">
+              {/* User card */}
+              <div className="flex items-center gap-3 px-3 py-3 rounded-2xl bg-[#155dfc]/10 border border-[#155dfc]/20">
+                {sessionUser?.profile_image_url ? (
+                  <img src={sessionUser.profile_image_url} alt="Profile" className="w-9 h-9 rounded-full object-cover border-2 border-[#155dfc]/40" />
+                ) : (
+                  <UserAvatar name={displayName} size="sm" />
+                )}
+                <div className="flex-1 min-w-0">
+                  <p className={`text-sm font-bold text-white truncate ${skeletonCls}`}>{displayName}</p>
+                  <p className={`text-[10px] text-white/40 truncate mt-0.5 ${skeletonCls}`}>{sessionUser?.email || '…'}</p>
+                  {currentTime && (
+                    <p className="text-[9px] font-bold text-[#93c5fd] mt-1 flex items-center gap-1">
+                      <CalendarDays className="w-3 h-3" />
+                      {currentTime.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                    </p>
+                  )}
+                </div>
+                <button onClick={onToggleTheme} className="w-8 h-8 rounded-full flex items-center justify-center bg-white/5 border border-[#155dfc]/30 text-white flex-shrink-0">
+                  {isDarkMode ? <Sun className="w-4 h-4 text-[#93c5fd]" /> : <Moon className="w-4 h-4 text-[#155dfc]" />}
+                </button>
+              </div>
+
+              {isResearcher && (
+                <Link
+                  href="/researcher"
+                  onClick={() => handleLink('/researcher')}
+                  className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold transition-all"
+                  style={{ background: 'rgba(21,93,252,0.12)', color: '#93c5fd', border: '1px solid rgba(21,93,252,0.25)' }}
+                >
+                  <FlaskConical className="w-3.5 h-3.5" />
+                  Researcher Dashboard
+                  <ChevronRight className="w-3 h-3 ml-auto opacity-60" />
+                </Link>
+              )}
+
+              <button
+                onClick={onLogout}
+                disabled={isLoggingOut}
+                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 transition-all disabled:opacity-50"
+              >
+                <LogOut className="w-4 h-4" />
+                {isLoggingOut ? 'Signing out...' : 'Logout'}
+              </button>
+            </div>
+          </motion.aside>
+        )}
+      </AnimatePresence>
+    </>
   );
 }
 
@@ -360,6 +519,21 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
         </div>
       </aside>
 
+      {/* ── Mobile Top Header (hidden on lg+) ── */}
+      <MobileHeader
+        displayName={finalDisplayName}
+        sessionUser={sessionUser}
+        pathname={pathname}
+        isDarkMode={isDarkMode}
+        isLoggingOut={isLoggingOut}
+        isResearcher={isResearcher}
+        currentTime={currentTime}
+        skeletonCls={skeletonCls}
+        onNavClick={handleNavClick}
+        onLogout={handleLogout}
+        onToggleTheme={toggleTheme}
+      />
+
       {/* ── Main content area ── */}
       <div className="flex-1 flex flex-col h-screen overflow-hidden min-w-0 relative">
         
@@ -400,11 +574,8 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
           )}
         </AnimatePresence>
 
-        {/* Top floating glass header */}
-
-
         {/* Page content */}
-        <main className="flex-1 overflow-y-auto transition-colors duration-500" style={{ background: isDarkMode ? '#030304' : '#ffffff' }}>
+        <main className="flex-1 overflow-y-auto transition-colors duration-500 pt-14 lg:pt-0" style={{ background: isDarkMode ? '#030304' : '#ffffff' }}>
           <motion.div
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
