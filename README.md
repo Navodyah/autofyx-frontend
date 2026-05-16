@@ -1,36 +1,59 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# AutoFyx Frontend Application
+
+This repository contains the frontend web application for the AutoFyx Vehicle Analyzer System. Built with [Next.js](https://nextjs.org/) and [React](https://react.dev/), it provides a highly responsive, modern, and dark-themed user interface for users to discover, analyze, and compare vehicles.
+
+## Key Features
+
+- **Interactive Dashboard:** A premium, dark-themed dashboard providing an overview of vehicle recommendations, saved searches, and analytics.
+- **Advanced Vehicle Search & Filtering:** Dynamic search functionality to find vehicles based on brand, model, price, and custom features.
+- **Financial Insights:** Detailed breakdowns of 5-year total cost of ownership, loan estimations, and maintenance cost predictions with interactive charts.
+- **AI Integration:** Leveraging Groq and Google Gemini to provide intelligent conversational assistants and automated insights.
+- **PDF Export:** Ability to generate and download comprehensive vehicle reports.
+- **Responsive Design:** Fully optimized for both desktop and mobile viewing with a seamless navigation experience.
+
+## Technology Stack
+
+- **Framework:** Next.js (App Router), React
+- **Styling:** Tailwind CSS, Framer Motion (for animations), Shadcn UI (Radix UI)
+- **Data Management:** React Query, Axios
+- **Forms & Validation:** React Hook Form, Zod
+- **Charts:** Recharts
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+- Node.js (v18 or higher)
+- npm, yarn, or pnpm
+
+### Installation
+
+1. Clone the repository and navigate to the project directory:
+   ```bash
+   cd frontend/autofyx
+   ```
+
+2. Install the required dependencies:
+   ```bash
+   npm install
+   ```
+
+3. Set up environment variables:
+   Copy `.env.example` to `.env.local` and add your backend API URL and any required third-party API keys.
+
+### Running the Application
+
+Start the development server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) in your browser to see the application in action.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Project Structure
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `app/` - Next.js App Router pages and layouts.
+- `components/` - Reusable UI components (buttons, forms, charts, layouts).
+- `lib/` & `utils/` - Helper functions, API configurations, and utilities.
+- `types/` - TypeScript interface and type definitions.
+- `public/` - Static assets such as images and fonts.
