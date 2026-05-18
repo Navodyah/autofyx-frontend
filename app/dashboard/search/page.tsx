@@ -102,20 +102,40 @@ export default function SearchPage() {
       .catch(console.error)
       .finally(() => setLoading(false));
 
-    fetch(`${API_BASE}/brands/?limit=200`)
+    fetch(`${API_BASE}/brands/?limit=500`)
       .then((r) => r.json())
       .then((data: { brand_name: string }[]) => {
         if (Array.isArray(data)) setBrands(data.map((b) => b.brand_name).filter(Boolean).sort());
       })
       .catch(console.error);
 
-    fetch(`${API_BASE}/fuel_types/?limit=100`)
+    fetch(`${API_BASE}/fuel_types/?limit=500`)
       .then((r) => r.json())
       .then((data: { fuel_type_name: string }[]) => {
         if (Array.isArray(data)) setFuelTypes(data.map((f) => f.fuel_type_name).filter(Boolean).sort());
       })
       .catch(console.error);
   }, []);
+
+  // Derive fuel types from vehicles as a live fallback once vehicles are loaded
+  useEffect(() => {
+    if (vehicles.length > 0 && fuelTypes.length === 0) {
+      const derived = Array.from(
+        new Set(vehicles.map((v) => v.fuel_type?.fuel_type_name).filter(Boolean))
+      ).sort() as string[];
+      if (derived.length > 0) setFuelTypes(derived);
+    }
+  }, [vehicles, fuelTypes.length]);
+
+  // Derive brands from vehicles as a live fallback once vehicles are loaded
+  useEffect(() => {
+    if (vehicles.length > 0 && brands.length === 0) {
+      const derived = Array.from(
+        new Set(vehicles.map((v) => v.brand?.brand_name).filter(Boolean))
+      ).sort() as string[];
+      if (derived.length > 0) setBrands(derived);
+    }
+  }, [vehicles, brands.length]);
 
   useEffect(() => {
     if (!userId) return;
@@ -172,8 +192,9 @@ export default function SearchPage() {
       if (applied.filterMake && v.brand?.brand_name !== applied.filterMake) return false;
       if (applied.filterModel && v.model_name !== applied.filterModel) return false;
       if (applied.filterFuel) {
-        const vFuel = (v.fuel_type?.fuel_type_name || '').toLowerCase();
-        if (vFuel !== applied.filterFuel.toLowerCase()) return false;
+        const vFuel = (v.fuel_type?.fuel_type_name || '').toLowerCase().trim();
+        const selectedFuel = applied.filterFuel.toLowerCase().trim();
+        if (vFuel !== selectedFuel) return false;
       }
       if (applied.filterYear && v.manufacturing_year !== Number(applied.filterYear)) return false;
       if (applied.filterPrice) {
@@ -567,7 +588,7 @@ export default function SearchPage() {
                           <div>
                             <p className="text-[9px] font-bold uppercase tracking-widest mb-0.5" style={{ color: P.muted }}>Est. Value</p>
                             <p className="text-[18px] font-extrabold tracking-tight" style={{ color: P.primary }}>
-                              LKR {car.minimum_price ? parseFloat(car.minimum_price).toLocaleString() : 'N/A'}
+                              {car.minimum_price ? `LKR ${parseFloat(car.minimum_price) >= 1000000 ? `${(parseFloat(car.minimum_price) / 1000000).toFixed(1).replace(/\.0$/, '')} M` : `${parseFloat(car.minimum_price)} M`}` : 'N/A'}
                             </p>
                           </div>
                           <div className="flex items-center justify-center w-9 h-9 rounded-full transition-all group-hover:scale-110 shrink-0" style={{ background: P.primary, boxShadow: `0 4px 14px rgba(21,93,252,0.35)` }}>
