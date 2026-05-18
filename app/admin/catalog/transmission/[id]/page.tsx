@@ -9,7 +9,7 @@ export default function EditTransmissionPage() {
   const params = useParams();
   const id = params?.id as string;
   const router = useRouter();
-  
+
   const [formData, setFormData] = useState({
     transmission_name: '',
     category: ''
@@ -64,7 +64,7 @@ export default function EditTransmissionPage() {
 
       if (response.status === 200) {
         alert("Transmission Updated Successfully!");
-        router.push('/admin_dashboard/catalog/transmission');
+        router.push('/admin/catalog/transmission');
       }
     } catch (error: any) {
       console.error("Error updating:", error);
@@ -94,7 +94,7 @@ export default function EditTransmissionPage() {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-8">
       <div className="max-w-2xl mx-auto">
         {/* Back Button */}
-        <Link href="/admin_dashboard/catalog/transmission">
+        <Link href="/admin/catalog/transmission">
           <button className="mb-6 flex items-center gap-2 text-gray-600 hover:text-blue-600 transition-colors">
             <ArrowLeft className="w-5 h-5" />
             Back to Transmissions
@@ -187,7 +187,7 @@ export default function EditTransmissionPage() {
                   </>
                 )}
               </button>
-              <Link href="/admin_dashboard/catalog/transmission" className="flex-1">
+              <Link href="/admin/catalog/transmission" className="flex-1">
                 <button
                   type="button"
                   className="w-full bg-gray-200 hover:bg-gray-300 text-gray-700 px-6 py-3 rounded-xl flex items-center justify-center gap-2 transition-all duration-300"

@@ -64,7 +64,7 @@ export default function TransmissionsListPage() {
               </h1>
               <p className="text-gray-500 mt-2">Manage vehicle transmission types and categories</p>
             </div>
-            <Link href="/admin_dashboard/catalog/transmission/new">
+            <Link href="/admin/catalog/transmission/new">
               <button className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-6 py-3 rounded-xl flex items-center gap-2 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
                 <Plus className="w-5 h-5" />
                 Add New Transmission
@@ -155,7 +155,7 @@ export default function TransmissionsListPage() {
                     </tr>
                   ) : (
                     filteredData.map((item) => (
-                      <tr 
+                      <tr
                         key={item.transmission_id}
                         className="hover:bg-blue-50 transition-colors duration-200"
                       >
@@ -177,23 +177,22 @@ export default function TransmissionsListPage() {
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                            item.category === 'Automatic' ? 'bg-green-100 text-green-800' :
-                            item.category === 'Manual' ? 'bg-blue-100 text-blue-800' :
-                            item.category === 'CVT' ? 'bg-purple-100 text-purple-800' :
-                            'bg-gray-100 text-gray-800'
-                          }`}>
+                          <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${item.category === 'Automatic' ? 'bg-green-100 text-green-800' :
+                              item.category === 'Manual' ? 'bg-blue-100 text-blue-800' :
+                                item.category === 'CVT' ? 'bg-purple-100 text-purple-800' :
+                                  'bg-gray-100 text-gray-800'
+                            }`}>
                             {item.category || 'N/A'}
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-center">
                           <div className="flex items-center justify-center gap-2">
-                            <Link href={`/admin_dashboard/catalog/transmission/${item.transmission_id}`}>
+                            <Link href={`/admin/catalog/transmission/${item.transmission_id}`}>
                               <button className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white p-2 rounded-lg transition-all duration-300 transform hover:scale-110 shadow-md hover:shadow-lg">
                                 <Edit className="w-4 h-4" />
                               </button>
                             </Link>
-                            <button 
+                            <button
                               onClick={() => handleDelete(item.transmission_id)}
                               className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white p-2 rounded-lg transition-all duration-300 transform hover:scale-110 shadow-md hover:shadow-lg"
                             >
