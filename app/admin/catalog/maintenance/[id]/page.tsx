@@ -11,10 +11,10 @@ export default function EditMaintenancePage() {
   const params = useParams();
   const id = params?.id as string;
   const router = useRouter();
-  
+
   const [loading, setLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
-  
+
   const [formData, setFormData] = useState({
     vehicle_id: '',
     yearly_cost: '',
@@ -44,7 +44,7 @@ export default function EditMaintenancePage() {
       console.log('Fetching maintenance record with ID:', id);
       const response = await axios.get(`${API_BASE}/maintenance-costs/${id}`);
       console.log('Maintenance data:', response.data);
-      
+
       setFormData({
         vehicle_id: response.data.vehicle_id?.toString() || '',
         yearly_cost: response.data.yearly_cost?.toString() || '',
@@ -86,16 +86,16 @@ export default function EditMaintenancePage() {
 
     try {
       const response = await axios.put(`${API_BASE}/maintenance-costs/${id}`, payload);
-      
+
       if (response.status === 200) {
         alert('Maintenance record updated successfully!');
-        router.push('/admin_dashboard/catalog/maintenance');
+        router.push('/admin/catalog/maintenance');
       }
     } catch (error: any) {
       console.error('Update error:', error);
-      const errorMessage = error.response?.data?.detail || 
-                          JSON.stringify(error.response?.data) || 
-                          'Error updating maintenance record';
+      const errorMessage = error.response?.data?.detail ||
+        JSON.stringify(error.response?.data) ||
+        'Error updating maintenance record';
       alert(errorMessage);
     } finally {
       setIsUpdating(false);
@@ -117,7 +117,7 @@ export default function EditMaintenancePage() {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-8">
       <div className="max-w-3xl mx-auto">
         {/* Back Button */}
-        <Link href="/admin_dashboard/catalog/maintenance">
+        <Link href="/admin/catalog/maintenance">
           <button className="mb-6 flex items-center gap-2 text-gray-600 hover:text-orange-600 transition-colors">
             <ArrowLeft className="w-5 h-5" />
             Back to Maintenance Records
@@ -254,7 +254,7 @@ export default function EditMaintenancePage() {
                   </>
                 )}
               </button>
-              <Link href="/admin_dashboard/catalog/maintenance" className="flex-1">
+              <Link href="/admin/catalog/maintenance" className="flex-1">
                 <button
                   type="button"
                   disabled={isUpdating}
