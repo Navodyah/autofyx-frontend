@@ -3,9 +3,9 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
-  LayoutDashboard, Database, Users, BrainCircuit, Car, ChevronDown,
+  LayoutDashboard, Database, Users, Car, ChevronDown,
   MessageSquare, Image, Settings, Fuel, FlaskConical, LogOut,
-  ShieldCheck, CalendarDays, Clock,
+  ShieldCheck, CalendarDays,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { clsx } from 'clsx';
@@ -56,7 +56,6 @@ function readAdminUser(): AdminUser | null {
 /* ── Nav config ─────────────────────────────────── */
 const topNav = [
   { label: 'Dashboard', href: '/admin', icon: LayoutDashboard, exact: true },
-  { label: 'ML Studio', href: '/admin/dataset_ml', icon: BrainCircuit },
 ];
 
 const mgmtNav = [

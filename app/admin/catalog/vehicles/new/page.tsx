@@ -3,16 +3,16 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
 import Link from 'next/link';
-import { 
-  ArrowLeft, Car, Save, Calendar, Zap, Fuel, Settings, 
-  Tag, Droplet, Gauge, CircleDot, FileText, AlertCircle 
+import {
+  ArrowLeft, Car, Save, Calendar, Zap, Fuel, Settings,
+  Tag, Droplet, Gauge, CircleDot, FileText, AlertCircle
 } from 'lucide-react';
 
 export default function NewVehiclePage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [dataLoading, setDataLoading] = useState(true);
-  
+
   // Form state with NEW fields
   const [formData, setFormData] = useState({
     brand_id: '',
@@ -160,7 +160,7 @@ export default function NewVehiclePage() {
   const fetchAllDropdownData = async () => {
     setDataLoading(true);
     setFetchErrors([]);
-    
+
     await Promise.all([
       fetchBrands(),
       fetchVehicleClasses(),
@@ -206,13 +206,13 @@ export default function NewVehiclePage() {
 
       if (response.status === 200 || response.status === 201) {
         alert("Vehicle Registered Successfully!");
-        router.push('/admin_dashboard/catalog/vehicles');
+        router.push('/admin/catalog/vehicles');
       }
     } catch (error: any) {
       console.error('Submit error:', error);
-      const errorMessage = error.response?.data?.detail || 
-                          JSON.stringify(error.response?.data) || 
-                          "Error registering vehicle";
+      const errorMessage = error.response?.data?.detail ||
+        JSON.stringify(error.response?.data) ||
+        "Error registering vehicle";
       alert(errorMessage);
     } finally {
       setIsLoading(false);
@@ -234,7 +234,7 @@ export default function NewVehiclePage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-8">
       <div className="max-w-5xl mx-auto">
-        <Link href="/admin_dashboard/catalog/vehicles">
+        <Link href="/admin/catalog/vehicles">
           <button className="mb-6 flex items-center gap-2 text-gray-600 hover:text-blue-600 transition-colors">
             <ArrowLeft className="w-5 h-5" />
             Back to Vehicle Registry
@@ -307,7 +307,7 @@ export default function NewVehiclePage() {
                 </p>
               </div>
 
-          
+
 
               {/* NEW: Vehicle Model */}
               <div className="space-y-2">
@@ -386,7 +386,7 @@ export default function NewVehiclePage() {
                 <p className="text-xs text-gray-500">Highest market price for this vehicle</p>
               </div>
 
-            
+
 
               {/* Vehicle Class */}
               <div className="space-y-2">
@@ -640,7 +640,7 @@ export default function NewVehiclePage() {
                   </>
                 )}
               </button>
-              <Link href="/admin_dashboard/catalog/vehicles" className="flex-1">
+              <Link href="/admin/catalog/vehicles" className="flex-1">
                 <button
                   type="button"
                   disabled={isLoading}

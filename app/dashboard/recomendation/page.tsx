@@ -227,15 +227,15 @@ export default function RecommendationPage() {
       // ── Fire-and-forget: persist history + update global scores ──
       if (enriched.length > 0) {
         const userId = getUserId();
-        const top15  = enriched.slice(0, 15);
+        const top10  = enriched.slice(0, 10);
         const top3   = enriched.slice(0, 3);
 
-        // Save up to 15 vehicles in recommendation_history for this user
+        // Save up to 10 vehicles in recommendation_history for this user
         if (userId) {
           fetch(`${API_BASE}/recommendations/save-history`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ user_id: userId, vehicles: top15 }),
+            body: JSON.stringify({ user_id: userId, vehicles: top10 }),
           }).catch(() => { /* silent — non-critical */ });
         }
 

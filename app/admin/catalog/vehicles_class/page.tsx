@@ -63,7 +63,7 @@ export default function VehicleClassesListPage() {
               </h1>
               <p className="text-gray-500 mt-2">Manage vehicle classification categories</p>
             </div>
-            <Link href="/admin_dashboard/catalog/vehicles_class/new">
+            <Link href="/admin/catalog/vehicles_class/new">
               <button className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-6 py-3 rounded-xl flex items-center gap-2 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
                 <Plus className="w-5 h-5" />
                 Add New Class
@@ -149,7 +149,7 @@ export default function VehicleClassesListPage() {
                     </tr>
                   ) : (
                     filteredData.map((item) => (
-                      <tr 
+                      <tr
                         key={item.class_id}
                         className="hover:bg-blue-50 transition-colors duration-200"
                       >
@@ -172,12 +172,12 @@ export default function VehicleClassesListPage() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-center">
                           <div className="flex items-center justify-center gap-2">
-                            <Link href={`/admin_dashboard/catalog/vehicles_class/${item.class_id}`}>
+                            <Link href={`/admin/catalog/vehicles_class/${item.class_id}`}>
                               <button className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white p-2 rounded-lg transition-all duration-300 transform hover:scale-110 shadow-md hover:shadow-lg">
                                 <Edit className="w-4 h-4" />
                               </button>
                             </Link>
-                            <button 
+                            <button
                               onClick={() => handleDelete(item.class_id)}
                               className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white p-2 rounded-lg transition-all duration-300 transform hover:scale-110 shadow-md hover:shadow-lg"
                             >

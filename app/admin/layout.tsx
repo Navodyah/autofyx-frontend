@@ -1,8 +1,8 @@
 
- 'use client';
+'use client';
 
 import { useEffect, useState } from 'react';
-import Sidebar from '@/components/dashboard/admin/Sidebar'; 
+import Sidebar from '@/components/dashboard/admin/Sidebar';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [mounted, setMounted] = useState(false);

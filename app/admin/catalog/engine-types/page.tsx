@@ -60,9 +60,9 @@ export default function EngineTypesList() {
               <h1 className="text-3xl font-bold text-slate-900 mb-2">Engine Types</h1>
               <p className="text-slate-600">Manage vehicle engine configurations</p>
             </div>
-            <Link href="/admin_dashboard/catalog/engine-types/new">
+            <Link href="/admin/catalog/engine-types/new">
               <button className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-6 py-3 rounded-xl flex items-center gap-2 shadow-lg shadow-blue-500/30 transition-all duration-200 hover:shadow-xl hover:shadow-blue-500/40 hover:-translate-y-0.5">
-                <Plus size={20}/> Add Engine Type
+                <Plus size={20} /> Add Engine Type
               </button>
             </Link>
           </div>
@@ -72,8 +72,8 @@ export default function EngineTypesList() {
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 mb-6">
           <div className="flex flex-col md:flex-row gap-4">
             <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={20}/>
-              <input 
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+              <input
                 type="text"
                 placeholder="Search engine types..."
                 className="w-full pl-11 pr-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
@@ -82,10 +82,10 @@ export default function EngineTypesList() {
               />
             </div>
             <button className="px-6 py-3 border border-slate-300 rounded-xl hover:bg-slate-50 flex items-center gap-2 transition-colors">
-              <Filter size={18}/> Filter
+              <Filter size={18} /> Filter
             </button>
             <button className="px-6 py-3 border border-slate-300 rounded-xl hover:bg-slate-50 flex items-center gap-2 transition-colors">
-              <Download size={18}/> Export
+              <Download size={18} /> Export
             </button>
           </div>
         </div>
@@ -112,7 +112,7 @@ export default function EngineTypesList() {
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
           {loading ? (
             <div className="flex items-center justify-center py-20">
-              <Loader2 className="animate-spin text-blue-600" size={48}/>
+              <Loader2 className="animate-spin text-blue-600" size={48} />
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -151,16 +151,16 @@ export default function EngineTypesList() {
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex items-center justify-center gap-2">
-                            <Link href={`/admin_dashboard/catalog/engine-types/${type.engine_type_id}`}>
+                            <Link href={`/admin/catalog/engine-types/${type.engine_type_id}`}>
                               <button className="p-2.5 bg-amber-50 hover:bg-amber-100 text-amber-600 rounded-lg transition-colors shadow-sm hover:shadow">
-                                <Edit size={18}/>
+                                <Edit size={18} />
                               </button>
                             </Link>
-                            <button 
-                              onClick={() => handleDelete(type.engine_type_id)} 
+                            <button
+                              onClick={() => handleDelete(type.engine_type_id)}
                               className="p-2.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg transition-colors shadow-sm hover:shadow"
                             >
-                              <Trash2 size={18}/>
+                              <Trash2 size={18} />
                             </button>
                           </div>
                         </td>

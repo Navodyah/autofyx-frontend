@@ -74,8 +74,8 @@ export default function MaintenanceListPage() {
                 <p className="text-gray-600 mt-1">Manage vehicle maintenance cost data</p>
               </div>
             </div>
-            <Link 
-              href="/admin_dashboard/catalog/maintenance/new" 
+            <Link
+              href="/admin/catalog/maintenance/new"
               className="bg-gradient-to-r from-green-600 to-green-700 text-white px-6 py-3 rounded-xl flex items-center gap-2 hover:from-green-700 hover:to-green-800 transition-all shadow-lg hover:shadow-xl transform hover:scale-105"
             >
               <Plus size={20} /> Add Record
@@ -179,15 +179,15 @@ export default function MaintenanceListPage() {
                       </td>
                       <td className="p-4">
                         <div className="flex justify-end gap-2">
-                          <Link 
-                            href={`/admin_dashboard/catalog/maintenance/${item.record_id}`} 
+                          <Link
+                            href={`/admin/catalog/maintenance/${item.record_id}`}
                             className="text-blue-600 bg-blue-100 p-2 rounded-lg hover:bg-blue-200 transition-colors"
                             title="Edit"
                           >
                             <Pencil size={18} />
                           </Link>
-                          <button 
-                            onClick={() => handleDelete(item.record_id)} 
+                          <button
+                            onClick={() => handleDelete(item.record_id)}
                             className="text-red-600 bg-red-100 p-2 rounded-lg hover:bg-red-200 transition-colors"
                             title="Delete"
                           >

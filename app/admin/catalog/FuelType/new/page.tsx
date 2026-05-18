@@ -28,7 +28,7 @@ export default function NewFuelTypePage() {
 
       if (response.status === 200 || response.status === 201) {
         alert("Fuel Type Added Successfully!");
-        router.push('/admin_dashboard/catalog/FuelType');
+        router.push('/admin/catalog/FuelType');
       }
     } catch (error: any) {
       console.error(error);
@@ -43,7 +43,7 @@ export default function NewFuelTypePage() {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-8">
       <div className="max-w-2xl mx-auto">
         {/* Back Button */}
-        <Link href="/admin_dashboard/catalog/FuelType">
+        <Link href="/admin/catalog/FuelType">
           <button className="mb-6 flex items-center gap-2 text-gray-600 hover:text-blue-600 transition-colors">
             <ArrowLeft className="w-5 h-5" />
             Back to Fuel Types
@@ -116,7 +116,7 @@ export default function NewFuelTypePage() {
                   </>
                 )}
               </button>
-              <Link href="/admin_dashboard/catalog/FuelType" className="flex-1">
+              <Link href="/admin/catalog/FuelType" className="flex-1">
                 <button
                   type="button"
                   className="w-full bg-gray-200 hover:bg-gray-300 text-gray-700 px-6 py-3 rounded-xl flex items-center justify-center gap-2 transition-all duration-300"
@@ -135,7 +135,7 @@ export default function NewFuelTypePage() {
             <li>• Z- Premium Gasonline</li>
             <li>• X - Regular Gasoline</li>
             <li>• D - Diesel</li>
-            
+
           </ul>
         </div>
       </div>

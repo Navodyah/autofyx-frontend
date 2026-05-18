@@ -80,7 +80,12 @@ function DashboardOverview() {
   const [applyMsg, setApplyMsg] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [historyVehicles, setHistoryVehicles] = useState<any[]>([]);
+  const [historySessions, setHistorySessions] = useState<any[]>([]);
+  const [vehicleDetails, setVehicleDetails] = useState<Record<number, any>>({});
   const [fuelPrices, setFuelPrices] = useState<{ fuel_type_name: string; fuel_price: number }[]>([]);
+  const [analyzedCount, setAnalyzedCount] = useState<number | string>("854");
+  const [savedCount, setSavedCount] = useState<number | string>("3");
+  const [activeAlerts, setActiveAlerts] = useState<number | string>("2");
   const P = isDarkMode ? D : L;
 
   // Load user data from localStorage on mount
@@ -93,12 +98,65 @@ function DashboardOverview() {
         if (parsed.email) setUserEmail(parsed.email);
         if (parsed.user_type) setUserRole(parsed.user_type as 'user' | 'researcher');
 
-        // Fetch history
+        // Fetch history and user stats
         if (parsed.user_id) {
           const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+          
           fetch(`${API_BASE}/recommendations/history/${parsed.user_id}`)
             .then(r => r.json())
-            .then(data => setHistoryVehicles(data.vehicles || []))
+            .then(data => {
+              // New API returns { sessions: [...], total_vehicles: N }
+              // Flatten all vehicles across sessions for the activity graph + recent recs
+              // Inject recommended_at from each session's saved_at so the activity
+              // graph and timestamps still work correctly on the flattened list.
+              const sessions: any[] = data.sessions || [];
+              setHistorySessions(sessions);
+
+              // Flatten all vehicles across sessions; inject recommended_at from session saved_at
+              const allVehicles: any[] = sessions.flatMap((s: any) =>
+                (s.vehicles || []).map((v: any) => ({
+                  ...v,
+                  recommended_at: v.recommended_at || s.saved_at,
+                }))
+              );
+              setHistoryVehicles(allVehicles);
+              // Show total sessions run as the "Analyzed Models" count
+              setAnalyzedCount(sessions.length > 0 ? sessions.length.toString() : allVehicles.length.toString());
+
+              // Fetch real vehicle details (image_url) for the top 3 most recent vehicles
+              allVehicles.slice(0, 3).forEach((v: any) => {
+                const vid = v.vehicle_id;
+                if (!vid) return;
+                fetch(`${API_BASE}/vehicles/${vid}`)
+                  .then(r => r.json())
+                  .then(detail => {
+                    if (detail && detail.vehicle_id) {
+                      setVehicleDetails(prev => ({ ...prev, [vid]: detail }));
+                    }
+                  })
+                  .catch(() => {});
+              });
+            })
+            .catch(() => {});
+
+          fetch(`/api/wishlist?user_id=${parsed.user_id}`)
+            .then(r => r.json())
+            .then(data => {
+              // /api/wishlist returns { items: number[] }
+              const items = data.items;
+              if (Array.isArray(items)) {
+                setSavedCount(items.length.toString());
+              }
+            })
+            .catch(() => { });
+
+          fetch(`${API_BASE}/users/activity/${parsed.user_id}`)
+            .then(r => r.json())
+            .then(data => {
+              if (data.comparisons) {
+                setActiveAlerts(data.comparisons.length.toString());
+              }
+            })
             .catch(() => { });
         }
       }
@@ -131,15 +189,15 @@ function DashboardOverview() {
     { title: "Vehicle Search", href: "/dashboard/search", desc: "Manual filtering", icon: SearchCheck },
     { title: "Compare", href: "/dashboard/compare", desc: "Side-by-side specs", icon: Scale },
     { title: "Cost Calc", href: "/dashboard/cost-calculation", desc: "EMI & ownership", icon: Calculator },
-    { title: "Profile", href: "/dashboard/profile", desc: "Your preferences", icon: User },
+    { title: "Settings", href: "/dashboard/settings", desc: "Your preferences", icon: User },
     { title: "My Garage", href: "/dashboard/garage", desc: "Saved & wishlist", icon: Heart },
   ];
 
   const stats = [
-    { label: "Analyzed Models", value: "854", sub: "+12 this week", icon: CarFront },
-    { label: "Saved Matches", value: "3", sub: "1 high confidence", icon: Trophy },
-    { label: "Market Trend", value: "âˆ’2.4%", sub: "Prices dropping", icon: TrendingDown },
-    { label: "Active Alerts", value: "2", sub: "Price drop found", icon: Bell },
+    { label: "Analyzed Models", value: analyzedCount, sub: "Based on history", icon: CarFront },
+    { label: "Saved Matches", value: savedCount, sub: "In Garage", icon: Trophy },
+    { label: "Market Trend", value: "−2.4%", sub: "Prices dropping", icon: TrendingDown },
+    { label: "Active Alerts", value: activeAlerts, sub: "Comparisons made", icon: Bell },
   ];
 
   const premiumCard = {
@@ -246,15 +304,17 @@ function DashboardOverview() {
                 <History className="w-4 h-4" /> History
               </motion.button>
             </Link>
-            <motion.button
-              whileHover={{ scale: 1.02, boxShadow: `0 0 15px ${P.glow}` }}
-              whileTap={{ scale: 0.98 }}
-              className="flex items-center gap-2 px-6 py-2.5 rounded-full text-sm font-semibold shadow-md transition-all duration-500 group"
-              style={{ background: P.primary, color: P.primaryText }}
-            >
-              <Sparkles className="w-4 h-4" style={{ color: isDarkMode ? "#000" : "#FFF" }} />
-              Update Preferences
-            </motion.button>
+            <Link href="/dashboard/settings">
+              <motion.button
+                whileHover={{ scale: 1.02, boxShadow: `0 0 15px ${P.glow}` }}
+                whileTap={{ scale: 0.98 }}
+                className="flex items-center gap-2 px-6 py-2.5 rounded-full text-sm font-semibold shadow-md transition-all duration-500 group"
+                style={{ background: P.primary, color: P.primaryText }}
+              >
+                <Sparkles className="w-4 h-4" style={{ color: isDarkMode ? "#000" : "#FFF" }} />
+                Update Preferences
+              </motion.button>
+            </Link>
           </div>
         </motion.div>
 
@@ -382,17 +442,25 @@ function DashboardOverview() {
                       {historyVehicles[0]?.score ? `${Number(historyVehicles[0].score).toFixed(1)}%` : 'AI Pick'}
                     </motion.div>
                   </div>
-                  <motion.img
-                    whileHover={{ scale: 1.04 }}
-                    transition={{ type: "spring" as const, stiffness: 100 }}
-                    src={isDarkMode
-                      ? "https://images.unsplash.com/photo-1563720223185-11003d516935?q=80&w=1500&auto=format&fit=crop"
-                      : "https://images.unsplash.com/photo-1503376713356-2dbfdfaa52a1?q=80&w=1500&auto=format&fit=crop"
-                    }
-                    alt="Best Recommended Vehicle"
-                    className={`relative z-0 w-[130%] max-w-none -translate-x-6 object-cover mt-6 transition-opacity duration-1000 ${isDarkMode ? 'opacity-90' : 'drop-shadow-xl'}`}
-                    style={isDarkMode ? { mixBlendMode: "lighten" } : {}}
-                  />
+                  {/* Vehicle image — use fetched image_url if available, fallback to stock */}
+                  {(() => {
+                    const topVehicleId = historyVehicles[0]?.vehicle_id;
+                    const detailImg = topVehicleId ? vehicleDetails[topVehicleId]?.image_url : null;
+                    const fallbackSrc = isDarkMode
+                      ? 'https://images.unsplash.com/photo-1563720223185-11003d516935?q=80&w=1500&auto=format&fit=crop'
+                      : 'https://images.unsplash.com/photo-1503376713356-2dbfdfaa52a1?q=80&w=1500&auto=format&fit=crop';
+                    return (
+                      <motion.img
+                        whileHover={{ scale: 1.04 }}
+                        transition={{ type: 'spring' as const, stiffness: 100 }}
+                        src={detailImg || fallbackSrc}
+                        alt="Best Recommended Vehicle"
+                        className={`relative z-0 w-[130%] max-w-none -translate-x-6 object-cover mt-6 transition-opacity duration-1000 ${isDarkMode ? 'opacity-90' : 'drop-shadow-xl'}`}
+                        style={isDarkMode ? { mixBlendMode: 'lighten' } : {}}
+                        onError={(e) => { (e.target as HTMLImageElement).src = fallbackSrc; }}
+                      />
+                    );
+                  })()}
                 </div>
 
                 {/* Info */}
@@ -414,8 +482,8 @@ function DashboardOverview() {
                       )}
                       <div className="grid grid-cols-2 gap-3 mb-6">
                         {[
-                          { icon: DollarSign, label: 'Min Price', value: historyVehicles[0].min_price ? `LKR ${Number(historyVehicles[0].min_price).toLocaleString()}` : 'N/A' },
-                          { icon: DollarSign, label: 'Max Price', value: historyVehicles[0].max_price ? `LKR ${Number(historyVehicles[0].max_price).toLocaleString()}` : 'N/A' },
+                          { icon: DollarSign, label: 'Min Price', value: historyVehicles[0].min_price ? (Number(historyVehicles[0].min_price) >= 1000000 ? `LKR ${(Number(historyVehicles[0].min_price) / 1000000).toFixed(1).replace(/\.0$/, '')}M` : `LKR ${Number(historyVehicles[0].min_price).toLocaleString()}`) : 'N/A' },
+                          { icon: DollarSign, label: 'Max Price', value: historyVehicles[0].max_price ? (Number(historyVehicles[0].max_price) >= 1000000 ? `LKR ${(Number(historyVehicles[0].max_price) / 1000000).toFixed(1).replace(/\.0$/, '')}M` : `LKR ${Number(historyVehicles[0].max_price).toLocaleString()}`) : 'N/A' },
                           { icon: Gauge, label: 'Fuel Type', value: historyVehicles[0].fuel_type || 'N/A' },
                           { icon: Activity, label: 'Recommended', value: new Date(historyVehicles[0].recommended_at).toLocaleDateString() },
                         ].map((spec, i) => (
@@ -563,47 +631,62 @@ function DashboardOverview() {
 
                 <div className="h-40 flex items-end gap-1.5 relative w-full mt-2 z-10">
                   {(() => {
+                    // Count recommendation SESSIONS per day (not vehicles)
+                    // Each session = one recommendation run by the user
                     const activity = Array(7).fill(0);
                     const today = new Date();
                     today.setHours(0, 0, 0, 0);
 
-                    historyVehicles.forEach((v: any) => {
-                      if (!v.recommended_at) return;
-                      const recDate = new Date(v.recommended_at);
+                    historySessions.forEach((s: any) => {
+                      const ts = s.saved_at;
+                      if (!ts) return;
+                      const recDate = new Date(ts);
                       recDate.setHours(0, 0, 0, 0);
-                      const diffTime = today.getTime() - recDate.getTime();
-                      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-                      if (diffDays >= 0 && diffDays < 7) {
-                        activity[6 - diffDays]++;
-                      }
+                      const diffDays = Math.floor(
+                        (today.getTime() - recDate.getTime()) / (1000 * 60 * 60 * 24)
+                      );
+                      if (diffDays >= 0 && diffDays < 7) activity[6 - diffDays]++;
                     });
 
-                    const maxActivity = Math.max(...activity, 5); // fallback max scale to 5
+                    const maxActivity = Math.max(...activity, 1);
+                    const dayLabels = Array.from({ length: 7 }, (_, i) => {
+                      const d = new Date(today);
+                      d.setDate(today.getDate() - (6 - i));
+                      return d.toLocaleDateString('en-US', { weekday: 'short' });
+                    });
 
                     return activity.map((count, i) => {
                       const h = (count / maxActivity) * 100;
+                      const isToday = i === 6;
                       return (
-                        <div key={i} className="flex-1 flex flex-col justify-end h-full gap-2 group/bar cursor-pointer relative">
+                        <div key={i} className="flex-1 flex flex-col justify-end h-full gap-1 group/bar cursor-pointer relative">
                           <motion.div
                             initial={{ height: 0 }}
-                            animate={{ height: `${Math.max(h, 4)}%` }} // At least 4% height so empty days still show a small pip
-                            transition={{ duration: 1, delay: i * 0.1, type: "spring" as const }}
+                            animate={{ height: `${Math.max(h, 4)}%` }}
+                            transition={{ duration: 0.8, delay: i * 0.08, type: 'spring' as const }}
                             className="w-full rounded-t-sm transition-all duration-500 relative overflow-hidden"
-                            style={{ background: i === 6 ? P.primary : (isDarkMode ? "rgba(21,93,252,0.15)" : "#DBEAFE"), opacity: i === 6 ? 1 : 0.6 }}
+                            style={{
+                              background: isToday ? P.primary : (isDarkMode ? 'rgba(21,93,252,0.2)' : '#DBEAFE'),
+                              opacity: isToday ? 1 : 0.7,
+                            }}
                           >
-                            <div className={`absolute top-0 left-0 right-0 h-full bg-gradient-to-b from-white/20 to-transparent opacity-0 group-hover/bar:opacity-100 transition-opacity`} />
+                            <div className="absolute top-0 left-0 right-0 h-full bg-gradient-to-b from-white/20 to-transparent opacity-0 group-hover/bar:opacity-100 transition-opacity" />
                           </motion.div>
-                          
-                          {/* Hover tooltip */}
-                          <div className="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover/bar:opacity-100 pointer-events-none transition-opacity duration-200 z-20">
+
+                          {/* Tooltip */}
+                          <div className="absolute -top-9 left-1/2 -translate-x-1/2 opacity-0 group-hover/bar:opacity-100 pointer-events-none transition-opacity duration-200 z-20">
                             <span className="text-[10px] font-bold px-2 py-1 rounded shadow-lg whitespace-nowrap" style={{ background: P.text, color: P.bg }}>
-                              {count} picks
+                              {dayLabels[i]}: {count} {count === 1 ? 'run' : 'runs'}
                             </span>
                           </div>
 
-                          {i === 6 && (
-                            <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-[9px] font-bold px-1.5 py-0.5 transition-colors duration-500" style={{ color: P.muted }}>Now</span>
-                          )}
+                          {/* Day label */}
+                          <span
+                            className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-[9px] font-bold whitespace-nowrap transition-colors duration-500"
+                            style={{ color: isToday ? P.primary : P.muted }}
+                          >
+                            {dayLabels[i]}
+                          </span>
                         </div>
                       );
                     });
@@ -631,18 +714,30 @@ function DashboardOverview() {
                       whileHover={{ backgroundColor: isDarkMode ? "rgba(21,93,252,0.08)" : "#F0F4FF", borderColor: isDarkMode ? "rgba(21,93,252,0.2)" : "rgba(21,93,252,0.1)" }}
                       className="flex items-center gap-3 p-2.5 rounded-xl cursor-pointer transition-colors border border-transparent"
                     >
-                      <div className="w-[60px] h-[45px] rounded-lg overflow-hidden shrink-0 relative bg-black/50">
-                        <motion.img
-                          whileHover={{ scale: 1.1 }} transition={{ duration: 0.3 }}
-                          src={isDarkMode ? "https://images.unsplash.com/photo-1563720223185-11003d516935?q=80&w=800&auto=format&fit=crop" : "https://images.unsplash.com/photo-1503376713356-2dbfdfaa52a1?q=80&w=800&auto=format&fit=crop"}
-                          alt={car.model} className={`w-full h-full object-cover ${isDarkMode ? 'opacity-80' : 'opacity-100'}`}
-                        />
+                      <div className="w-[60px] h-[45px] rounded-lg overflow-hidden shrink-0 relative" style={{ background: isDarkMode ? 'rgba(21,93,252,0.1)' : '#EFF6FF' }}>
+                        {(() => {
+                          const vid = car.vehicle_id;
+                          const detailImg = vid ? vehicleDetails[vid]?.image_url : null;
+                          const fallbackSrc = isDarkMode
+                            ? 'https://images.unsplash.com/photo-1563720223185-11003d516935?q=80&w=300&auto=format&fit=crop'
+                            : 'https://images.unsplash.com/photo-1503376713356-2dbfdfaa52a1?q=80&w=300&auto=format&fit=crop';
+                          return (
+                            <motion.img
+                              whileHover={{ scale: 1.1 }}
+                              transition={{ duration: 0.3 }}
+                              src={detailImg || fallbackSrc}
+                              alt={car.model}
+                              className={`w-full h-full object-cover ${isDarkMode ? 'opacity-80' : 'opacity-100'}`}
+                              onError={(e) => { (e.target as HTMLImageElement).src = fallbackSrc; }}
+                            />
+                          );
+                        })()}
                       </div>
                       <div className="flex-1 min-w-0">
                         <h4 className="text-[13px] font-bold truncate tracking-tight transition-colors duration-500" style={{ color: P.text }}>{car.model || car.brand}</h4>
                         <div className="flex items-center gap-2 mt-0.5">
                           <span className="text-[11px] font-bold transition-colors duration-500" style={{ color: P.muted }}>
-                            {car.min_price ? `$${Number(car.min_price).toLocaleString()}` : 'N/A'}
+                            {car.min_price ? (Number(car.min_price) >= 1000000 ? `LKR ${(Number(car.min_price) / 1000000).toFixed(1).replace(/\.0$/, '')}M` : `LKR ${Number(car.min_price).toLocaleString()}`) : 'N/A'}
                           </span>
                           <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded flex items-center gap-0.5 transition-colors duration-500 ${isDarkMode ? "bg-emerald-500/10 text-emerald-400" : "bg-emerald-50 text-emerald-700"}`}>
                             <TrendingUp className="w-3 h-3" />

@@ -64,7 +64,7 @@ export default function VehicleListPage() {
     setLoading(true);
     try {
       console.log('Fetching all vehicle data...');
-      
+
       const [
         vehiclesRes,
         brandsRes,
@@ -78,7 +78,7 @@ export default function VehicleListPage() {
         axios.get(`${API_BASE}/brands/`),
         axios.get(`${API_BASE}/models/`),
         axios.get(`${API_BASE}/vehicle_classes/`),
-        axios.get(`${API_BASE}/engine-types/`), 
+        axios.get(`${API_BASE}/engine-types/`),
         axios.get(`${API_BASE}/fuel_types/`),
         axios.get(`${API_BASE}/transmissions/`),
       ]);
@@ -115,7 +115,7 @@ export default function VehicleListPage() {
       setVehicles(enriched);
     } catch (error) {
       console.error('Failed to fetch vehicles or reference data:', error);
-      setVehicles([]); 
+      setVehicles([]);
     } finally {
       setLoading(false);
     }
@@ -137,7 +137,7 @@ export default function VehicleListPage() {
   const term = searchTerm.trim().toLowerCase();
   const filteredVehicles = vehicles.filter((v) => {
     if (!term) return true;
-    
+
     const matchesId = v.vehicle_id?.toString().toLowerCase().includes(term);
     const matchesBrand = v.brand_name?.toLowerCase().includes(term);
     const matchesModel = v.model_name?.toLowerCase().includes(term);
@@ -150,16 +150,16 @@ export default function VehicleListPage() {
     const matchesEngineSize = v.engine_size?.toString().includes(term);
     const matchesMinimumPrice = v.minimum_price?.toString().includes(term);
     const matchesMaximumPrice = v.max_price?.toString().includes(term);
-    
+
     return !!(
-      matchesId || 
-      matchesBrand || 
-      matchesModel || 
-      matchesVehicleName || 
-      matchesVehicleModel || 
-      matchesClass || 
-      matchesEngine || 
-      matchesFuel || 
+      matchesId ||
+      matchesBrand ||
+      matchesModel ||
+      matchesVehicleName ||
+      matchesVehicleModel ||
+      matchesClass ||
+      matchesEngine ||
+      matchesFuel ||
       matchesYear ||
       matchesEngineSize ||
       matchesMinimumPrice ||
@@ -180,7 +180,7 @@ export default function VehicleListPage() {
               </h1>
               <p className="text-gray-500 mt-2">Comprehensive vehicle catalog and specifications</p>
             </div>
-            <Link href="/admin_dashboard/catalog/vehicles/new">
+            <Link href="/admin/catalog/vehicles/new">
               <button className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-6 py-3 rounded-xl flex items-center gap-2 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
                 <Plus className="w-5 h-5" />
                 Register New Vehicle
@@ -206,7 +206,7 @@ export default function VehicleListPage() {
               <p className="text-sm text-gray-600">
                 Found <span className="font-bold text-blue-600">{filteredVehicles.length}</span> result(s) for &quot;{searchTerm}&quot;
               </p>
-              <button 
+              <button
                 onClick={() => setSearchTerm('')}
                 className="text-sm text-blue-600 hover:text-blue-800 font-medium"
               >
@@ -391,13 +391,13 @@ export default function VehicleListPage() {
 
                         <td className="px-6 py-4 whitespace-nowrap text-center">
                           <div className="flex items-center justify-center gap-2">
-                            <Link href={`/admin_dashboard/catalog/vehicles/${vehicle.vehicle_id}`}>
+                            <Link href={`/admin/catalog/vehicles/${vehicle.vehicle_id}`}>
                               <button className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white p-2 rounded-lg transition-all duration-300 transform hover:scale-110 shadow-md hover:shadow-lg">
                                 <Edit className="w-4 h-4" />
                               </button>
                             </Link>
-                            <button 
-                              onClick={() => handleDelete(vehicle.vehicle_id)} 
+                            <button
+                              onClick={() => handleDelete(vehicle.vehicle_id)}
                               className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white p-2 rounded-lg transition-all duration-300 transform hover:scale-110 shadow-md hover:shadow-lg"
                             >
                               <Trash2 className="w-4 h-4" />

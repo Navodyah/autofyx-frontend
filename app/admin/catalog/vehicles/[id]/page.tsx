@@ -3,19 +3,19 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import axios from 'axios';
 import Link from 'next/link';
-import { 
-  ArrowLeft, Edit, Save, Calendar, Zap, Fuel, Settings, 
-  Tag, Droplet, Gauge, CircleDot, FileText, Car, AlertCircle 
+import {
+  ArrowLeft, Edit, Save, Calendar, Zap, Fuel, Settings,
+  Tag, Droplet, Gauge, CircleDot, FileText, Car, AlertCircle
 } from 'lucide-react';
 
 export default function EditVehiclePage() {
   const params = useParams();
   const id = params?.id as string;
   const router = useRouter();
-  
+
   const [loading, setLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
-  
+
   // Form state - matches new page structure
   const [formData, setFormData] = useState({
     brand_id: '',
@@ -66,7 +66,7 @@ export default function EditVehiclePage() {
       console.log('Fetching vehicle with ID:', id);
       const response = await axios.get(`http://127.0.0.1:8000/vehicles/${id}`);
       console.log('Vehicle data received:', response.data);
-      
+
       // FIXED: Properly map model_name from response
       setFormData({
         brand_id: response.data.brand_id?.toString() || '',
@@ -85,7 +85,7 @@ export default function EditVehiclePage() {
         fuel_efficiency_combined: response.data.fuel_efficiency_combined?.toString() || '',
         description: response.data.description || '',
       });
-      
+
       // Debug log to verify model_name was loaded
       console.log('✓ Form data populated:', {
         brand_id: response.data.brand_id,
@@ -209,7 +209,7 @@ export default function EditVehiclePage() {
 
   const fetchDropdownData = async () => {
     setFetchErrors([]);
-    
+
     await Promise.all([
       fetchBrands(),
       fetchVehicleClasses(),
@@ -253,16 +253,16 @@ export default function EditVehiclePage() {
 
     try {
       const response = await axios.put(`http://127.0.0.1:8000/vehicles/${id}`, payload);
-      
+
       if (response.status === 200) {
         alert('Vehicle Updated Successfully!');
-        router.push('/admin_dashboard/catalog/vehicles');
+        router.push('/admin/catalog/vehicles');
       }
     } catch (error: any) {
       console.error('Update error:', error);
-      const errorMessage = error.response?.data?.detail || 
-                          JSON.stringify(error.response?.data) || 
-                          'Error updating vehicle';
+      const errorMessage = error.response?.data?.detail ||
+        JSON.stringify(error.response?.data) ||
+        'Error updating vehicle';
       alert(errorMessage);
     } finally {
       setIsUpdating(false);
@@ -284,7 +284,7 @@ export default function EditVehiclePage() {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-8">
       <div className="max-w-5xl mx-auto">
         {/* Back Button */}
-        <Link href="/admin_dashboard/catalog/vehicles">
+        <Link href="/admin/catalog/vehicles">
           <button className="mb-6 flex items-center gap-2 text-gray-600 hover:text-orange-600 transition-colors">
             <ArrowLeft className="w-5 h-5" />
             Back to Vehicle Registry
@@ -692,7 +692,7 @@ export default function EditVehiclePage() {
                   </>
                 )}
               </button>
-              <Link href="/admin_dashboard/catalog/vehicles" className="flex-1">
+              <Link href="/admin/catalog/vehicles" className="flex-1">
                 <button
                   type="button"
                   disabled={isUpdating}

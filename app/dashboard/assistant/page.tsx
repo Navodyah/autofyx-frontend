@@ -9,7 +9,7 @@ type ChatSession = { sessionId: string; title: string; messages: Message[]; upda
 
 // Light Palette
 const L = {
-  bg: "transparent", cardBg: "#FFFFFF", primary: "#155dfc", primaryText: "#FFFFFF",
+  bg: "#F0F4FF", cardBg: "#FFFFFF", primary: "#155dfc", primaryText: "#FFFFFF",
   text: "#030304", muted: "#6B7280", border: "#DBEAFE", glow: "rgba(21,93,252,0.15)",
   shadow: "0 4px 20px -2px rgba(21, 93, 252, 0.06), 0 0 3px rgba(21,93,252,0.04)",
   hoverShadow: "0 12px 24px -4px rgba(21,93,252,0.12)",
@@ -223,7 +223,10 @@ export default function AssistantPage() {
   );
 
   return (
-    <div className="flex h-[calc(100vh-100px)] m-1 sm:m-3 gap-4 sm:gap-6 p-3 sm:p-4 xl:p-6 transition-colors duration-500 rounded-[32px] relative">
+    <div 
+      className="flex h-[calc(100vh-100px)] m-1 sm:m-3 gap-4 sm:gap-6 p-3 sm:p-4 xl:p-6 transition-colors duration-500 rounded-[32px] relative"
+      style={{ background: P.bg }}
+    >
 
       {/* ── Mobile Sidebar Overlay (hidden on sm+) ── */}
       <AnimatePresence>
