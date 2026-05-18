@@ -178,21 +178,7 @@ export default function LoginPage() {
                             ))}
                         </motion.div>
                     </div>
-                    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.7, duration: 0.8 }} className="bg-[#1c1c21]/60 border border-white/10 backdrop-blur-md rounded-[1.5rem] p-6">
-                        <div className="flex gap-1 mb-3">
-                            {[...Array(5)].map((_, i) => (<Star key={i} className="w-3.5 h-3.5 fill-zinc-300 text-zinc-300" />))}
-                        </div>
-                        <p className="text-zinc-300 text-sm leading-relaxed font-light italic">
-                            "AutoFyx found my ideal car in minutes. The AI understood exactly what I needed — I saved months of research."
-                        </p>
-                        <div className="flex items-center gap-3 mt-4">
-                            <img src="https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=100&auto=format&fit=crop" alt="user" className="w-8 h-8 rounded-full object-cover border border-white/10" />
-                            <div>
-                                <p className="text-zinc-100 font-semibold text-sm">James R.</p>
-                                <p className="text-zinc-500 text-xs">Verified AutoFyx User</p>
-                            </div>
-                        </div>
-                    </motion.div>
+
                 </div>
             </div>
 

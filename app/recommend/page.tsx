@@ -147,7 +147,7 @@ export default function PublicRecommendPage() {
       if (merged.transmission) body.transmission = merged.transmission;
       addOpt(body, "rate_of_interest", merged.rate, parseFloat);
       addOpt(body, "number_of_months", merged.months, parseInt);
-      addOpt(body, "down_payment_ratio", merged.dpr, parseFloat);
+
       addOpt(body, "down_payment_amount", merged.dpa, parseFloat);
       addOpt(body, "max_comb_l_per_100", merged.maxFuel, parseFloat);
       addOpt(body, "top_n", values.topN, parseInt);

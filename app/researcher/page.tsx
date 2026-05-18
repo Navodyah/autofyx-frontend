@@ -229,7 +229,7 @@ export default function ResearcherOverview() {
       {/* ── KPI row ─────────────────────────────────── */}
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <KpiCard title="Total Vehicles" value={a.summary.vehicle_count.toLocaleString()} sub="Catalogued in the database" icon={Car} accent="#155dfc" P={P} delay={0.05}/>
-        <KpiCard title="Avg Vehicle Price" value={`LKR ${fmt(a.summary.avg_price)}`} sub="Mean across all listings" icon={DollarSign} accent="#10b981" P={P} delay={0.1}/>
+        <KpiCard title="Avg Vehicle Price" value={`LKR ${a.summary.avg_price >= 1000000 ? (a.summary.avg_price / 1000000).toFixed(1).replace(/\.0$/, '') : fmt(a.summary.avg_price)} M`} sub="Mean across all listings" icon={DollarSign} accent="#10b981" P={P} delay={0.1}/>
         <KpiCard title="Avg Maintenance" value={`LKR ${fmt(a.summary.avg_maintenance_cost)}`} sub="Yearly average cost" icon={Wrench} accent="#f59e0b" P={P} delay={0.15}/>
         <KpiCard title="Avg Efficiency" value={`${fmtD(a.summary.avg_combined_efficiency)} L/100`} sub="Combined fuel consumption" icon={Gauge} accent="#8b5cf6" P={P} delay={0.2}/>
       </div>
