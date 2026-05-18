@@ -22,7 +22,7 @@ export default function NewVehicleClassPage() {
 
       if (response.status === 200 || response.status === 201) {
         alert("Vehicle Class Added Successfully!");
-        router.push('/admin_dashboard/catalog/vehicles_class');
+        router.push('/admin/catalog/vehicles_class');
       }
     } catch (error: any) {
       console.error(error);
@@ -105,7 +105,7 @@ export default function NewVehicleClassPage() {
                   </>
                 )}
               </button>
-              <Link href="/admin_dashboard/catalog/vehicles_class" className="flex-1">
+              <Link href="/admin/catalog/vehicles_class" className="flex-1">
                 <button
                   type="button"
                   className="w-full bg-gray-200 hover:bg-gray-300 text-gray-700 px-6 py-3 rounded-xl flex items-center justify-center gap-2 transition-all duration-300"
