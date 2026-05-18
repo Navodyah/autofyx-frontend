@@ -11,7 +11,7 @@ export default function NewMaintenancePage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [dataLoading, setDataLoading] = useState(true);
-  
+
   const [formData, setFormData] = useState({
     vehicle_id: '',
     yearly_cost: '',
@@ -19,7 +19,7 @@ export default function NewMaintenancePage() {
     source: '',
   });
 
-  
+
   const [vehicles, setVehicles] = useState<any[]>([]);
   const [models, setModels] = useState<any[]>([]);
 
@@ -29,7 +29,7 @@ export default function NewMaintenancePage() {
 
   const fetchData = async () => {
     try {
-      
+
       const [vehiclesRes, modelsRes] = await Promise.all([
         axios.get(`${API_BASE}/vehicles/`),
         axios.get(`${API_BASE}/models/`)
@@ -37,7 +37,7 @@ export default function NewMaintenancePage() {
 
       setVehicles(vehiclesRes.data);
       setModels(modelsRes.data);
-      
+
       console.log('✓ Vehicles loaded:', vehiclesRes.data.length);
       console.log('✓ Models loaded:', modelsRes.data.length);
 
@@ -49,7 +49,7 @@ export default function NewMaintenancePage() {
     }
   };
 
-  
+
   const getModelName = (modelId: number) => {
     const model = models.find(m => m.model_id === modelId);
     return model ? model.model_name : 'Unknown Model';
@@ -73,18 +73,18 @@ export default function NewMaintenancePage() {
     console.log('Submitting maintenance record:', payload);
 
     try {
-      
+
       const response = await axios.post(`${API_BASE}/maintenance-costs`, payload);
-      
+
       if (response.status === 200 || response.status === 201) {
         alert('Maintenance record added successfully!');
-        router.push('/admin_dashboard/catalog/maintenance');
+        router.push('/admin/catalog/maintenance');
       }
     } catch (error: any) {
       console.error('Submit error:', error);
-      const errorMessage = error.response?.data?.detail || 
-                           JSON.stringify(error.response?.data) || 
-                           'Error adding maintenance record';
+      const errorMessage = error.response?.data?.detail ||
+        JSON.stringify(error.response?.data) ||
+        'Error adding maintenance record';
       alert(errorMessage);
     } finally {
       setIsLoading(false);
@@ -105,7 +105,7 @@ export default function NewMaintenancePage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-8">
       <div className="max-w-3xl mx-auto">
-        <Link href="/admin_dashboard/catalog/maintenance">
+        <Link href="/admin/catalog/maintenance">
           <button className="mb-6 flex items-center gap-2 text-gray-600 hover:text-green-600 transition-colors">
             <ArrowLeft className="w-5 h-5" />
             Back to Maintenance Records
@@ -243,7 +243,7 @@ export default function NewMaintenancePage() {
                   </>
                 )}
               </button>
-              <Link href="/admin_dashboard/catalog/maintenance" className="flex-1">
+              <Link href="/admin/catalog/maintenance" className="flex-1">
                 <button
                   type="button"
                   disabled={isLoading}
