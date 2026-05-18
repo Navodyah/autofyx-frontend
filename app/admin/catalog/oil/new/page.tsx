@@ -8,7 +8,7 @@ import { ArrowLeft, Save, Droplet, FileText } from 'lucide-react';
 export default function NewOilQualityPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
-  
+
   const [formData, setFormData] = useState({
     oil_grade: '',
     description: ''
@@ -31,7 +31,7 @@ export default function NewOilQualityPage() {
 
       if (response.status === 200 || response.status === 201) {
         alert("Oil Quality Added Successfully!");
-        router.push('/admin_dashboard/catalog/oil');
+        router.push('/admin/catalog/oil');
       }
     } catch (error: any) {
       console.error(error);
@@ -46,7 +46,7 @@ export default function NewOilQualityPage() {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-8">
       <div className="max-w-2xl mx-auto">
         {/* Back Button */}
-        <Link href="/admin_dashboard/catalog/oil">
+        <Link href="/admin/catalog/oil">
           <button className="mb-6 flex items-center gap-2 text-gray-600 hover:text-blue-600 transition-colors">
             <ArrowLeft className="w-5 h-5" />
             Back to Oil Quality
@@ -136,7 +136,7 @@ export default function NewOilQualityPage() {
                   </>
                 )}
               </button>
-              <Link href="/admin_dashboard/catalog/oil" className="flex-1">
+              <Link href="/admin/catalog/oil" className="flex-1">
                 <button
                   type="button"
                   className="w-full bg-gray-200 hover:bg-gray-300 text-gray-700 px-6 py-3 rounded-xl flex items-center justify-center gap-2 transition-all duration-300"
