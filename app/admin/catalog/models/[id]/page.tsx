@@ -9,7 +9,7 @@ import { useParams } from 'next/navigation';
 export default function EditModelPage() {
   const params = useParams();
   const id = params?.id as string;
-  
+
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -60,7 +60,7 @@ export default function EditModelPage() {
           <div className="text-red-500 text-6xl mb-4">⚠️</div>
           <h2 className="text-2xl font-bold text-gray-800 mb-2">Model Not Found</h2>
           <p className="text-gray-600 mb-6">The model you're looking for doesn't exist.</p>
-          <Link href="/admin_dashboard/catalog/models">
+          <Link href="/admin/catalog/models">
             <button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl">
               Back to Models
             </button>
@@ -73,7 +73,7 @@ export default function EditModelPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-8">
       <div className="max-w-2xl mx-auto">
-        <Link href="/admin_dashboard/catalog/models">
+        <Link href="/admin/catalog/models">
           <button className="mb-6 flex items-center gap-2 text-gray-600 hover:text-blue-600 transition-colors">
             <ArrowLeft className="w-5 h-5" />
             Back to Models
@@ -92,7 +92,7 @@ export default function EditModelPage() {
               </div>
             </div>
           </div>
-          
+
           <div className="p-8">
             <ModelForm initialData={data} isEdit={true} />
           </div>
