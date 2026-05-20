@@ -786,7 +786,7 @@ function DashboardOverview() {
           const raw = localStorage.getItem('user_data');
           const userData = raw ? JSON.parse(raw) : {};
           const appwriteId = userData.appwrite_id || '';
-          const BackendURL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
+          const BackendURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
           const response = await fetch(`${BackendURL}/applications/apply`, {
             method: 'POST',

@@ -18,10 +18,11 @@ export default function PendingApproval() {
   const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const BackendURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
   const fetchApplications = async () => {
     try {
-      const res = await fetch("http://localhost:8000/applications/pending");
+      const res = await fetch(`${BackendURL}/applications/pending`);
       const data = await res.json();
       if (data.success) {
         setApplications(data.applications);
@@ -41,7 +42,7 @@ export default function PendingApproval() {
 
   const handleReview = async (id: string, status: "approved" | "declined") => {
     try {
-      const res = await fetch(`http://localhost:8000/applications/${id}/review`, {
+      const res = await fetch(`${BackendURL}/applications/${id}/review`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status })
